@@ -30,7 +30,29 @@ export async function getSubjects(params: GetSubjectsParams = {}): Promise<{
   const supabase = await createClient();
   const { filters, sort, page = 1, limit = 12 } = params;
 
+  const getErrorMessage = (err: unknown) => {
+    if (!err) return 'Erreur inconnue';
+    if (typeof err === 'string') return err;
+    if (err instanceof Error) return err.message || err.name;
+    if (typeof err === 'object') {
+      const message =
+        (err as { message?: string }).message ||
+        (err as { details?: string }).details ||
+        (err as { hint?: string }).hint ||
+        (err as { code?: string }).code;
+      if (message) return message;
+      try {
+        return JSON.stringify(err);
+      } catch {
+        return String(err);
+      }
+    }
+    return String(err);
+  };
+
   try {
+    console.log('🔍 Starting getSubjects with params:', { filters, sort, page, limit });
+    
     // Build query
     let query = supabase
       .from('subjects')
@@ -119,9 +141,17 @@ export async function getSubjects(params: GetSubjectsParams = {}): Promise<{
 
     const { data: subjects, error, count } = await query;
 
+    console.log('📊 Query executed:', { 
+      hasError: !!error, 
+      errorDetails: error,
+      dataLength: subjects?.length,
+      count 
+    });
+
     if (error) {
-      console.error('Error fetching subjects:', error);
-      return { data: null, error: error.message };
+      const errorMessage = getErrorMessage(error);
+      console.error('❌ Error fetching subjects:', errorMessage, error);
+      return { data: null, error: errorMessage };
     }
 
     // Get current user's access if logged in
@@ -161,8 +191,151 @@ export async function getSubjects(params: GetSubjectsParams = {}): Promise<{
       error: null,
     };
   } catch (err) {
-    console.error('Error in getSubjects:', err);
-    return { data: null, error: 'Erreur lors du chargement des sujets' };
+    const errorMessage = getErrorMessage(err);
+    console.error('Error in getSubjects:', errorMessage, err);
+    return { data: null, error: errorMessage };
+  }
+}
+
+// =====================================================
+// Get Subject Metadata (for filters)
+// =====================================================
+
+export async function getSubjectMetadata(): Promise<{
+  data: SubjectMetadata | null;
+  error: string | null;
+}> {
+  const supabase = await createClient();
+
+  const getErrorMessage = (err: unknown) => {
+    if (!err) return 'Erreur inconnue';
+    if (typeof err === 'string') return err;
+    if (err instanceof Error) return err.message || err.name;
+    if (typeof err === 'object') {
+      const message =
+        (err as { message?: string }).message ||
+        (err as { details?: string }).details ||
+        (err as { hint?: string }).hint ||
+        (err as { code?: string }).code;
+      if (message) return message;
+      try {
+        return JSON.stringify(err);
+      } catch {
+        return String(err);
+      }
+    }
+    return String(err);
+  };
+
+  try {
+    console.log('🔍 Starting getSubjectMetadata...');
+    
+    // Get all published subjects for metadata
+    const { data: subjects, error } = await supabase
+      .from('subjects')
+      .select('exam_type, year, matiere, matiere_display, serie, niveau')
+      .eq('status', 'published');
+
+    console.log('📊 Subjects query result:', { error, count: subjects?.length });
+
+    if (error) {
+      const errorMessage = getErrorMessage(error);
+      console.error('❌ Error in subjects query:', errorMessage, error);
+      return { data: null, error: errorMessage };
+    }
+
+    // Process metadata
+    const examTypeCounts = new Map<ExamType, number>();
+    const yearCounts = new Map<number, number>();
+    const matiereCounts = new Map<string, { label: string; count: number }>();
+    const serieCounts = new Map<string, number>();
+    const niveauCounts = new Map<string, number>();
+
+    console.log('📈 Processing metadata for', subjects?.length, 'subjects...');
+    
+    subjects?.forEach((subject) => {
+      // Exam types
+      examTypeCounts.set(
+        subject.exam_type,
+        (examTypeCounts.get(subject.exam_type) || 0) + 1
+      );
+
+      // Years
+      yearCounts.set(subject.year, (yearCounts.get(subject.year) || 0) + 1);
+
+      // Matieres
+      const matiereData = matiereCounts.get(subject.matiere);
+      if (matiereData) {
+        matiereData.count++;
+      } else {
+        matiereCounts.set(subject.matiere, {
+          label: subject.matiere_display,
+          count: 1,
+        });
+      }
+
+      // Series
+      if (subject.serie) {
+        serieCounts.set(subject.serie, (serieCounts.get(subject.serie) || 0) + 1);
+      }
+
+      // Niveaux
+      if (subject.niveau) {
+        niveauCounts.set(subject.niveau, (niveauCounts.get(subject.niveau) || 0) + 1);
+      }
+    });
+
+    console.log('✅ Metadata processing completed');
+
+    const examTypeLabels: Record<ExamType, string> = {
+      cepe: 'CEPE',
+      bepc: 'BEPC',
+      baccalaureat: 'Baccalauréat',
+      licence: 'Licence',
+      master: 'Master',
+      doctorat: 'Doctorat',
+      dts: 'DTS',
+      bts: 'BTS',
+      concours: 'Concours',
+      other: 'Autre',
+    };
+
+    return {
+      data: {
+        exam_types: Array.from(examTypeCounts.entries())
+          .map(([value, count]) => ({
+            value,
+            label: examTypeLabels[value] || value,
+            count,
+          }))
+          .sort((a, b) => b.count - a.count),
+
+        years: Array.from(yearCounts.entries())
+          .map(([value, count]) => ({ value, count }))
+          .sort((a, b) => b.value - a.value),
+
+        matieres: Array.from(matiereCounts.entries())
+          .map(([value, data]) => ({
+            value,
+            label: data.label,
+            count: data.count,
+          }))
+          .sort((a, b) => b.count - a.count),
+
+        series: Array.from(serieCounts.entries())
+          .map(([value, count]) => ({ value, count }))
+          .sort((a, b) => a.value.localeCompare(b.value)),
+
+        niveaux: Array.from(niveauCounts.entries())
+          .map(([value, count]) => ({ value, count }))
+          .sort((a, b) => a.value.localeCompare(b.value)),
+      },
+      error: null,
+    };
+  } catch (err) {
+    const errorMessage = getErrorMessage(err);
+    console.error('Error in getSubjectMetadata:', errorMessage, err);
+    return { data: null, error: errorMessage };
   }
 }
 
@@ -213,8 +386,35 @@ export async function getSubjectById(id: string): Promise<{
       }
     }
 
-    // Increment view count (non-blocking)
-    supabase.rpc('increment_subject_view', { p_subject_id: id }).then();
+    // Increment view count
+    // Pass user ID to ensure unique counting per user (logic handled in SQL function)
+    const { error: viewError } = await supabase.rpc('increment_subject_view', {
+      p_subject_id: id,
+      p_user_id: user?.id || null,
+    });
+
+    if (viewError) {
+      console.error('❌ Error incrementing view count:', viewError);
+    } 
+
+    // If we just incremented (or tried to), the returned subject data might be stale 
+    // because we fetched it BEFORE the RPC call.
+    // However, fetching again is expensive.
+    // Ideally, the RPC should return the new count or a "did_increment" boolean.
+    // For now, let's just leave it as is - the count will update on next refresh.
+    // Or we could optimistically increment if no error occurred (but we don't know if it was deduped).
+    
+    // To be perfectly accurate without refetching, we would need the RPC to return "incremented: true".
+    // Let's refetch just the view_count to be safe and accurate for the UI.
+    const { data: updatedCount } = await supabase
+      .from('subjects')
+      .select('view_count')
+      .eq('id', id)
+      .single();
+      
+    if (updatedCount) {
+        subject.view_count = updatedCount.view_count;
+    }
 
     return {
       data: {
@@ -227,300 +427,5 @@ export async function getSubjectById(id: string): Promise<{
   } catch (err) {
     console.error('Error in getSubjectById:', err);
     return { data: null, error: 'Erreur lors du chargement du sujet' };
-  }
-}
-
-// =====================================================
-// Get Subject Metadata (for filters)
-// =====================================================
-
-export async function getSubjectMetadata(): Promise<{
-  data: SubjectMetadata | null;
-  error: string | null;
-}> {
-  const supabase = await createClient();
-
-  try {
-    // Get all published subjects for metadata
-    const { data: subjects, error } = await supabase
-      .from('subjects')
-      .select('exam_type, year, matiere, matiere_display, serie, niveau')
-      .eq('status', 'published');
-
-    if (error) {
-      return { data: null, error: error.message };
-    }
-
-    // Process metadata
-    const examTypeCounts = new Map<ExamType, number>();
-    const yearCounts = new Map<number, number>();
-    const matiereCounts = new Map<string, { label: string; count: number }>();
-    const serieCounts = new Map<string, number>();
-    const niveauCounts = new Map<string, number>();
-
-    subjects?.forEach((subject) => {
-      // Exam types
-      examTypeCounts.set(
-        subject.exam_type,
-        (examTypeCounts.get(subject.exam_type) || 0) + 1
-      );
-
-      // Years
-      yearCounts.set(subject.year, (yearCounts.get(subject.year) || 0) + 1);
-
-      // Matieres
-      const matiereData = matiereCounts.get(subject.matiere);
-      if (matiereData) {
-        matiereData.count++;
-      } else {
-        matiereCounts.set(subject.matiere, {
-          label: subject.matiere_display,
-          count: 1,
-        });
-      }
-
-      // Series
-      if (subject.serie) {
-        serieCounts.set(subject.serie, (serieCounts.get(subject.serie) || 0) + 1);
-      }
-
-      // Niveaux
-      if (subject.niveau) {
-        niveauCounts.set(subject.niveau, (niveauCounts.get(subject.niveau) || 0) + 1);
-      }
-    });
-
-    const examTypeLabels: Record<ExamType, string> = {
-      cepe: 'CEPE',
-      bepc: 'BEPC',
-      baccalaureat: 'Baccalauréat',
-      licence: 'Licence',
-      master: 'Master',
-      doctorat: 'Doctorat',
-      dts: 'DTS',
-      bts: 'BTS',
-      concours: 'Concours',
-      other: 'Autre',
-    };
-
-    return {
-      data: {
-        exam_types: Array.from(examTypeCounts.entries())
-          .map(([value, count]) => ({
-            value,
-            label: examTypeLabels[value] || value,
-            count,
-          }))
-          .sort((a, b) => b.count - a.count),
-
-        years: Array.from(yearCounts.entries())
-          .map(([value, count]) => ({ value, count }))
-          .sort((a, b) => b.value - a.value),
-
-        matieres: Array.from(matiereCounts.entries())
-          .map(([value, data]) => ({
-            value,
-            label: data.label,
-            count: data.count,
-          }))
-          .sort((a, b) => b.count - a.count),
-
-        series: Array.from(serieCounts.entries())
-          .map(([value, count]) => ({ value, count }))
-          .sort((a, b) => a.value.localeCompare(b.value)),
-
-        niveaux: Array.from(niveauCounts.entries())
-          .map(([value, count]) => ({ value, count }))
-          .sort((a, b) => a.value.localeCompare(b.value)),
-      },
-      error: null,
-    };
-  } catch (err) {
-    console.error('Error in getSubjectMetadata:', err);
-    return { data: null, error: 'Erreur lors du chargement des filtres' };
-  }
-}
-
-// =====================================================
-// Get Related Subjects
-// =====================================================
-
-export async function getRelatedSubjects(
-  subjectId: string,
-  limit: number = 4
-): Promise<{
-  data: SubjectCard[] | null;
-  error: string | null;
-}> {
-  const supabase = await createClient();
-
-  try {
-    // First get the current subject to find related ones
-    const { data: currentSubject, error: currentError } = await supabase
-      .from('subjects')
-      .select('matiere, exam_type, serie, year')
-      .eq('id', subjectId)
-      .single();
-
-    if (currentError || !currentSubject) {
-      return { data: [], error: null };
-    }
-
-    // Find related subjects (same matiere, different subject)
-    const { data: relatedSubjects, error } = await supabase
-      .from('subjects')
-      .select(
-        `
-        id,
-        title,
-        exam_type,
-        year,
-        matiere,
-        matiere_display,
-        serie,
-        niveau,
-        thumbnail_url,
-        is_free,
-        credit_cost,
-        view_count
-      `
-      )
-      .eq('status', 'published')
-      .eq('matiere', currentSubject.matiere)
-      .neq('id', subjectId)
-      .order('year', { ascending: false })
-      .limit(limit);
-
-    if (error) {
-      return { data: null, error: error.message };
-    }
-
-    return { data: relatedSubjects || [], error: null };
-  } catch (err) {
-    console.error('Error in getRelatedSubjects:', err);
-    return { data: null, error: 'Erreur lors du chargement des sujets similaires' };
-  }
-}
-
-// =====================================================
-// Get Featured Subjects (for homepage)
-// =====================================================
-
-export async function getFeaturedSubjects(limit: number = 6): Promise<{
-  data: SubjectCard[] | null;
-  error: string | null;
-}> {
-  const supabase = await createClient();
-
-  try {
-    const { data: subjects, error } = await supabase
-      .from('subjects')
-      .select(
-        `
-        id,
-        title,
-        exam_type,
-        year,
-        matiere,
-        matiere_display,
-        serie,
-        niveau,
-        thumbnail_url,
-        is_free,
-        credit_cost,
-        view_count
-      `
-      )
-      .eq('status', 'published')
-      .order('view_count', { ascending: false })
-      .order('year', { ascending: false })
-      .limit(limit);
-
-    if (error) {
-      return { data: null, error: error.message };
-    }
-
-    return { data: subjects || [], error: null };
-  } catch (err) {
-    console.error('Error in getFeaturedSubjects:', err);
-    return { data: null, error: 'Erreur lors du chargement des sujets populaires' };
-  }
-}
-
-// =====================================================
-// Search Subjects
-// =====================================================
-
-export async function searchSubjects(query: string, limit: number = 10): Promise<{
-  data: SubjectCard[] | null;
-  error: string | null;
-}> {
-  if (!query || query.trim().length < 2) {
-    return { data: [], error: null };
-  }
-
-  const supabase = await createClient();
-
-  try {
-    const { data: subjects, error } = await supabase
-      .from('subjects')
-      .select(
-        `
-        id,
-        title,
-        exam_type,
-        year,
-        matiere,
-        matiere_display,
-        serie,
-        niveau,
-        thumbnail_url,
-        is_free,
-        credit_cost,
-        view_count
-      `
-      )
-      .eq('status', 'published')
-      .textSearch('search_vector', query, {
-        type: 'websearch',
-        config: 'french',
-      })
-      .limit(limit);
-
-    if (error) {
-      // Fallback to simple ILIKE search if FTS fails
-      const { data: fallbackSubjects, error: fallbackError } = await supabase
-        .from('subjects')
-        .select(
-          `
-          id,
-          title,
-          exam_type,
-          year,
-          matiere,
-          matiere_display,
-          serie,
-          niveau,
-          thumbnail_url,
-          is_free,
-          credit_cost,
-          view_count
-        `
-        )
-        .eq('status', 'published')
-        .or(`title.ilike.%${query}%,matiere_display.ilike.%${query}%`)
-        .limit(limit);
-
-      if (fallbackError) {
-        return { data: null, error: fallbackError.message };
-      }
-
-      return { data: fallbackSubjects || [], error: null };
-    }
-
-    return { data: subjects || [], error: null };
-  } catch (err) {
-    console.error('Error in searchSubjects:', err);
-    return { data: null, error: 'Erreur lors de la recherche' };
   }
 }

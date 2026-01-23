@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { ProfileDropdown } from "@/components/ui/profile-dropdown";
+import { CreditBalance } from "@/components/credits/CreditBalance";
 
 // Navigation Items
 export interface NavItem {
@@ -103,10 +104,14 @@ export function Navbar({
 
           {/* Right Section: Profile & Mobile Toggle */}
           <div className="flex-1 flex items-center justify-end gap-4">
+            
             {/* Desktop Profile */}
-            <div className="hidden md:block">
+            <div className="hidden md:flex items-center">
               {user ? (
-                <ProfileDropdown user={user} isExpanded={true} />
+                <>
+                  <CreditBalance />
+                  <ProfileDropdown user={user} isExpanded={true} />
+                </>
               ) : (
                  <Link
                   href="/auth/login"
