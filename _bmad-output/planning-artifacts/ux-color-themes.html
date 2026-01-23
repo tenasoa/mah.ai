@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mah.ai - Design Tokens & Color Palette</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        outfit: ['Outfit', 'sans-serif'],
+                        inter: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --grit-gradient: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+            --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --ai-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        }
+        .grit-bg { background: var(--grit-gradient); }
+        .success-bg { background: var(--success-gradient); }
+        .ai-bg { background: var(--ai-gradient); }
+        
+        /* Custom transitions */
+        body { transition: background-color 0.3s ease, color 0.3s ease; }
+        .card-transition { transition: all 0.3s ease; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen p-4 md:p-8 font-inter">
+    <div class="max-w-5xl mx-auto">
+        <!-- Header with Toggle -->
+        <header class="mb-12 border-b border-slate-200 dark:border-slate-800 pb-8 flex justify-between items-end">
+            <div>
+                <h1 class="text-4xl font-bold tracking-tight font-outfit">Design System Tokens</h1>
+                <p class="text-slate-500 dark:text-slate-400 mt-2 text-lg">Palette de couleurs vibrantes pour mah.ai - Direction "Epic Bento Minimaliste"</p>
+            </div>
+            <button onclick="toggleDarkMode()" class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex items-center gap-2 font-bold text-sm">
+                <span class="dark:hidden">🌙 Mode Sombre</span>
+                <span class="hidden dark:block">☀️ Mode Clair</span>
+            </button>
+        </header>
+
+        <section class="mb-16">
+            <h2 class="text-2xl font-bold mb-6 font-outfit">Core Gradients (Vibrancy)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Grit Score -->
+                <div class="space-y-4">
+                    <div class="h-32 rounded-3xl grit-bg shadow-lg shadow-orange-200 dark:shadow-orange-900/20 flex items-center justify-center">
+                        <span class="text-white font-bold text-xl uppercase tracking-widest font-outfit">Grit Score</span>
+                    </div>
+                    <div>
+                        <p class="font-bold">Grit Accent</p>
+                        <p class="text-xs text-slate-400 font-mono">Amber-500 (#f59e0b) → Red-500 (#ef4444)</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 italic">Utilisé pour l'effort, la progression et les célébrations de réussite.</p>
+                    </div>
+                </div>
+
+                <!-- Success Score -->
+                <div class="space-y-4">
+                    <div class="h-32 rounded-3xl success-bg shadow-lg shadow-emerald-200 dark:shadow-emerald-900/20 flex items-center justify-center">
+                        <span class="text-white font-bold text-xl uppercase tracking-widest font-outfit">Success</span>
+                    </div>
+                    <div>
+                        <p class="font-bold">Success Accent</p>
+                        <p class="text-xs text-slate-400 font-mono">Emerald-500 (#10b981) → Emerald-600 (#059669)</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 italic">Utilisé pour la validation des quiz et les maîtrises de concepts.</p>
+                    </div>
+                </div>
+
+                <!-- AI Accent -->
+                <div class="space-y-4">
+                    <div class="h-32 rounded-3xl ai-bg shadow-lg shadow-indigo-200 dark:shadow-indigo-900/20 flex items-center justify-center">
+                        <span class="text-white font-bold text-xl uppercase tracking-widest font-outfit">AI Sidekick</span>
+                    </div>
+                    <div>
+                        <p class="font-bold">AI & Intel</p>
+                        <p class="text-xs text-slate-400 font-mono">Indigo-500 (#6366f1) → Violet-600 (#8b5cf6)</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 italic">Utilisé pour l'assistance intelligente et les outils pédagogiques.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-16">
+            <h2 class="text-2xl font-bold mb-6 font-outfit">Neutral Foundations (Stability)</h2>
+            <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm card-transition">
+                    <div class="h-12 w-full bg-slate-50 dark:bg-slate-800 rounded-lg mb-2"></div>
+                    <p class="text-xs font-bold uppercase font-mono">Slate 50 / 800</p>
+                    <p class="text-[10px] text-slate-400 italic">Background global</p>
+                </div>
+                <div class="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm card-transition">
+                    <div class="h-12 w-full bg-slate-100 dark:bg-slate-700 rounded-lg mb-2 border border-slate-200 dark:border-slate-600"></div>
+                    <p class="text-xs font-bold uppercase font-mono">Slate 100 / 700</p>
+                    <p class="text-[10px] text-slate-400 italic">Borders & Dividers</p>
+                </div>
+                <div class="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm card-transition">
+                    <div class="h-12 w-full bg-white dark:bg-slate-900 rounded-lg mb-2 border border-slate-200 dark:border-slate-800 shadow-inner"></div>
+                    <p class="text-xs font-bold uppercase font-mono">White / Slate 900</p>
+                    <p class="text-[10px] text-slate-400 italic">Bento Cards</p>
+                </div>
+                <div class="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm card-transition">
+                    <div class="h-12 w-full bg-slate-400 dark:bg-slate-500 rounded-lg mb-2"></div>
+                    <p class="text-xs font-bold uppercase font-mono">Slate 400 / 500</p>
+                    <p class="text-[10px] text-slate-400 italic">Secondary Text</p>
+                </div>
+                <div class="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm card-transition">
+                    <div class="h-12 w-full bg-slate-900 dark:bg-slate-50 rounded-lg mb-2"></div>
+                    <p class="text-xs font-bold uppercase font-mono">Slate 900 / 50</p>
+                    <p class="text-[10px] text-slate-400 italic">Primary Text</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-16">
+            <h2 class="text-2xl font-bold mb-6 font-outfit">Typography Examples</h2>
+            <div class="bg-white dark:bg-slate-900 p-10 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-8 card-transition">
+                <div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded mb-2 inline-block">Headlines (Outfit)</span>
+                    <h3 class="text-4xl font-bold text-slate-900 dark:text-white font-outfit">Physique-Chimie : Force Nucléaires</h3>
+                </div>
+                <div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded mb-2 inline-block">Body (Inter)</span>
+                    <p class="text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
+                        L’interaction forte est aussi responsable de la cohésion des noyaux atomiques en liant les protons et les neutrons entre eux au sein du noyau.
+                    </p>
+                </div>
+                <div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded mb-2 inline-block">Data (JetBrains Mono)</span>
+                    <p class="text-3xl font-bold font-mono text-orange-500 dark:text-orange-400">12,450 GRIT SCORE</p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center text-slate-400 text-sm py-12 border-t border-slate-200 dark:border-slate-800">
+            <p>© 2026 mah.ai - Design Tokens Documentation</p>
+        </footer>
+    </div>
+
+    <script>
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Check for saved theme preference
+        if (localStorage.getItem('theme') === 'dark' || 
+            (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</body>
+</html>
