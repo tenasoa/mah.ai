@@ -51,8 +51,8 @@ development_status:
   epic-2: in-progress
   2-1-interface-bento-responsive: done
   2-2-moteur-de-recherche-instantane: done
-  2-3-teaser-hybride-seo-ux: review
-  2-4-systeme-de-credits-deblocage: backlog
+  2-3-teaser-hybride-seo-ux: done
+  2-4-systeme-de-credits-deblocage: review
   epic-2-retrospective: optional
 
   epic-3: backlog

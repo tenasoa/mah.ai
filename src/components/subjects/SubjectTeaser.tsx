@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { Lock, Unlock, ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { SubjectWithAccess } from "@/lib/types/subject";
 import {
   EXAM_TYPE_LABELS,
@@ -10,6 +11,8 @@ import {
   MATIERE_ICONS,
 } from "@/lib/types/subject";
 import { recordTeaserView, recordTeaserCTA } from "@/app/actions/teaser";
+import { getCreditBalance } from "@/app/actions/credits";
+import { UnlockModal } from "@/components/subjects/UnlockModal";
 
 interface SubjectTeaserProps {
   subject: SubjectWithAccess;
@@ -34,10 +37,15 @@ export function SubjectTeaser({
   previewLines = 3,
   onTeaserViewed,
 }: SubjectTeaserProps) {
+  const router = useRouter();
   const colors = EXAM_TYPE_COLORS[subject.exam_type] || EXAM_TYPE_COLORS.other;
   const icon = MATIERE_ICONS[subject.matiere] || "📚";
   const [variant, setVariant] = useState<TeaserVariant>("control");
   const [isMounted, setIsMounted] = useState(false);
+  
+  // Unlock Logic State
+  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
 
   // Parse preview text into lines
   const previewContent = useMemo(() => {
@@ -69,6 +77,9 @@ export function SubjectTeaser({
     // Record View with Variant
     recordTeaserView(subject.id, "direct", selectedVariant).catch(console.error);
     
+    // Fetch user balance
+    getCreditBalance().then(setCreditBalance);
+
     onTeaserViewed?.();
   }, [subject.id, onTeaserViewed]);
 
@@ -84,8 +95,19 @@ export function SubjectTeaser({
     }
   };
 
-  const handleCTAClick = () => {
+  const handleUnlockClick = (e: React.MouseEvent) => {
+    if (subject.is_free) return; // Let the link work normally
+    
+    e.preventDefault();
     recordTeaserCTA(subject.id, "unlock", variant).catch(console.error);
+
+    if (creditBalance === null) {
+      // User not logged in
+      router.push(`/auth/login?redirect=/subjects/${subject.id}`);
+    } else {
+      // Open modal
+      setIsUnlockModalOpen(true);
+    }
   };
 
   return (
@@ -221,7 +243,7 @@ export function SubjectTeaser({
                   ? `/subjects/${subject.id}`
                   : `/auth/login?redirect=/subjects/${subject.id}`
               }
-              onClick={handleCTAClick}
+              onClick={handleUnlockClick}
               className="
                 w-full px-6 py-4 rounded-xl
                 bg-gradient-to-r from-amber-500 to-amber-600
@@ -325,6 +347,16 @@ export function SubjectTeaser({
           <p className="text-xs text-slate-500 mt-1">Année</p>
         </div>
       </div>
+
+      {/* Unlock Modal */}
+      <UnlockModal 
+        isOpen={isUnlockModalOpen}
+        onClose={() => setIsUnlockModalOpen(false)}
+        subjectId={subject.id}
+        subjectTitle={subject.matiere_display}
+        creditCost={subject.credit_cost}
+        currentBalance={creditBalance || 0}
+      />
     </div>
   );
 }
