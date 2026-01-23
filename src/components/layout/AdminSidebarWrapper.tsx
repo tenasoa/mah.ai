@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { Sidebar, type UserProfile } from '@/components/ui/sidebar';
+import { Navbar, type NavItem, type UserProfile } from '@/components/layout/Navbar';
 import {
   LayoutGrid,
   CreditCard,
@@ -12,16 +12,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-// Internal nav item type with actual icon component
-interface InternalNavItem {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-  badge?: string | number;
-}
-
 // Default admin navigation items
-const defaultAdminNavItems: InternalNavItem[] = [
+const defaultAdminNavItems: NavItem[] = [
   { href: '/admin/payments', label: 'Paiements', icon: CreditCard },
   { href: '/admin/users', label: 'Utilisateurs', icon: Users },
   { href: '/admin/subjects', label: 'Sujets', icon: FileText },
@@ -30,7 +22,7 @@ const defaultAdminNavItems: InternalNavItem[] = [
 ];
 
 // Dashboard link to go back to main app
-const dashboardNavItem: InternalNavItem = {
+const dashboardNavItem: NavItem = {
   href: '/dashboard',
   label: 'Retour App',
   icon: LayoutGrid,
@@ -38,7 +30,7 @@ const dashboardNavItem: InternalNavItem = {
 
 interface AdminSidebarWrapperProps {
   children: ReactNode;
-  navItems?: InternalNavItem[];
+  navItems?: NavItem[];
   user?: UserProfile | null;
   showUserProfile?: boolean;
   onLogout?: () => void;
@@ -52,11 +44,10 @@ export function AdminSidebarWrapper({
   user,
   showUserProfile = false,
   onLogout,
-  defaultExpanded = false,
   pendingPaymentsCount,
 }: AdminSidebarWrapperProps) {
   // Build nav items with optional badge for payments
-  const resolvedNavItems: InternalNavItem[] = navItems
+  const resolvedNavItems: NavItem[] = navItems
     ? navItems
     : defaultAdminNavItems.map((item) => {
         if (item.href === '/admin/payments' && pendingPaymentsCount && pendingPaymentsCount > 0) {
@@ -69,7 +60,7 @@ export function AdminSidebarWrapper({
   const allNavItems = [...resolvedNavItems, dashboardNavItem];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col lg:flex-row overflow-hidden">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
       {/* Ambient Background - Admin theme */}
       <div className="mah-ambient">
         <div
@@ -95,17 +86,15 @@ export function AdminSidebarWrapper({
         />
       </div>
 
-      {/* Sidebar */}
-      <Sidebar
+      {/* Navbar - Admin */}
+      <Navbar
         navItems={allNavItems}
         user={user}
-        showUserProfile={showUserProfile}
         onLogout={onLogout}
-        defaultExpanded={defaultExpanded}
       />
 
-      {/* Main Content - with left margin to account for fixed sidebar */}
-      <main className="relative z-10 flex-1 px-6 py-8 lg:px-12 lg:py-10 overflow-y-auto mah-scroll lg:ml-[72px]">
+      {/* Main Content */}
+      <main className="relative z-10 flex-1 w-full max-w-7xl mx-auto px-6 py-8 lg:px-12 lg:py-10">
         {children}
       </main>
     </div>
