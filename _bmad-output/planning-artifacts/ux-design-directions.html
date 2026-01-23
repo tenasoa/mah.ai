@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mah.ai - Design Directions Showcase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --grit-gradient: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
+            --excellence-indigo: #6366F1;
+            --success-emerald: #10B981;
+            --slate-950: #0F172A;
+            --slate-50: #F8FAFC;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--slate-50);
+            color: var(--slate-950);
+        }
+        h1, h2, h3 {
+            font-family: 'Outfit', sans-serif;
+        }
+        .grit-text {
+            background: var(--grit-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .grit-bg {
+            background: var(--grit-gradient);
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .glass-dark {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .bento-card {
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .bento-card:hover {
+            transform: translateY(-4px) scale(1.02);
+        }
+        .mockup-container {
+            display: none;
+        }
+        .mockup-container.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <header class="max-w-6xl mx-auto mb-12 flex justify-between items-center">
+        <div>
+            <h1 class="text-4xl font-bold tracking-tight">mah.ai <span class="grit-text">Design Directions</span></h1>
+            <p class="text-slate-500 mt-2">Exploration visuelle de la direction "Grit Vibrant"</p>
+        </div>
+        <div class="flex gap-2">
+            <span class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">BMM UX Workflow</span>
+            <span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">Concept Stage</span>
+        </div>
+    </header>
+
+    <nav class="max-w-6xl mx-auto mb-12">
+        <div class="flex flex-wrap gap-4 p-2 bg-slate-200 rounded-2xl overflow-hidden">
+            <button onclick="showMockup('v1')" class="nav-btn px-6 py-3 rounded-xl font-medium transition-all bg-white shadow-sm text-slate-900" id="btn-v1">V1: Bento Mastery</button>
+            <button onclick="showMockup('v2')" class="nav-btn px-6 py-3 rounded-xl font-medium transition-all text-slate-600 hover:bg-white/50" id="btn-v2">V2: Zen Reader</button>
+            <button onclick="showMockup('v3')" class="nav-btn px-6 py-3 rounded-xl font-medium transition-all text-slate-600 hover:bg-white/50" id="btn-v3">V3: Gamified Epic</button>
+            <button onclick="showMockup('v4')" class="nav-btn px-6 py-3 rounded-xl font-medium transition-all text-slate-600 hover:bg-white/50" id="btn-v4">V4: AI Sidekick</button>
+            <button onclick="showMockup('v5')" class="nav-btn px-6 py-3 rounded-xl font-medium transition-all text-slate-600 hover:bg-white/50" id="btn-v5">V5: Bento Minimaliste</button>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto">
+        
+        <!-- V1: Bento Mastery -->
+        <div id="v1" class="mockup-container active">
+            <div class="grid grid-cols-1 md:grid-cols-4 grid-rows-4 gap-4 aspect-video bg-slate-100 p-8 rounded-[2.5rem] shadow-2xl overflow-hidden border-8 border-slate-900">
+                <div class="col-span-2 row-span-2 bg-white rounded-3xl p-6 shadow-sm bento-card flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white mb-4">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        </div>
+                        <h3 class="text-2xl font-bold">Mathématiques</h3>
+                        <p class="text-slate-500 mt-2">Algèbre, Géométrie et Analyse.</p>
+                    </div>
+                    <div class="mt-4">
+                        <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full grit-bg w-3/4"></div>
+                        </div>
+                        <p class="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">75% Grit Level</p>
+                    </div>
+                </div>
+                <div class="col-span-1 row-span-1 bg-emerald-500 rounded-3xl p-6 shadow-sm bento-card text-white">
+                    <h3 class="font-bold">Histoire</h3>
+                    <p class="text-3xl font-bold mt-2">12</p>
+                    <p class="text-xs opacity-75 uppercase mt-1">Leçons terminées</p>
+                </div>
+                <div class="col-span-1 row-span-2 bg-indigo-900 rounded-3xl p-6 shadow-sm bento-card text-white flex flex-col justify-center items-center text-center">
+                    <div class="w-16 h-16 rounded-full border-4 border-indigo-500/30 flex items-center justify-center mb-4">
+                        <span class="text-2xl font-bold">1ère</span>
+                    </div>
+                    <p class="text-sm font-medium">Classement</p>
+                    <p class="text-xs opacity-50">Communauté d'Excellence</p>
+                </div>
+                <div class="col-span-1 row-span-1 bg-white rounded-3xl p-6 shadow-sm bento-card">
+                    <h3 class="font-bold text-slate-400 uppercase text-xs">Aujourd'hui</h3>
+                    <p class="text-xl font-bold text-indigo-600 mt-1">+450 Grit</p>
+                </div>
+                <div class="col-span-2 row-span-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-8 shadow-sm bento-card text-white flex flex-col justify-end relative overflow-hidden">
+                    <div class="absolute top-8 right-8 w-24 h-24 bg-white/10 rounded-full blur-3xl"></div>
+                    <h3 class="text-3xl font-bold relative z-10">L'Excellence est une habitude.</h3>
+                    <button class="mt-6 px-6 py-3 bg-white text-indigo-600 rounded-xl font-bold self-start relative z-10">Continuer</button>
+                </div>
+                <div class="col-span-1 row-span-1 bg-white rounded-3xl p-6 shadow-sm bento-card flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-slate-200"></div>
+                    <div>
+                        <p class="font-bold text-sm">Sally</p>
+                        <p class="text-xs text-slate-500">Alpha Student</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- V2: Zen Reader -->
+        <div id="v2" class="mockup-container">
+            <div class="aspect-video bg-white p-12 rounded-[2.5rem] shadow-2xl overflow-hidden border-8 border-slate-900 relative">
+                <nav class="flex justify-between items-center mb-12">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded bg-indigo-600"></div>
+                        <span class="font-bold">mah.ai</span>
+                    </div>
+                    <div class="flex gap-8 text-sm font-medium text-slate-400">
+                        <span class="text-slate-900">Leçon</span>
+                        <span>Quiz</span>
+                        <span>Notes</span>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-slate-100"></div>
+                </nav>
+                <div class="max-w-2xl mx-auto">
+                    <h2 class="text-4xl font-bold mb-8">Les fonctions dérivées</h2>
+                    <div class="space-y-6 text-xl text-slate-600 leading-relaxed">
+                        <p>En mathématiques, la <span class="bg-indigo-100 text-indigo-700 font-medium px-1 rounded cursor-pointer relative group">dérivée
+                            <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-64 glass p-4 rounded-2xl shadow-xl border border-indigo-100 opacity-0 group-hover:opacity-100 transition-all pointer-events-none text-sm text-slate-900 font-normal">
+                                <strong>Tuteur IA :</strong> La dérivée mesure la rapidité avec laquelle une valeur change en un point donné. Pense à la vitesse d'une voiture !
+                            </span>
+                        </span> d'une fonction d'une variable réelle...</p>
+                        <p>Le calcul différentiel est l'une des deux branches principales de l'analyse, l'autre étant le calcul intégral.</p>
+                        <div class="h-40 bg-slate-50 rounded-3xl border border-dashed border-slate-200 flex items-center justify-center text-slate-400">
+                            [ Visualisation Interactive de l'Effort ]
+                        </div>
+                        <p>Pour comprendre comment une fonction varie localement...</p>
+                    </div>
+                </div>
+                <div class="absolute bottom-12 right-12 flex gap-4">
+                    <button class="w-14 h-14 rounded-2xl bg-indigo-600 text-white shadow-lg flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- V3: Gamified Epic (Light Version) -->
+        <div id="v3" class="mockup-container">
+            <div class="aspect-video bg-slate-50 p-8 rounded-[2.5rem] shadow-2xl overflow-hidden border-8 border-slate-200 flex flex-col">
+                <div class="flex justify-between items-center mb-8">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl grit-bg flex items-center justify-center text-white font-bold shadow-lg shadow-orange-500/20">M</div>
+                        <div>
+                            <p class="text-slate-900 font-bold">Tenasoa</p>
+                            <p class="text-xs text-indigo-500 font-medium">Warrior of Knowledge</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="px-4 py-2 glass rounded-xl flex items-center gap-2 border border-orange-100 shadow-sm">
+                            <span class="text-orange-500">🔥</span>
+                            <span class="text-slate-900 font-bold text-sm">12 Days</span>
+                        </div>
+                        <div class="px-4 py-2 glass rounded-xl flex items-center gap-2 border border-indigo-100 shadow-sm">
+                            <span class="text-indigo-600">💎</span>
+                            <span class="text-slate-900 font-bold text-sm">2,450 Grit</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-1 grid grid-cols-3 gap-6">
+                    <div class="col-span-2 space-y-6">
+                        <div class="h-64 glass rounded-3xl p-8 flex flex-col justify-center items-center text-center relative overflow-hidden border border-white shadow-xl">
+                            <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--excellence-indigo)_0%,_transparent_70%)]"></div>
+                            <h2 class="text-4xl font-bold text-slate-900 mb-4">Prochain Défi</h2>
+                            <p class="text-slate-600 max-w-sm mb-6">Maîtrise les logarithmes pour débloquer le badge "Maître de l'Analyse".</p>
+                            <button class="px-8 py-4 grit-bg text-white rounded-2xl font-bold shadow-xl shadow-orange-500/30 transition-transform hover:scale-105">Lancer l'Examen (+500 Grit)</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-6">
+                            <div class="p-6 glass rounded-3xl border border-white shadow-sm">
+                                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2">Success Rate</p>
+                                <p class="text-3xl font-bold text-slate-900">94%</p>
+                            </div>
+                            <div class="p-6 glass rounded-3xl border border-white shadow-sm">
+                                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2">Rank</p>
+                                <p class="text-3xl font-bold text-slate-900">#1 Madagascar</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-span-1 glass rounded-3xl p-6 border border-white shadow-xl">
+                        <h3 class="text-slate-900 font-bold mb-6">Badges récents</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4 p-3 bg-white/60 rounded-2xl border border-indigo-50">
+                                <div class="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center border border-indigo-100">🦉</div>
+                                <div>
+                                    <p class="text-slate-900 text-sm font-bold">Oiseau de Nuit</p>
+                                    <p class="text-[10px] text-slate-500 italic">3 sessions après 22h</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4 p-3 bg-white/60 rounded-2xl border border-orange-50">
+                                <div class="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center border border-orange-100">⚡</div>
+                                <div>
+                                    <p class="text-slate-900 text-sm font-bold">Vitesse Eclair</p>
+                                    <p class="text-[10px] text-slate-500 italic">Quiz fini en < 30s</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4 p-3 bg-slate-100/50 rounded-2xl opacity-40 grayscale">
+                                <div class="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center">?</div>
+                                <div>
+                                    <p class="text-slate-900 text-sm font-bold">Locké...</p>
+                                    <p class="text-[10px] text-slate-500 italic">???</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- V4: AI Sidekick -->
+        <div id="v4" class="mockup-container">
+            <div class="aspect-video bg-slate-50 rounded-[2.5rem] shadow-2xl overflow-hidden border-8 border-slate-900 flex">
+                <div class="w-2/3 p-12 bg-white overflow-y-auto">
+                    <div class="flex items-center gap-2 mb-8">
+                        <span class="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded">Sujet : Physique</span>
+                        <span class="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded">Niveau : Terminale</span>
+                    </div>
+                    <h2 class="text-3xl font-bold mb-6">Optique Géométrique</h2>
+                    <div class="space-y-4 text-slate-600">
+                        <p>La lumière se propage en ligne droite dans un milieu homogène et isotrope. C'est le principe de propagation rectiligne.</p>
+                        <div class="p-6 bg-slate-50 rounded-2xl border-l-4 border-indigo-600">
+                            <strong>Loi de Snell-Descartes :</strong> n1.sin(i1) = n2.sin(i2)
+                        </div>
+                        <p>Lorsqu'un rayon passe de l'air à l'eau, son angle change en fonction de l'indice de réfraction.</p>
+                        <p>Imaginez un plongeur qui regarde vers la surface. Les objets semblent plus hauts qu'ils ne le sont réellement.</p>
+                        <p>Ce phénomène s'appelle la réfraction. C'est la base de fonctionnement des lentilles de vos lunettes.</p>
+                    </div>
+                </div>
+                <div class="w-1/3 glass bg-indigo-50/50 p-6 border-l border-indigo-100 flex flex-col">
+                    <div class="flex items-center gap-2 mb-6">
+                        <div class="w-8 h-8 rounded-full grit-bg flex items-center justify-center text-white text-xs">AI</div>
+                        <h3 class="font-bold text-indigo-900">Tuteur mah.ai</h3>
+                    </div>
+                    <div class="flex-1 space-y-4">
+                        <div class="p-4 bg-white rounded-2xl rounded-tl-none shadow-sm text-sm border border-indigo-100">
+                            Tu bloques sur <strong>Snell-Descartes</strong> ? Pas de panique ! C'est juste une règle pour savoir comment la lumière "plie".
+                        </div>
+                        <div class="p-4 bg-white rounded-2xl rounded-tl-none shadow-sm text-sm border border-indigo-100">
+                            Veux-tu que je t'explique pourquoi un bâton semble "cassé" dans un verre d'eau ? 🥤
+                        </div>
+                        <div class="mt-8">
+                            <p class="text-xs font-bold text-indigo-400 uppercase mb-2">Challenge Rapide</p>
+                            <div class="p-4 bg-indigo-600 rounded-2xl text-white text-sm">
+                                Si n1=1 et n2=1.33, quel est l'angle de réfraction si l'angle d'incidence est de 30° ?
+                                <div class="mt-4 flex gap-2">
+                                    <button class="flex-1 py-2 bg-white/20 rounded-lg hover:bg-white/30">22.1°</button>
+                                    <button class="flex-1 py-2 bg-white/20 rounded-lg hover:bg-white/30">41.6°</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex gap-2">
+                        <input type="text" placeholder="Demande-moi n'importe quoi..." class="flex-1 px-4 py-3 rounded-xl bg-white border border-indigo-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+            </div>
+        <!-- V5: Bento Minimaliste -->
+        <div id="v5" class="mockup-container">
+            <div class="grid grid-cols-4 grid-rows-3 gap-6 aspect-video bg-white p-10 rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-200">
+                <!-- Main Focus Card -->
+                <div class="col-span-2 row-span-2 bg-slate-50 rounded-3xl p-8 border border-slate-100 flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest bg-indigo-50 px-2 py-1 rounded">Matière Active</span>
+                        <h3 class="text-3xl font-bold mt-4 text-slate-900">Physique-Chimie</h3>
+                        <p class="text-slate-500 mt-2 text-sm leading-relaxed">Étude des forces nucléaires et de l'énergie cinétique.</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex-1 h-1 bg-slate-200 rounded-full overflow-hidden">
+                            <div class="h-full bg-slate-900 w-2/3"></div>
+                        </div>
+                        <span class="text-[10px] font-mono font-bold text-slate-400">67%</span>
+                    </div>
+                </div>
+
+                <!-- Secondary Stats -->
+                <div class="col-span-1 row-span-1 bg-white rounded-3xl p-6 border border-slate-100 flex flex-col justify-between">
+                    <p class="text-xs text-slate-400 font-medium">Grit Global</p>
+                    <p class="text-2xl font-bold text-slate-900">12.5k</p>
+                </div>
+                
+                <div class="col-span-1 row-span-1 bg-white rounded-3xl p-6 border border-slate-100 flex flex-col justify-between">
+                    <p class="text-xs text-slate-400 font-medium">Session</p>
+                    <p class="text-2xl font-bold text-slate-900">45 min</p>
+                </div>
+
+                <!-- AI Quick Access -->
+                <div class="col-span-2 row-span-1 bg-white rounded-3xl p-6 border border-slate-100 flex items-center justify-between group cursor-pointer hover:border-indigo-200 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-900 text-sm">Expliquer un concept</p>
+                            <p class="text-xs text-slate-400 italic">L'IA est prête à vous aider.</p>
+                        </div>
+                    </div>
+                    <svg class="w-5 h-5 text-slate-300 group-hover:text-indigo-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </div>
+
+                <!-- Small Info Cards -->
+                <div class="col-span-1 row-span-1 bg-slate-900 rounded-3xl p-6 text-white flex flex-col justify-between">
+                    <p class="text-[10px] font-bold uppercase tracking-tighter opacity-50">Rang</p>
+                    <p class="text-2xl font-bold">#04</p>
+                </div>
+
+                <div class="col-span-1 row-span-2 bg-indigo-50 rounded-3xl p-8 flex flex-col justify-center items-center text-center gap-4">
+                    <div class="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center">
+                        <span class="text-xl">🏆</span>
+                    </div>
+                    <div>
+                        <p class="font-bold text-slate-900">Prochain Palier</p>
+                        <p class="text-xs text-slate-500 mt-1">200 Grit restants</p>
+                    </div>
+                </div>
+
+                <div class="col-span-1 row-span-1 bg-white rounded-3xl p-6 border border-slate-100 flex flex-col justify-center items-center">
+                    <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse mb-2"></div>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">Online</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="max-w-6xl mx-auto mt-16 pb-16 text-center text-slate-400 text-sm">
+        <p>© 2026 mah.ai - Built with BMM & Grit.</p>
+        <p class="mt-2 italic">Choisissez la direction qui résonne le plus avec vos utilisateurs.</p>
+    </footer>
+
+    <script>
+        function showMockup(id) {
+            // Hide all mockups
+            document.querySelectorAll('.mockup-container').forEach(el => {
+                el.classList.remove('active');
+            });
+            // Reset button styles
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'shadow-sm', 'text-slate-900');
+                btn.classList.add('text-slate-600', 'hover:bg-white/50');
+            });
+            
+            // Show selected mockup
+            document.getElementById(id).classList.add('active');
+            // Stylize selected button
+            const activeBtn = document.getElementById('btn-' + id);
+            activeBtn.classList.add('bg-white', 'shadow-sm', 'text-slate-900');
+            activeBtn.classList.remove('text-slate-600', 'hover:bg-white/50');
+        }
+    </script>
+</body>
+</html>

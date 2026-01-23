@@ -1,0 +1,63 @@
+# Workflow Status - mah.ai
+# Tracks progress through BMM methodology Analysis, Planning, and Solutioning phases.
+
+generated: "2026-01-21"
+project: "mah.ai"
+project_type: "Academic Excellence Community Platform"
+selected_track: "bmad-method"
+field_type: "greenfield"
+workflow_path: "{project-root}/_bmad/bmm/workflows/workflow-status/paths/method-greenfield.yaml"
+
+workflow_status:
+  - phase: 1
+    name: "Analysis"
+    workflows:
+      - id: "brainstorm-project"
+        status: "required"
+        agent: "analyst"
+        command: "/bmad:bmm:workflows:brainstorming"
+      - id: "research"
+        status: "required"
+        agent: "analyst"
+        command: "/bmad:bmm:workflows:research"
+      - id: "product-brief"
+        status: "required"
+        agent: "analyst"
+        command: "/bmad:bmm:workflows:create-product-brief"
+  - phase: 2
+    name: "Planning"
+    workflows:
+      - id: "prd"
+        status: "required"
+        agent: "pm"
+        command: "/bmad:bmm:workflows:create-prd"
+      - id: "create-ux-design"
+        status: "conditional"
+        agent: "ux-designer"
+        command: "/bmad:bmm:workflows:create-ux-design"
+  - phase: 3
+    name: "Solutioning"
+    workflows:
+      - id: "create-architecture"
+        status: "required"
+        agent: "architect"
+        command: "/bmad:bmm:workflows:create-architecture"
+      - id: "create-epics-and-stories"
+        status: "required"
+        agent: "pm"
+        command: "/bmad:bmm:workflows:create-epics-and-stories"
+      - id: "test-design"
+        status: "optional"
+        agent: "tea"
+        command: "/bmad:bmm:workflows:test-design"
+      - id: "implementation-readiness"
+        status: "required"
+        agent: "architect"
+        command: "/bmad:bmm:workflows:implementation-readiness"
+  - phase: 4
+    name: "Implementation"
+    workflows:
+      - id: "sprint-planning"
+        status: "required"
+        agent: "sm"
+        command: "/bmad:bmm:workflows:sprint-planning"
