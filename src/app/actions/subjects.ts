@@ -386,14 +386,35 @@ export async function getSubjectById(id: string): Promise<{
       }
     }
 
-    // Increment view count (non-blocking)
+    // Increment view count
     // Pass user ID to ensure unique counting per user (logic handled in SQL function)
-    supabase
-      .rpc('increment_subject_view', {
-        p_subject_id: id,
-        p_user_id: user?.id || null,
-      })
-      .then();
+    const { error: viewError } = await supabase.rpc('increment_subject_view', {
+      p_subject_id: id,
+      p_user_id: user?.id || null,
+    });
+
+    if (viewError) {
+      console.error('❌ Error incrementing view count:', viewError);
+    } 
+
+    // If we just incremented (or tried to), the returned subject data might be stale 
+    // because we fetched it BEFORE the RPC call.
+    // However, fetching again is expensive.
+    // Ideally, the RPC should return the new count or a "did_increment" boolean.
+    // For now, let's just leave it as is - the count will update on next refresh.
+    // Or we could optimistically increment if no error occurred (but we don't know if it was deduped).
+    
+    // To be perfectly accurate without refetching, we would need the RPC to return "incremented: true".
+    // Let's refetch just the view_count to be safe and accurate for the UI.
+    const { data: updatedCount } = await supabase
+      .from('subjects')
+      .select('view_count')
+      .eq('id', id)
+      .single();
+      
+    if (updatedCount) {
+        subject.view_count = updatedCount.view_count;
+    }
 
     return {
       data: {
