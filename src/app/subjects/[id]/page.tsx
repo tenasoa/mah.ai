@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Lock, Sparkles } from "lucide-react";
 import { Metadata } from "next";
 import { getSubjectById } from "@/app/actions/subjects";
-import { EXAM_TYPE_COLORS, EXAM_TYPE_LABELS } from "@/lib/types/subject";
+import { EXAM_TYPE_LABELS } from "@/lib/types/subject";
 import { SubjectTeaser } from "@/components/subjects/SubjectTeaser";
+import { SubjectReader } from "@/components/subjects/SubjectReader";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -148,15 +148,45 @@ export default async function SubjectDetailPage({ params }: PageProps) {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="mah-ambient">
-        <div className="mah-blob mah-blob-1" />
-        <div className="mah-blob mah-blob-2" />
-        <div className="mah-blob mah-blob-3" />
-      </div>
+  if (data.has_access) {
+    const resolvedPdfUrl =
+      data.pdf_url && (data.pdf_url.startsWith("http://") || data.pdf_url.startsWith("https://"))
+        ? data.pdf_url
+        : null;
+    if (!resolvedPdfUrl) {
+      return (
+        <div className="min-h-[60vh] flex items-center justify-center bg-slate-50 text-slate-900">
+          <div className="max-w-md text-center mah-card">
+            <h1 className="text-2xl font-bold mb-2">PDF indisponible</h1>
+            <p className="text-slate-500 mb-6">
+              Le fichier n&apos;est pas encore disponible pour ce sujet. Reviens un peu plus tard.
+            </p>
+            <Link
+              href="/subjects"
+              className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800"
+            >
+              Retour aux sujets
+            </Link>
+          </div>
+        </div>
+      );
+    }
 
-      <main className="relative z-10 px-4 sm:px-6 lg:px-10 py-12 max-w-6xl mx-auto">
+    return (
+      <div className="w-full">
+        <SubjectReader
+          subjectId={data.id}
+          pdfUrl={resolvedPdfUrl}
+          title={data.matiere_display}
+          subtitle={`${EXAM_TYPE_LABELS[data.exam_type]} ${data.year}${data.serie ? ` • Série ${data.serie}` : ""}`}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full">
+      <div className="relative z-10 px-4 sm:px-6 lg:px-10 py-12 max-w-6xl mx-auto">
         {/* Breadcrumb Navigation */}
         <nav className="mb-8 flex items-center gap-2 text-sm text-slate-500">
           <Link
@@ -200,7 +230,7 @@ export default async function SubjectDetailPage({ params }: PageProps) {
           {data.description && <p>{data.description}</p>}
           {data.preview_text && <p>{data.preview_text}</p>}
         </div>
-      </main>
+      </div>
     </div>
   );
 }
