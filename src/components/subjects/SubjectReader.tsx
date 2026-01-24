@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Crosshair, Search, Minus, Plus, Sparkles } from "lucide-react";
 import { createSubjectQuestion, listSubjectQuestions } from "@/app/actions/reader";
+import { askSocraticTutor } from "@/app/actions/socratic";
+import { SocraticSidekick } from "./SocraticSidekick";
 
 interface SubjectReaderProps {
   subjectId: string;
@@ -531,103 +533,15 @@ export function SubjectReader({ subjectId, pdfUrl, title, subtitle }: SubjectRea
         Sidekick IA
       </button>
 
-      {isSidekickOpen && (
-        <div className="absolute inset-0 z-20">
-          <div
-            className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
-            onClick={() => setIsSidekickOpen(false)}
-          />
-          <aside className="absolute right-0 top-0 h-full w-full max-w-md bg-white/90 border-l border-white/40 shadow-2xl shadow-slate-900/10 backdrop-blur-xl animate-in slide-in-from-right duration-200 ease-out">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200/60">
-              <div className="flex items-center gap-2">
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white">
-                  <Sparkles className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Sidekick IA</p>
-                  <p className="text-xs text-slate-500">Click-to-Ask</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsSidekickOpen(false)}
-                className="h-8 w-8 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
-                aria-label="Fermer"
-              >
-                <span className="block text-lg leading-none">×</span>
-              </button>
-            </div>
-            <div className="p-5 space-y-3">
-              <p className="text-sm text-slate-600">
-                Selectionne une zone du PDF, pose ta question, et nous associons le contexte automatiquement.
-              </p>
-              {selectionRect && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2 text-xs text-amber-700">
-                  Contexte capturé : x={Math.round(selectionRect.x)}, y={Math.round(selectionRect.y)}, w=
-                  {Math.round(selectionRect.width)}, h={Math.round(selectionRect.height)}, zoom={zoom}%
-                </div>
-              )}
-              {selectionContext && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2 text-xs text-amber-700">
-                  Contexte en attente : x={Math.round(selectionContext.x)}, y={Math.round(selectionContext.y)}, w=
-                  {Math.round(selectionContext.width)}, h={Math.round(selectionContext.height)}, zoom={zoom}%
-                </div>
-              )}
-              <div className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2">
-                <textarea
-                  ref={questionInputRef}
-                  value={questionInput}
-                  onChange={(event) => setQuestionInput(event.target.value)}
-                  placeholder="Pose ta question sur cette zone..."
-                  className="w-full min-h-[80px] resize-none bg-transparent text-sm text-slate-700 focus:outline-none"
-                />
-              </div>
-              {questionError && (
-                <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
-                  Impossible d&apos;enregistrer la question ({questionError}).
-                </div>
-              )}
-              {messages.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 px-4 py-5 text-center text-xs text-slate-500">
-                  <p className="font-semibold text-slate-700 mb-1">Aucune question pour l’instant</p>
-                  <p>Selectionne un passage du PDF pour commencer une discussion.</p>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-52 overflow-auto pr-1">
-                  {messages.map((message, index) => (
-                    <div
-                      key={message.id}
-                      className="rounded-2xl border border-slate-200 bg-white/90 px-3 py-3 shadow-sm"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] uppercase tracking-wide text-slate-400">
-                          Question {messages.length - index}
-                        </span>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                          Zone · {message.zoom}%
-                        </span>
-                      </div>
-                      <p className="text-sm text-slate-700 mt-2">{message.text}</p>
-                      <p className="text-[11px] text-slate-400 mt-2">
-                        x={Math.round(message.rect.x)}, y={Math.round(message.rect.y)}, w=
-                        {Math.round(message.rect.width)}, h={Math.round(message.rect.height)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={handleSendQuestion}
-                disabled={!questionInput.trim() || !selectionContext || isSending}
-                className="w-full rounded-xl bg-slate-900 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {isSending ? "Envoi..." : "Envoyer"}
-              </button>
-            </div>
-          </aside>
-        </div>
-      )}
+      <SocraticSidekick
+        isOpen={isSidekickOpen}
+        onClose={() => setIsSidekickOpen(false)}
+        subjectId={subjectId}
+        questionId={messages[0]?.id || ""}
+        questionText={messages[0]?.text || questionInput}
+        selectionRect={selectionContext}
+        zoom={zoom}
+      />
 
       {toastMessage && (
         <div className="absolute bottom-24 right-6 z-30">
