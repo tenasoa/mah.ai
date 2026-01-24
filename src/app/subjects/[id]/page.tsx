@@ -175,6 +175,7 @@ export default async function SubjectDetailPage({ params }: PageProps) {
     return (
       <div className="w-full">
         <SubjectReader
+          subjectId={data.id}
           pdfUrl={resolvedPdfUrl}
           title={data.matiere_display}
           subtitle={`${EXAM_TYPE_LABELS[data.exam_type]} ${data.year}${data.serie ? ` • Série ${data.serie}` : ""}`}
