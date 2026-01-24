@@ -394,8 +394,13 @@ export async function getSubjectById(id: string): Promise<{
     });
 
     if (viewError) {
-      console.error('❌ Error incrementing view count:', viewError);
-    } 
+      const { error: fallbackError } = await supabase.rpc('increment_subject_view', {
+        p_subject_id: id,
+      });
+      if (fallbackError) {
+        console.error('❌ Error incrementing view count:', fallbackError);
+      }
+    }
 
     // If we just incremented (or tried to), the returned subject data might be stale 
     // because we fetched it BEFORE the RPC call.

@@ -5,26 +5,20 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  BookOpen,
   FileText,
-  LayoutGrid,
-  LogOut,
   Search,
   Sparkles,
   Star,
   Timer,
   TrendingUp,
-  Zap,
   Target,
   ChevronRight,
   Play,
   Bell,
-  User,
   Calendar,
   Award,
   Flame,
 } from 'lucide-react';
-import { Sidebar, type NavItem, type UserProfile } from '@/components/ui/sidebar';
 
 type Profile = {
   pseudo: string;
@@ -67,12 +61,6 @@ const quickStats = [
   { label: 'Exercices', value: '24', icon: Target, color: 'text-emerald-500', bg: 'bg-emerald-50' },
   { label: 'Streak', value: '12j', icon: Flame, color: 'text-amber-500', bg: 'bg-amber-50' },
   { label: 'Rang', value: '#42', icon: TrendingUp, color: 'text-pink-500', bg: 'bg-pink-50' },
-];
-
-const navItems: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
-  { href: '/subjects', label: 'Sujets', icon: BookOpen },
-  { href: '/profile', label: 'Profil', icon: User },
 ];
 
 export default function DashboardPage() {
@@ -141,31 +129,8 @@ export default function DashboardPage() {
     return 'Bonsoir';
   };
 
-  const sidebarUser: UserProfile = {
-    name: profile.pseudo || 'Élève',
-    subtitle: `${profile.classe} • ${profile.etablissement}`,
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col lg:flex-row">
-      {/* Ambient Background */}
-      <div className="mah-ambient">
-        <div className="mah-blob mah-blob-1" />
-        <div className="mah-blob mah-blob-2" />
-        <div className="mah-blob mah-blob-3" />
-      </div>
-
-      {/* Sidebar */}
-      <Sidebar
-        navItems={navItems}
-        user={sidebarUser}
-        showUserProfile={true}
-        onLogout={handleLogout}
-        defaultExpanded={false}
-      />
-
-      {/* Main Content - with left margin to account for fixed sidebar */}
-      <main className="relative z-10 flex-1 px-4 sm:px-6 py-6 lg:px-10 lg:py-8 lg:ml-[72px]">
+    <div className="w-full">
         {/* Header */}
         <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
           <div className="animate-slide-up">
@@ -366,7 +331,6 @@ export default function DashboardPage() {
             </button>
           </article>
         </section>
-      </main>
     </div>
   );
 }

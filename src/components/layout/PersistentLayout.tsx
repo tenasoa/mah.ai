@@ -66,7 +66,7 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
   };
 
   // Don't render layout for auth pages
-  if (pathname?.startsWith("/auth") || pathname === "/") {
+  if (pathname?.startsWith("/auth") || pathname === "/" || pathname?.startsWith("/admin")) {
     return <>{children}</>;
   }
 

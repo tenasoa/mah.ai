@@ -1,16 +1,6 @@
 import type { Metadata } from "next";
-import { Outfit, Inter } from "next/font/google";
 import "./globals.css";
-
-const outfit = Outfit({
-  subsets: ["latin"],
-  variable: "--font-outfit",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
+import { PersistentLayout } from "@/components/layout/PersistentLayout";
 
 export const metadata: Metadata = {
   title: "mah.ai - Votre Tuteur IA Socratique",
@@ -23,8 +13,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={`${outfit.variable} ${inter.variable}`} suppressHydrationWarning>
-      <body className="font-inter">{children}</body>
+    <html lang="fr" className="font-outfit font-inter" suppressHydrationWarning>
+      <body className="font-inter" suppressHydrationWarning>
+        <PersistentLayout>{children}</PersistentLayout>
+      </body>
     </html>
   );
 }

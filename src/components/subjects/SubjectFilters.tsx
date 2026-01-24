@@ -1,13 +1,10 @@
 'use client';
 
-import { useCallback, useState, useTransition } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
-  Filter,
   X,
   ChevronDown,
-  ChevronUp,
-  Check,
   Loader2,
   SlidersHorizontal,
 } from 'lucide-react';
@@ -27,6 +24,12 @@ interface FilterSectionProps {
   title: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
+}
+
+interface DropdownOption {
+  value: string;
+  label: string;
+  count?: number;
 }
 
 // Filter Section Component (collapsible on mobile)
@@ -49,8 +52,10 @@ function FilterSection({ title, children, defaultOpen = true }: FilterSectionPro
         />
       </button>
       <div
-        className={`mt-3 overflow-hidden transition-all duration-300 ${
-          isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 lg:max-h-96 lg:opacity-100'
+        className={`mt-3 transition-all duration-300 ${
+          isOpen
+            ? 'max-h-96 opacity-100 overflow-visible'
+            : 'max-h-0 opacity-0 overflow-hidden lg:max-h-96 lg:opacity-100 lg:overflow-visible'
         }`}
       >
         {children}
@@ -59,52 +64,164 @@ function FilterSection({ title, children, defaultOpen = true }: FilterSectionPro
   );
 }
 
-// Filter Chip Component
-function FilterChip({
-  label,
-  count,
-  active,
-  onClick,
-  color,
+function DropdownSelect({
+  value,
+  options,
+  placeholder,
+  onChange,
   disabled,
 }: {
-  label: string;
-  count?: number;
-  active?: boolean;
-  onClick: () => void;
-  color?: { bg: string; text: string };
+  value: string | null;
+  options: DropdownOption[];
+  placeholder: string;
+  onChange: (value: string | null) => void;
   disabled?: boolean;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const selectedOption = options.find((option) => option.value === value);
+  const displayLabel = selectedOption
+    ? selectedOption.count !== undefined
+      ? `${selectedOption.label} (${selectedOption.count})`
+      : selectedOption.label
+    : placeholder;
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handleOutsideClick(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setActiveIndex(-1);
+      return;
+    }
+    const selectedIndex = selectedOption
+      ? options.findIndex((option) => option.value === selectedOption.value) + 1
+      : 0;
+    setActiveIndex(selectedIndex);
+  }, [isOpen, options, selectedOption]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const target = optionRefs.current[activeIndex];
+    if (target) {
+      target.focus();
+    }
+  }, [activeIndex, isOpen]);
+
+  const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (disabled) return;
+    if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      setIsOpen(true);
+    }
+  };
+
+  const handleListKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!isOpen) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setIsOpen(false);
+      return;
+    }
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveIndex((prev) => Math.min(prev + 1, options.length));
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveIndex((prev) => Math.max(prev - 1, 0));
+      return;
+    }
+    if (event.key === 'Home') {
+      event.preventDefault();
+      setActiveIndex(0);
+      return;
+    }
+    if (event.key === 'End') {
+      event.preventDefault();
+      setActiveIndex(options.length);
+    }
+  };
+
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`
-        inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
-        transition-all duration-200 whitespace-nowrap disabled:opacity-50
-        ${
-          active
-            ? color
-              ? `${color.bg} ${color.text} ring-2 ring-offset-1 ring-current`
-              : 'bg-amber-500 text-white shadow-md shadow-amber-500/25'
-            : 'bg-white border border-slate-200 text-slate-600 hover:border-amber-300 hover:text-amber-700 hover:bg-amber-50'
-        }
-      `}
-    >
-      {active && <Check className="w-3 h-3" />}
-      <span>{label}</span>
-      {count !== undefined && (
-        <span
-          className={`text-xs px-1.5 py-0.5 rounded-full ${
-            active
-              ? 'bg-white/20 text-current'
-              : 'bg-slate-100 text-slate-500'
-          }`}
-        >
-          {count}
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        onKeyDown={handleTriggerKeyDown}
+        disabled={disabled}
+        className={`
+          w-full flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm
+          transition-all duration-200 disabled:opacity-50
+          ${isOpen ? 'border-amber-400 ring-4 ring-amber-100' : 'hover:border-amber-300'}
+        `}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+      >
+        <span className={`${selectedOption ? 'text-slate-700' : 'text-slate-400'}`}>
+          {displayLabel}
         </span>
+        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div
+          className="absolute z-20 mt-2 w-full rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-900/5 max-h-64 overflow-auto"
+          role="listbox"
+          tabIndex={-1}
+          onKeyDown={handleListKeyDown}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              onChange(null);
+              setIsOpen(false);
+            }}
+            ref={(element) => {
+              optionRefs.current[0] = element;
+            }}
+            className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            {placeholder}
+          </button>
+          {options.map((option, index) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              ref={(element) => {
+                optionRefs.current[index + 1] = element;
+              }}
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-amber-50 ${
+                option.value === value ? 'text-amber-700 font-semibold' : 'text-slate-700'
+              }`}
+            >
+              {option.label}
+              {option.count !== undefined && (
+                <span className="ml-2 text-xs text-slate-400">({option.count})</span>
+              )}
+            </button>
+          ))}
+        </div>
       )}
-    </button>
+    </div>
   );
 }
 
@@ -169,15 +286,6 @@ export function SubjectFilters({ metadata, className = '' }: SubjectFiltersProps
       });
     },
     [pathname, router, searchParams]
-  );
-
-  // Toggle a filter value
-  const toggleFilter = useCallback(
-    (key: string, value: string) => {
-      const currentValue = searchParams.get(key);
-      updateFilters(key, currentValue === value ? null : value);
-    },
-    [searchParams, updateFilters]
   );
 
   // Clear all filters
@@ -290,89 +398,73 @@ export function SubjectFilters({ metadata, className = '' }: SubjectFiltersProps
             </div>
           )}
 
-          {/* Exam Types */}
-          <FilterSection title="Type d'examen" defaultOpen={true}>
-            <div className="flex flex-wrap gap-2">
-              {metadata.exam_types.map((type) => {
-                const colors = EXAM_TYPE_COLORS[type.value];
-                return (
-                  <FilterChip
-                    key={type.value}
-                    label={type.label}
-                    count={type.count}
-                    active={currentType === type.value}
-                    onClick={() => toggleFilter('type', type.value)}
-                    color={currentType === type.value ? colors : undefined}
-                    disabled={isPending}
-                  />
-                );
-              })}
-            </div>
-          </FilterSection>
-
-          {/* Years */}
-          {metadata.years.length > 0 && (
-            <FilterSection title="Année" defaultOpen={true}>
-              <div className="flex flex-wrap gap-2">
-                {metadata.years.slice(0, 8).map((year) => (
-                  <FilterChip
-                    key={year.value}
-                    label={year.value.toString()}
-                    count={year.count}
-                    active={currentYear === year.value.toString()}
-                    onClick={() => toggleFilter('year', year.value.toString())}
-                    disabled={isPending}
-                  />
-                ))}
-                {metadata.years.length > 8 && (
-                  <span className="self-center text-xs text-slate-400">
-                    +{metadata.years.length - 8} autres
-                  </span>
-                )}
-              </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {/* Exam Types */}
+            <FilterSection title="Type d'examen" defaultOpen={true}>
+              <DropdownSelect
+                value={currentType ?? null}
+                placeholder="Tous les types"
+                onChange={(value) => updateFilters('type', value)}
+                disabled={isPending}
+                options={metadata.exam_types.map((type) => ({
+                  value: type.value,
+                  label: type.label,
+                  count: type.count,
+                }))}
+              />
             </FilterSection>
-          )}
 
-          {/* Matieres */}
-          {metadata.matieres.length > 0 && (
-            <FilterSection title="Matière" defaultOpen={true}>
-              <div className="flex flex-wrap gap-2">
-                {metadata.matieres.slice(0, 10).map((mat) => (
-                  <FilterChip
-                    key={mat.value}
-                    label={mat.label}
-                    count={mat.count}
-                    active={currentMatiere === mat.value}
-                    onClick={() => toggleFilter('matiere', mat.value)}
-                    disabled={isPending}
-                  />
-                ))}
-                {metadata.matieres.length > 10 && (
-                  <span className="self-center text-xs text-slate-400">
-                    +{metadata.matieres.length - 10} autres
-                  </span>
-                )}
-              </div>
-            </FilterSection>
-          )}
+            {/* Years */}
+            {metadata.years.length > 0 && (
+              <FilterSection title="Année" defaultOpen={true}>
+                <DropdownSelect
+                  value={currentYear ?? null}
+                  placeholder="Toutes les années"
+                  onChange={(value) => updateFilters('year', value)}
+                  disabled={isPending}
+                  options={metadata.years.map((year) => ({
+                    value: year.value.toString(),
+                    label: year.value.toString(),
+                    count: year.count,
+                  }))}
+                />
+              </FilterSection>
+            )}
 
-          {/* Series */}
-          {metadata.series.length > 0 && (
-            <FilterSection title="Série" defaultOpen={false}>
-              <div className="flex flex-wrap gap-2">
-                {metadata.series.map((serie) => (
-                  <FilterChip
-                    key={serie.value}
-                    label={`Série ${serie.value}`}
-                    count={serie.count}
-                    active={currentSerie === serie.value}
-                    onClick={() => toggleFilter('serie', serie.value)}
-                    disabled={isPending}
-                  />
-                ))}
-              </div>
-            </FilterSection>
-          )}
+            {/* Matieres */}
+            {metadata.matieres.length > 0 && (
+              <FilterSection title="Matière" defaultOpen={true}>
+                <DropdownSelect
+                  value={currentMatiere ?? null}
+                  placeholder="Toutes les matières"
+                  onChange={(value) => updateFilters('matiere', value)}
+                  disabled={isPending}
+                  options={metadata.matieres.map((mat) => ({
+                    value: mat.value,
+                    label: mat.label,
+                    count: mat.count,
+                  }))}
+                />
+              </FilterSection>
+            )}
+
+            {/* Series */}
+            {metadata.series.length > 0 && (
+              <FilterSection title="Série" defaultOpen={false}>
+                <DropdownSelect
+                  value={currentSerie ?? null}
+                  placeholder="Toutes les séries"
+                  onChange={(value) => updateFilters('serie', value)}
+                  disabled={isPending}
+                  options={metadata.series.map((serie) => ({
+                    value: serie.value,
+                    label: `Série ${serie.value}`,
+                    count: serie.count,
+                  }))}
+                />
+              </FilterSection>
+            )}
+          </div>
 
           {/* Quick Filter: Free Only */}
           <div className="pt-2 border-t border-slate-100">
