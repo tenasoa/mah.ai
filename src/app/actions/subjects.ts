@@ -67,6 +67,8 @@ export async function getSubjects(params: GetSubjectsParams = {}): Promise<{
         serie,
         niveau,
         thumbnail_url,
+        pdf_url,
+        pdf_storage_path,
         is_free,
         credit_cost,
         view_count
@@ -349,6 +351,22 @@ export async function getSubjectById(id: string): Promise<{
 }> {
   const supabase = await createClient();
 
+  const resolveSignedPdfUrl = async (path: string) => {
+    const normalizedPath = path.replace(/^\/+/, "");
+    const parts = normalizedPath.split("/");
+    const bucketCandidates = ["subjects", "subjets"];
+    const bucketFromPath = bucketCandidates.includes(parts[0]) ? parts[0] : null;
+    const bucket = bucketFromPath || process.env.NEXT_PUBLIC_SUBJECTS_BUCKET || "subjects";
+    const objectPath = bucketFromPath ? parts.slice(1).join("/") : normalizedPath;
+
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(objectPath, 60 * 60);
+    if (error || !data?.signedUrl) {
+      console.error("❌ Error creating signed PDF URL:", error);
+      return null;
+    }
+    return data.signedUrl;
+  };
+
   try {
     const { data: subject, error } = await supabase
       .from('subjects')
@@ -383,6 +401,16 @@ export async function getSubjectById(id: string): Promise<{
       if (accessData) {
         hasAccess = true;
         accessExpiresAt = accessData.expires_at;
+      }
+    }
+
+    if (hasAccess) {
+      const rawPath = subject.pdf_storage_path || subject.pdf_url;
+      if (rawPath && !rawPath.startsWith("http://") && !rawPath.startsWith("https://")) {
+        const signedUrl = await resolveSignedPdfUrl(rawPath);
+        if (signedUrl) {
+          subject.pdf_url = signedUrl;
+        }
       }
     }
 

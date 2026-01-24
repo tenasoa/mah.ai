@@ -70,6 +70,8 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
     return <>{children}</>;
   }
 
+  const isReaderRoute = pathname?.startsWith("/subjects/") && pathname !== "/subjects";
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
       {/* Ambient Background */}
@@ -79,7 +81,6 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
         <div className="mah-blob mah-blob-3" />
       </div>
 
-      {/* Navbar - Top Navigation */}
       <Navbar
         navItems={navItems}
         user={user}
@@ -87,7 +88,13 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
       />
 
       {/* Main Content */}
-      <main className="relative z-10 flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-8 lg:px-8">
+      <main
+        className={
+          isReaderRoute
+            ? "relative z-10 flex-1 w-full"
+            : "relative z-10 flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-8 lg:px-8"
+        }
+      >
         {children}
       </main>
     </div>

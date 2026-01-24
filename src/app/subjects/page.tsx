@@ -27,15 +27,10 @@ function SubjectCard({
 }) {
   const colors = EXAM_TYPE_COLORS[subject.exam_type] || EXAM_TYPE_COLORS.other;
   const icon = MATIERE_ICONS[subject.matiere] || '📚';
+  const isAvailable = Boolean(subject.pdf_url || subject.pdf_storage_path);
 
-  return (
-    <Link
-      href={`/subjects/${subject.id}`}
-      className={`
-        group relative mah-card overflow-hidden
-        hover:border-amber-200 hover:shadow-lg hover:shadow-amber-500/10
-      `}
-    >
+  const cardContent = (
+    <>
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col">
         {/* Header */}
@@ -47,6 +42,11 @@ function SubjectCard({
           </div>
 
           <div className="flex items-center gap-2">
+            {!isAvailable && (
+              <span className="px-2 py-1 rounded-lg bg-slate-100 text-slate-500 text-xs font-bold">
+                PDF indisponible
+              </span>
+            )}
             {subject.is_free ? (
               <span className="px-2 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center gap-1">
                 <Unlock className="w-3 h-3" />
@@ -101,6 +101,38 @@ function SubjectCard({
           <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-amber-500 group-hover:translate-x-1 transition-all" />
         </div>
       </div>
+      {!isAvailable && (
+        <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] rounded-2xl" />
+      )}
+    </>
+  );
+
+  if (!isAvailable) {
+    return (
+      <div
+        className={`
+          group relative mah-card overflow-hidden border-dashed border-slate-200 cursor-not-allowed
+        `}
+        aria-disabled="true"
+        title="PDF indisponible pour ce sujet"
+      >
+        <div className="absolute right-4 top-3 z-10 rounded-lg bg-slate-900 px-2 py-1 text-xs font-semibold text-white opacity-0 translate-y-1 transition group-hover:opacity-100 group-hover:translate-y-0 pointer-events-none">
+          PDF indisponible
+        </div>
+        {cardContent}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={`/subjects/${subject.id}`}
+      className={`
+        group relative mah-card overflow-hidden
+        hover:border-amber-200 hover:shadow-lg hover:shadow-amber-500/10
+      `}
+    >
+      {cardContent}
     </Link>
   );
 }
