@@ -18,43 +18,24 @@ import {
 } from '@/lib/types/subject';
 import { SubjectFilters } from '@/components/subjects/SubjectFilters';
 import { SubjectsSearch } from '@/components/subjects/SubjectsSearch';
-import { ClientSidebarWrapper, type SerializableNavItem } from '@/components/layout/ClientSidebarWrapper';
-
-// Navigation items (using serializable format for server component compatibility)
-const navItems: SerializableNavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', iconKey: 'layout-grid' },
-  { href: '/subjects', label: 'Sujets', iconKey: 'book-open' },
-  { href: '/profile', label: 'Profil', iconKey: 'user' },
-];
 
 // Subject Card Component
 function SubjectCard({
   subject,
-  size = 'normal',
 }: {
   subject: SubjectCardType;
-  size?: 'normal' | 'large' | 'featured';
 }) {
   const colors = EXAM_TYPE_COLORS[subject.exam_type] || EXAM_TYPE_COLORS.other;
   const icon = MATIERE_ICONS[subject.matiere] || '📚';
-  const isFeatured = size === 'featured';
-  const isLarge = size === 'large' || isFeatured;
 
   return (
     <Link
       href={`/subjects/${subject.id}`}
       className={`
         group relative mah-card overflow-hidden
-        ${isLarge ? 'sm:row-span-2' : ''}
-        ${isFeatured ? 'sm:col-span-2' : ''}
         hover:border-amber-200 hover:shadow-lg hover:shadow-amber-500/10
       `}
     >
-      {/* Background Gradient for Featured */}
-      {isFeatured && (
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-white to-orange-50 opacity-50" />
-      )}
-
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col">
         {/* Header */}
@@ -98,7 +79,7 @@ function SubjectCard({
         <div className="mt-3 flex-1">
           <h3
             className={`font-bold text-slate-900 group-hover:text-amber-600 transition-colors ${
-              isLarge ? 'text-xl' : 'text-base'
+              'text-base'
             }`}
           >
             {subject.matiere_display}
@@ -238,7 +219,6 @@ async function SubjectsGrid({
           <SubjectCard
             key={subject.id}
             subject={subject}
-            size={index === 0 && page === 1 ? 'featured' : index < 3 && page === 1 ? 'large' : 'normal'}
           />
         ))}
       </div>
@@ -289,7 +269,7 @@ export default async function SubjectsPage({
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
   return (
-    <ClientSidebarWrapper navItems={navItems} defaultExpanded={false}>
+    <>
       {/* Header */}
       <header className="mb-8">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
@@ -342,6 +322,6 @@ export default async function SubjectsPage({
       >
         <SubjectsGrid searchParams={searchParams} />
       </Suspense>
-    </ClientSidebarWrapper>
+    </>
   );
 }
