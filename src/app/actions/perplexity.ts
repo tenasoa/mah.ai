@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { redis, getCacheKey } from '@/lib/redis';
 
 type SelectionRect = {
   x: number;
@@ -96,7 +97,30 @@ export async function askSocraticTutor(params: SocraticRequest) {
   // }
 
   try {
-    // Construire le contexte pour l'IA
+    // 1. Tenter de récupérer depuis le cache Redis
+    const cacheKey = getCacheKey(subjectId, questionText);
+    try {
+      const cachedResponse = await redis.get<string>(cacheKey);
+      if (cachedResponse) {
+        console.log('🚀 AI Cache Hit! Returning stored response.');
+        
+        // On enregistre quand même l'échange dans Supabase pour l'historique de l'utilisateur
+        await supabase.from('socratic_exchanges').insert({
+          user_id: user.id,
+          subject_id: subjectId,
+          question_id: questionId,
+          user_message: userMessage || questionText,
+          ai_response: cachedResponse,
+          insisted_for_answer: insistForAnswer || false,
+        });
+
+        return { data: { response: cachedResponse }, error: null };
+      }
+    } catch (cacheError) {
+      console.warn('Cache error (ignoring):', cacheError);
+    }
+
+    // 2. Si non présent ou erreur cache, appeler l'API
     const contextMessage = `Voici le contenu du sujet de l'examen :
 ---
 ${markdownContext || "Contenu non disponible en texte."}
@@ -114,7 +138,15 @@ ${insistForAnswer ? `L'élève insiste pour avoir la réponse directe. Explique-
 
     const aiResponse = await callPerplexityAPI(messages);
 
-    // Sauvegarder l'échange pour l'historique
+    // 3. Sauvegarder dans le cache pour les prochains élèves (TTL de 7 jours)
+    try {
+      await redis.set(cacheKey, aiResponse, { ex: 60 * 60 * 24 * 7 });
+      console.log('💾 AI Response cached successfully.');
+    } catch (cacheStoreError) {
+      console.warn('Failed to store in cache:', cacheStoreError);
+    }
+
+    // Sauvegarder l'échange pour l'historique utilisateur (Supabase)
     const { error: insertError } = await supabase
       .from('socratic_exchanges')
       .insert({
@@ -123,8 +155,6 @@ ${insistForAnswer ? `L'élève insiste pour avoir la réponse directe. Explique-
         question_id: questionId,
         user_message: userMessage || questionText,
         ai_response: aiResponse,
-        selection_rect: selectionRect,
-        zoom,
         insisted_for_answer: insistForAnswer || false,
       });
 

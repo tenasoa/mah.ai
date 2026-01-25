@@ -9,10 +9,6 @@ inputDocuments:
 
 # mah.ai - Epic Breakdown (Pure Markdown Architecture)
 
-## Overview
-
-This document provides the complete epic and story breakdown for mah.ai, updated for the Markdown/HTML structured content architecture.
-
 ## Requirements Inventory
 
 ### Functional Requirements
@@ -60,7 +56,7 @@ Interface de lecture HTML et tutorat IA basé sur le texte structuré.
 
 ### Epic 4: Ligue Grit & Gamification
 Valoriser l'effort et la régularité via le Grit Score.
-**Status:** Backlog
+**Status:** In Progress
 
 ### Epic 5: Gestion du Savoir (Admin & Editor)
 Interface d'édition Markdown professionnelle pour les contributeurs.
@@ -85,18 +81,14 @@ As a Élève, I want saisir mon code Mobile Money et accéder immédiatement au 
 ### Story 3.1: Lecteur Zen HTML
 Status: Completed
 As a Élève, I want lire mon sujet dans une interface HTML épurée avec support mathématique.
-**Acceptance Criteria:**
-- Rendu Markdown via ReactMarkdown.
-- Support des formules LaTeX via KaTeX.
-- Interface parfaitement responsive.
 
 ### Story 3.2: Sidekick IA Contextuel
 Status: Completed
 As a Élève, I want poser des questions à l'IA qui connaît déjà le texte de mon sujet.
-**Acceptance Criteria:**
-- Injection automatique du Markdown dans le prompt AI.
-- Méthode socratique respectée.
-- Redimensionnement dynamique du panneau Sidekick.
+
+### Story 3.4: Cache Sémantique Intelligent
+Status: Completed
+As a Développeur, I want que les réponses de l'IA soient mises en cache dans Redis (Upstash).
 
 ---
 
@@ -105,15 +97,7 @@ As a Élève, I want poser des questions à l'IA qui connaît déjà le texte de
 ### Story 5.1: Éditeur Markdown "StackEdit Style"
 Status: Completed
 As a Administrateur, I want éditer les sujets avec un aperçu scindé et scroll synchronisé.
-**Acceptance Criteria:**
-- Barre d'outils Markdown (Gras, Titres, Math).
-- Synchronisation du défilement entre Édition et Aperçu.
-- Sauvegarde sécurisée via Server Actions.
 
 ### Story 5.2: Gestion Administrative des Sujets
 Status: Completed
 As a Administrateur, I want créer et lister les sujets via une interface dédiée.
-**Acceptance Criteria:**
-- Formulaire de création de métadonnées.
-- Redirection automatique vers l'éditeur après création.
-- Accès illimité automatique pour le rôle 'admin'.
