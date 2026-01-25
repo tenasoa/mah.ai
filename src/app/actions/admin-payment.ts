@@ -125,13 +125,54 @@ export async function rejectPayment(paymentId: string) {
 
   const { error } = await supabase
     .from("payments")
-    .update({ status: "rejected" })
-    .eq("id", paymentId);
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
   revalidatePath("/admin/payments");
   return { success: true };
+}
+
+export async function getTrustGapAnalytics(): Promise<{
+  stats: {
+    total_trust_requests: number;
+    confirmed_payments: number;
+    rejected_payments: number;
+    pending_trust: number;
+    trust_gap_index: number;
+    total_revenue: number;
+  };
+  error: string | null;
+}> {
+  const { supabase, isAdmin: isUserAdmin } = await isAdmin();
+
+  if (!isUserAdmin) {
+    return { stats: {} as any, error: "Accès refusé." };
+  }
+
+  try {
+    // 1. Récupérer tous les statuts
+    const { data: payments, error } = await supabase
+      .from("payments")
+      .select("status, amount");
+
+    if (error) throw error;
+
+    const stats = {
+      total_trust_requests: payments.length,
+      confirmed_payments: payments.filter(p => p.status === 'confirmed').length,
+      rejected_payments: payments.filter(p => p.status === 'rejected').length,
+      pending_trust: payments.filter(p => p.status === 'pending_trust').length,
+      total_revenue: payments.filter(p => p.status === 'confirmed').reduce((sum, p) => sum + (p.amount || 0), 0),
+      trust_gap_index: 0
+    };
+
+    // Calcul de l'indice Trust Gap (Honnêteté vs Fraude potentielle)
+    // Formule : Pending / Total (hors rejetés)
+    if (stats.total_trust_requests > 0) {
+      const activeRequests = stats.total_trust_requests - stats.rejected_payments;
+      stats.trust_gap_index = activeRequests > 0 ? (stats.pending_trust / activeRequests) * 100 : 0;
+    }
+
+    return { stats, error: null };
+  } catch (error: any) {
+    console.error("Error fetching analytics:", error);
+    return { stats: {} as any, error: "Erreur lors du calcul des stats." };
+  }
 }
