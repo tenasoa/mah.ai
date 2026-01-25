@@ -19,12 +19,14 @@ import {
   Award,
   Flame,
 } from 'lucide-react';
+import { GritScoreCard } from '@/components/dashboard/GritScoreCard';
 
 type Profile = {
   pseudo: string;
   etablissement: string;
   filiere: string;
   classe: string;
+  grit_score: number;
 };
 
 const subjects = [
@@ -89,7 +91,7 @@ export default function DashboardPage() {
 
     const { data: profiles, error } = await supabase
       .from('profiles')
-      .select('pseudo, etablissement, filiere, classe')
+      .select('pseudo, etablissement, filiere, classe, grit_score')
       .eq('id', user.id)
       .single();
 
@@ -99,6 +101,7 @@ export default function DashboardPage() {
         etablissement: profiles.etablissement || '',
         filiere: profiles.filiere || '',
         classe: profiles.classe || '',
+        grit_score: profiles.grit_score || 0,
       };
       setProfile(profileData);
     }
@@ -169,45 +172,7 @@ export default function DashboardPage() {
         <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 auto-rows-[180px] gap-4 lg:gap-5">
 
           {/* Grit Score Card */}
-          <article className="sm:col-span-2 sm:row-span-2 mah-card bg-gradient-to-br from-white via-white to-amber-50/50 border-amber-100/50 animate-scale-in">
-            <div className="flex items-center justify-between">
-              <span className="px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-                <Award className="w-3.5 h-3.5" />
-                Grit Score
-              </span>
-              <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4].map((i) => (
-                  <Star key={i} className="w-4 h-4 text-amber-500 fill-amber-500" />
-                ))}
-                <Star className="w-4 h-4 text-slate-200" />
-              </div>
-            </div>
-
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-7xl sm:text-8xl font-extrabold text-gradient-grit leading-none animate-pulse-soft">
-                  85
-                </div>
-                <div className="text-slate-400 font-medium mt-2">sur 100 points</div>
-                <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  +5 cette semaine
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 gap-3 pt-4 border-t border-slate-100">
-              {quickStats.map((stat) => (
-                <div key={stat.label} className="text-center group cursor-default">
-                  <div className={`h-10 w-10 mx-auto rounded-xl ${stat.bg} flex items-center justify-center mb-2 group-hover:scale-110 transition-transform`}>
-                    <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                  </div>
-                  <p className="text-lg font-bold text-slate-900">{stat.value}</p>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wider">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-          </article>
+          <GritScoreCard initialScore={profile.grit_score} userId={user.id} />
 
           {/* Document Preview Card */}
           <article className="sm:col-span-2 sm:row-span-2 mah-card p-0 overflow-hidden animate-scale-in stagger-1">

@@ -18,6 +18,7 @@ import {
 import { createSubjectQuestion, listSubjectQuestions } from "@/app/actions/reader";
 import { askSocraticTutor } from "@/app/actions/perplexity";
 import { saveSubjectMarkdown } from "@/app/actions/subjects";
+import { addGritPoints } from "@/app/actions/grit";
 import { SocraticSidekick } from "./SocraticSidekick";
 
 // Markdown rendering imports
@@ -53,6 +54,50 @@ export function SubjectReader({ subjectId, title, subtitle, initialContent, forc
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastTone, setToastTone] = useState<"success" | "error">("success");
   const [viewMode, setViewMode] = useState<"full" | "split">(forceEdit ? "split" : "full");
+
+  // Heartbeat State
+  const [lastHeartbeat, setLastHeartbeat] = useState(Date.now());
+  const isActive = useRef(true);
+
+  // Heartbeat Logic (Active Reading)
+  useEffect(() => {
+    if (isEditing) return; // Pas de points en mode édition pour l'instant
+
+    const GRIT_INTERVAL = 5 * 60 * 1000; // 5 minutes
+    
+    const interval = setInterval(async () => {
+      if (isActive.current) {
+        console.log('💓 Heartbeat: Awarding Grit points for active reading...');
+        const result = await addGritPoints({
+          amount: 10,
+          action: 'active_reading',
+          referenceId: subjectId
+        });
+
+        if (result.success) {
+          setToastTone("success");
+          setToastMessage("+10 Grit ! Merci pour ton effort.");
+          setTimeout(() => setToastMessage(null), 3000);
+        }
+      }
+    }, GRIT_INTERVAL);
+
+    // Détecter l'activité (basique)
+    const handleActivity = () => {
+      isActive.current = true;
+    };
+
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('scroll', handleActivity);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('mousemove', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('scroll', handleActivity);
+    };
+  }, [subjectId, isEditing]);
 
   // Refs pour le scroll synchronisé
   const editorRef = useRef<HTMLTextAreaElement>(null);
