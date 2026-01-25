@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
 import type {
   Subject,
   SubjectCard,
@@ -70,14 +71,38 @@ export async function getSubjects(params: GetSubjectsParams = {}): Promise<{
         content_markdown,
         is_free,
         credit_cost,
-        view_count
+        view_count,
+        status
       `,
         { count: 'exact' }
-      )
-      .eq('status', 'published');
+      );
+
+    // Get current user's access and role if logged in
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    
+    let userProfile = null;
+    if (user) {
+      const { data } = await supabase.from('profiles').select('roles').eq('id', user.id).single();
+      userProfile = data;
+    }
+    const roles = (userProfile?.roles as string[]) || [];
+    const isAdmin = roles.includes('admin') || roles.includes('superadmin') || roles.includes('validator');
 
     // Apply filters
     if (filters) {
+      if (filters.status) {
+        if (Array.isArray(filters.status)) {
+          query = query.in('status', filters.status);
+        } else {
+          query = query.eq('status', filters.status);
+        }
+      } else if (!isAdmin) {
+        // Default behavior for catalog (students only see published)
+        query = query.eq('status', 'published');
+      }
+
       if (filters.exam_type) {
         if (Array.isArray(filters.exam_type)) {
           query = query.in('exam_type', filters.exam_type);
@@ -155,10 +180,7 @@ export async function getSubjects(params: GetSubjectsParams = {}): Promise<{
       return { data: null, error: errorMessage };
     }
 
-    // Get current user's access if logged in
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // Reuse existing user variable for access check
     let userAccess: Set<string> = new Set();
 
     if (user && subjects && subjects.length > 0) {
@@ -353,9 +375,8 @@ export async function getSubjectById(id: string): Promise<{
   try {
     const { data: subject, error } = await supabase
       .from('subjects')
-      .select('*')
+      .select('*, status, revision_comment')
       .eq('id', id)
-      .eq('status', 'published')
       .single();
 
     if (error) {
@@ -510,6 +531,8 @@ export async function createSubject(params: {
   niveau?: string;
   is_free?: boolean;
   credit_cost?: number;
+  exam_metadata?: any;
+  status?: SubjectStatus;
 }): Promise<{ data: Subject | null; error: string | null }> {
   const supabase = await createClient();
 
@@ -525,11 +548,12 @@ export async function createSubject(params: {
     // Check admin
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('roles')
       .eq('id', user.id)
       .single();
 
-    if (profile?.role !== 'admin') {
+    const roles = (profile?.roles as string[]) || [];
+    if (!roles.includes('admin') && !roles.includes('superadmin')) {
       return { data: null, error: 'Permission refusée' };
     }
 
@@ -537,7 +561,7 @@ export async function createSubject(params: {
       .from('subjects')
       .insert({
         ...params,
-        status: 'published', // Direct publication for now
+        status: params.status || 'published',
         uploaded_by: user.id,
       })
       .select('*')
@@ -551,5 +575,72 @@ export async function createSubject(params: {
   } catch (err) {
     console.error('Error creating subject:', err);
     return { data: null, error: 'Erreur lors de la création' };
+  }
+}
+
+// =====================================================
+// Subject Validation Workflow
+// =====================================================
+
+export async function updateSubjectStatus(
+  id: string,
+  status: SubjectStatus,
+  comment?: string
+): Promise<{ success: boolean; error: string | null }> {
+  const supabase = await createClient();
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Non authentifié' };
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('roles')
+      .eq('id', user.id)
+      .single();
+
+    const roles = profile?.roles || [];
+    const canValidate = roles.includes('admin') || roles.includes('superadmin') || roles.includes('validator');
+
+    if (!canValidate) {
+      return { success: false, error: 'Permission refusée' };
+    }
+
+    const { error } = await supabase
+      .from('subjects')
+      .update({ 
+        status, 
+        revision_comment: comment || null,
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', id);
+
+    if (error) return { success: false, error: error.message };
+
+    revalidatePath('/admin/subjects');
+    revalidatePath(`/subjects/${id}`);
+    
+    return { success: true, error: null };
+  } catch (err) {
+    console.error('Validation Exception:', err);
+    return { success: false, error: err instanceof Error ? err.message : 'Erreur de validation' };
+  }
+}
+
+export async function deleteSubject(id: string): Promise<{ success: boolean; error: string | null }> {
+  const supabase = await createClient();
+
+  try {
+    const { error } = await supabase
+      .from('subjects')
+      .delete()
+      .eq('id', id);
+
+    if (error) return { success: false, error: error.message };
+
+    revalidatePath('/admin/subjects');
+    return { success: true, error: null };
+  } catch (err) {
+    return { success: false, error: 'Erreur lors de la suppression' };
   }
 }

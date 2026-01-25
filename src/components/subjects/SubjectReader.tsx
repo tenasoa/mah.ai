@@ -13,11 +13,16 @@ import {
   Columns,
   Maximize2,
   Minimize2,
-  Underline as UnderlineIcon
+  Underline as UnderlineIcon,
+  CheckCircle2,
+  XCircle,
+  RotateCcw,
+  MessageSquare,
+  AlertTriangle
 } from "lucide-react";
 import { createSubjectQuestion, listSubjectQuestions } from "@/app/actions/reader";
 import { askSocraticTutor } from "@/app/actions/perplexity";
-import { saveSubjectMarkdown } from "@/app/actions/subjects";
+import { saveSubjectMarkdown, updateSubjectStatus } from "@/app/actions/subjects";
 import { addGritPoints } from "@/app/actions/grit";
 import { SocraticSidekick } from "./SocraticSidekick";
 
@@ -29,6 +34,7 @@ import remarkBreaks from 'remark-breaks';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
+import { SubjectStatus } from "@/lib/types/subject";
 
 interface SubjectReaderProps {
   subjectId: string;
@@ -36,6 +42,8 @@ interface SubjectReaderProps {
   subtitle?: string;
   initialContent?: string | null;
   forceEdit?: boolean;
+  userRoles?: string[];
+  initialStatus?: string;
 }
 
 type QuestionMessage = {
@@ -44,7 +52,15 @@ type QuestionMessage = {
   createdAt: string;
 };
 
-export function SubjectReader({ subjectId, title, subtitle, initialContent, forceEdit }: SubjectReaderProps) {
+export function SubjectReader({ 
+  subjectId, 
+  title, 
+  subtitle, 
+  initialContent, 
+  forceEdit,
+  userRoles = [],
+  initialStatus = 'published'
+}: SubjectReaderProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(forceEdit || !initialContent);
   const [markdownContent, setMarkdownContent] = useState(initialContent || "");
@@ -54,6 +70,36 @@ export function SubjectReader({ subjectId, title, subtitle, initialContent, forc
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastTone, setToastTone] = useState<"success" | "error">("success");
   const [viewMode, setViewMode] = useState<"full" | "split">(forceEdit ? "split" : "full");
+
+  // Status & Validation State
+  const [currentStatus, setCurrentStatus] = useState(initialStatus);
+  const [showValidationBox, setShowValidationBox] = useState(false);
+  const [validationComment, setValidationComment] = useState("");
+  const [isValidating, setIsValidating] = useState(false);
+
+  const canValidate = userRoles.includes('admin') || userRoles.includes('superadmin') || userRoles.includes('validator');
+
+  const handleStatusUpdate = async (status: SubjectStatus) => {
+    setIsValidating(true);
+    try {
+      const result = await updateSubjectStatus(subjectId, status, validationComment);
+      if (result.success) {
+        setCurrentStatus(status);
+        setToastTone("success");
+        setToastMessage(`Statut mis à jour : ${status}`);
+        setShowValidationBox(false);
+      } else {
+        setToastTone("error");
+        setToastMessage(result.error || "Erreur de mise à jour");
+      }
+    } catch (error) {
+      setToastTone("error");
+      setToastMessage("Erreur serveur");
+    } finally {
+      setIsValidating(false);
+      setTimeout(() => setToastMessage(null), 3000);
+    }
+  };
 
   // Heartbeat State
   const [lastHeartbeat, setLastHeartbeat] = useState(Date.now());
@@ -180,6 +226,70 @@ export function SubjectReader({ subjectId, title, subtitle, initialContent, forc
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-slate-50">
+      {/* Admin Validation Bar - Only visible if not published */}
+      {canValidate && currentStatus !== 'published' && (
+        <div className="bg-slate-900 text-white px-6 py-3 flex items-center justify-between z-[40] animate-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-4 text-sm font-bold">
+            <span className="flex items-center gap-2 text-amber-400 uppercase tracking-widest text-[10px]">
+              <AlertTriangle className="w-4 h-4" />
+              Gestion de Validation
+            </span>
+            <span className="h-4 w-[1px] bg-white/20" />
+            <span className="text-slate-300 font-medium">Statut actuel : <span className="text-white uppercase">{currentStatus}</span></span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {!showValidationBox ? (
+              <>
+                <button 
+                  onClick={() => setShowValidationBox(true)}
+                  className="px-4 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold transition-all border border-white/10"
+                >
+                  Prendre une décision
+                </button>
+                <button 
+                  onClick={() => handleStatusUpdate('published')}
+                  className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 rounded-lg text-xs font-black uppercase tracking-tighter shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Approuver direct
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-3 bg-white/5 p-1 rounded-xl">
+                <textarea 
+                  value={validationComment}
+                  onChange={(e) => setValidationComment(e.target.value)}
+                  placeholder="Pourquoi renvoyer en révision ou refuser ?"
+                  className="bg-transparent border-none outline-none text-xs text-white p-2 w-64 h-10 resize-none placeholder:text-white/20"
+                />
+                <div className="flex flex-col gap-1 p-1">
+                  <button 
+                    onClick={() => handleStatusUpdate('published')}
+                    disabled={isValidating}
+                    className="px-3 py-1 bg-emerald-500 text-[10px] font-black rounded-md uppercase"
+                  >Approver</button>
+                  <button 
+                    onClick={() => handleStatusUpdate('revision')}
+                    disabled={isValidating || !validationComment}
+                    className="px-3 py-1 bg-blue-500 text-[10px] font-black rounded-md uppercase disabled:opacity-30"
+                  >Révision</button>
+                </div>
+                <button 
+                  onClick={() => handleStatusUpdate('rejected')}
+                  disabled={isValidating || !validationComment}
+                  className="px-3 py-1 bg-red-500 text-[10px] font-black rounded-md uppercase disabled:opacity-30"
+                >Refuser</button>
+                <button 
+                  onClick={() => setShowValidationBox(false)}
+                  className="p-2 text-white/40 hover:text-white"
+                ><XCircle className="w-4 h-4" /></button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Top Navigation Bar */}
       <div className="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between z-30 shadow-sm">
         <div className="flex items-center gap-4">

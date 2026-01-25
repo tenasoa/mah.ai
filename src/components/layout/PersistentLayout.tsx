@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Navbar, type NavItem, type UserProfile } from "@/components/layout/Navbar";
-import { LayoutGrid, BookOpen } from "lucide-react";
+import { LayoutGrid, BookOpen, ShieldAlert } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
 
-const navItems: NavItem[] = [
+const baseNavItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/subjects", label: "Sujets", icon: BookOpen },
 ];
@@ -18,6 +18,7 @@ interface PersistentLayoutProps {
 
 export function PersistentLayout({ children }: PersistentLayoutProps) {
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [roles, setRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
   const supabase = createClient();
@@ -37,11 +38,12 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
         // Fetch profile data
         const { data: profile } = await supabase
           .from("profiles")
-          .select("pseudo, etablissement, classe")
+          .select("pseudo, etablissement, classe, roles")
           .eq("id", authUser.id)
           .single();
 
         if (profile) {
+          setRoles((profile.roles as string[]) || []);
           setUser({
             name: profile.pseudo || "Élève",
             subtitle:
@@ -59,6 +61,12 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
 
     loadUserProfile();
   }, [supabase]);
+
+  const isAdmin = roles.includes('admin') || roles.includes('superadmin') || roles.includes('validator');
+  
+  const currentNavItems = isAdmin 
+    ? [...baseNavItems, { href: "/admin", label: "Admin", icon: ShieldAlert }]
+    : baseNavItems;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -82,7 +90,7 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
       </div>
 
       <Navbar
-        navItems={navItems}
+        navItems={currentNavItems}
         user={user}
         onLogout={handleLogout}
       />

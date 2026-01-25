@@ -48,32 +48,42 @@ Valoriser l'effort et la régularité via le Grit Score et les récompenses.
 **Status:** Completed
 
 ### Epic 5: Gestion du Savoir (Admin & Editor)
-Interface d'édition Markdown professionnelle pour les contributeurs.
+Interface d'édition Markdown professionnelle pour les contributeurs et analyse stratégique.
 **Status:** Completed
 
 ---
 
+## Epic 1: Fondation & Accès "Trust-First"
+
+### Story 1.1: Initialisation du Projet & PWA
+Status: Completed
+As a Développeur, I want initialiser le projet avec Next.js 16+, Tailwind 4 et Supabase.
+
+### Story 1.4: Paiement "Confiance" (Optimistic UI)
+Status: Completed
+As a Élève, I want saisir mon code Mobile Money et accéder immédiatement au contenu.
+
+---
+
+## Epic 3: Zen Reader & Socratic AI (Markdown)
+
+### Story 3.1: Lecteur Zen HTML
+Status: Completed
+As a Élève, I want lire mon sujet dans une interface HTML épurée avec support mathématique.
+
+### Story 3.2: Sidekick IA Contextuel
+Status: Completed
+As a Élève, I want poser des questions à l'IA qui connaît déjà le texte de mon sujet.
+
+### Story 3.4: Cache Sémantique Intelligent
+Status: Completed
+As a Développeur, I want que les réponses de l'IA soient mises en cache dans Redis (Upstash).
+
+---
+
 ## Epic 4: Ligue Grit & Gamification
-
-### Story 4.1: Moteur de Score Grit
-Status: Completed
-As a Système, I want calculer des points basés sur le temps de lecture et l'interaction IA.
-
-### Story 4.2: Visualisation de Progression
-Status: Completed
-As a Élève, I want voir mes gains de points s'animer en temps réel sur mon Dashboard.
-
-### Story 4.3: Système de Badges et Succès
-Status: Completed
-As a Élève, I want débloquer des trophées visuels (ex: Oiseau de Nuit, Pionnier).
-
-### Story 4.4: Notifications de Rétention
-Status: Completed
-As a Élève, I want recevoir des messages motivants pour maintenir mon effort.
-
-### Story 4.5: Classement National (Leaderboard)
-Status: Completed
-As a Élève, I want voir ma position dans la ligue par rapport aux autres apprenants.
+Valoriser l'effort et la régularité via le Grit Score et les récompenses.
+**Status:** Completed
 
 ---
 
@@ -86,3 +96,11 @@ As a Administrateur, I want éditer les sujets avec un aperçu scindé et scroll
 ### Story 5.2: Gestion Administrative des Sujets
 Status: Completed
 As a Administrateur, I want créer et lister les sujets via une interface dédiée.
+
+### Story 5.3: Tableau de Bord Analytics "Trust Gap"
+Status: Completed
+As a Administrateur, I want visualiser le taux d'utilisation réelle vs les paiements validés.
+**Acceptance Criteria:**
+- Calcul en temps réel du Trust Gap Index.
+- Visualisation des revenus et de la conversion.
+- Note stratégique pour l'ajustement du modèle de confiance.
