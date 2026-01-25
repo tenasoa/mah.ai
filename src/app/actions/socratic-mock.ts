@@ -1,15 +1,6 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import OpenAI from 'openai';
-
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error('OPENAI_API_KEY environment variable is required for Socratic AI features');
-}
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 type SelectionRect = {
   x: number;
@@ -28,21 +19,22 @@ interface SocraticRequest {
   insistForAnswer?: boolean;
 }
 
-const SOCRATIC_SYSTEM_PROMPT = `Tu es un tuteur IA socratique pour des élèves lycéens préparant le Baccalauréat malgache.
-Ton rôle : guider l'élève vers la compréhension par des questions ciblées et des indices progressifs, JAMAIS donner la réponse directement.
+const mockResponses = [
+  "Quelle piste de réflexion as-tu déjà explorée sur ce concept ?",
+  "Selon toi, quelles sont les implications de cette idée dans ton cours ?",
+  "Peux-tu me donner un exemple concret qui t’aide à mieux comprendre ?",
+  "Qu’est-ce qui te bloque exactement dans cette notion ?",
+  "Comment pourrais-tu reformuler cela avec tes propres mots ?",
+  "Quel lien vois-tu avec ce que tu as déjà appris en classe ?",
+  "Si tu devais l’expliquer à un camarade, que dirais-tu ?",
+  "Quelles hypothèses peux-tu faire pour répondre à ta propre question ?",
+];
 
-Style requis :
-- "Warm Intelligence" : encourageant, clair, pédagogique
-- Adapté au niveau lycée
-- Si l'élève insiste, explique avec bienveillance pourquoi tu ne donnes pas la solution tout de suite
-
-Structure de réponse :
-1. Accueil encourageant
-2. Question ouverte pour guider la réflexion
-3. Indice progressif si nécessaire
-4. Invitation à formuler une hypothèse
-
-Ne réponds JAMAIS par la solution brute, même si on te demande explicitement.`;
+const mockInsistResponses = [
+  "Je comprends que tu veuilles la réponse, mais imagine que je te la donne maintenant… Tu aurais la solution, mais pas la compétence pour la retrouver seul. C’est en cherchant par toi-même que tu construis vraiment ta compréhension. Essaye encore une fois : quelle idée te vient spontanément en lisant ta question ?",
+  "Je sais que c’est tentant d’avoir la réponse tout de suite ! Mais le but du Baccalauréat, c’est que tu puisses y arriver seul(e) le jour J. Je suis là pour te guider, pas pour donner la solution. Reprends ta question : quel mot ou quelle phrase attire ton attention en premier ?",
+  "Ton impatience est normale ! Mais la meilleure façon d’apprendre, c’est de se heurter doucement au problème. Si je te donne la réponse, tu ne la retiendras pas. Allez, on essaie ensemble : qu’est-ce que tu sais déjà sur ce sujet, même si tu penses que c’est peu ?",
+];
 
 export async function askSocraticTutor(params: SocraticRequest) {
   const supabase = await createClient();
@@ -69,23 +61,9 @@ export async function askSocraticTutor(params: SocraticRequest) {
   // }
 
   try {
-    // Construire le contexte pour l'IA
-    const contextMessage = `Question de l'élève : "${questionText}"
-${userMessage ? `Message de suivi : "${userMessage}"` : ''}
-
-${insistForAnswer ? `L'élève insiste pour avoir la réponse directe. Explique-lui pourquoi c'est mieux pour son apprentissage de ne pas la donner tout de suite.` : ''}`;
-
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: SOCRATIC_SYSTEM_PROMPT },
-        { role: 'user', content: contextMessage },
-      ],
-      temperature: 0.7,
-      max_tokens: 400,
-    });
-
-    const aiResponse = completion.choices[0]?.message?.content || 'Désolé, je n\'ai pas pu générer de réponse.';
+    // Mock response
+    const responses = insistForAnswer ? mockInsistResponses : mockResponses;
+    const aiResponse = responses[Math.floor(Math.random() * responses.length)];
 
     // Sauvegarder l'échange pour l'historique
     const { error: insertError } = await supabase

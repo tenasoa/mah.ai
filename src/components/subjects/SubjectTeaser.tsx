@@ -319,13 +319,7 @@ export function SubjectTeaser({
       </div>
 
       {/* Info Section */}
-      <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-slate-50 rounded-lg p-4 text-center">
-          <p className="text-2xl font-bold text-slate-900">
-            {subject.page_count || "?"}
-          </p>
-          <p className="text-xs text-slate-500 mt-1">Pages</p>
-        </div>
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-slate-50 rounded-lg p-4 text-center">
           <p className="text-2xl font-bold text-slate-900">
             {subject.view_count.toLocaleString()}
@@ -334,17 +328,11 @@ export function SubjectTeaser({
         </div>
         <div className="bg-slate-50 rounded-lg p-4 text-center">
           <p className="text-2xl font-bold text-slate-900">
-            {subject.download_count.toLocaleString()}
-          </p>
-          <p className="text-xs text-slate-500 mt-1">Téléchargements</p>
-        </div>
-        <div className="bg-slate-50 rounded-lg p-4 text-center">
-          <p className="text-2xl font-bold text-slate-900">
             {subject.created_at
               ? new Date(subject.created_at).getFullYear()
               : "?"}
           </p>
-          <p className="text-xs text-slate-500 mt-1">Année</p>
+          <p className="text-xs text-slate-500 mt-1">Année d&apos;ajout</p>
         </div>
       </div>
 

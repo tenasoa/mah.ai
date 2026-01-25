@@ -1,15 +1,6 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import OpenAI from 'openai';
-
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error('OPENAI_API_KEY environment variable is required for Socratic AI features');
-}
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 type SelectionRect = {
   x: number;
@@ -26,27 +17,63 @@ interface SocraticRequest {
   zoom?: number;
   userMessage?: string;
   insistForAnswer?: boolean;
+  markdownContext?: string;
 }
 
-const SOCRATIC_SYSTEM_PROMPT = `Tu es un tuteur IA socratique pour des élèves lycéens préparant le Baccalauréat malgache.
-Ton rôle : guider l'élève vers la compréhension par des questions ciblées et des indices progressifs, JAMAIS donner la réponse directement.
+const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
+
+const SOCRATIC_SYSTEM_PROMPT = `Tu es un tuteur IA socratique pour des élèves et étudiants malgaches préparant divers examens et concours (du collège à l'université).
+Ton rôle : guider l'apprenant vers la compréhension par des questions ciblées et des indices progressifs, JAMAIS donner la réponse directement.
 
 Style requis :
-- "Warm Intelligence" : encourageant, clair, pédagogique
-- Adapté au niveau lycée
-- Si l'élève insiste, explique avec bienveillance pourquoi tu ne donnes pas la solution tout de suite
+- "Warm Intelligence" : encourageant, clair, pédagogique et sobre.
+- Adapté au niveau de l'apprenant (sois attentif au contenu du sujet pour deviner le niveau).
+- Évite les présentations trop longues ou répétitives sur le "Baccalauréat". Salue brièvement et entre dans le vif du sujet.
+- Si l'élève insiste, explique avec bienveillance pourquoi tu ne donnes pas la solution tout de suite.
+
+Formatage Mathématique (CRUCIAL) :
+- Utilise TOUJOURS LaTeX pour TOUTES les formules mathématiques, même les plus simples.
+- Utilise des doubles dollars $$ ... $$ pour les formules importantes sur une nouvelle ligne.
+- Utilise des simples dollars $ ... $ pour les formules intégrées au texte.
 
 Structure de réponse :
-1. Accueil encourageant
-2. Question ouverte pour guider la réflexion
-3. Indice progressif si nécessaire
-4. Invitation à formuler une hypothèse
+1. Accueil très bref et encourageant
+2. Question ouverte ou indice pour guider la réflexion en fonction du sujet
+3. Invitation à formuler une hypothèse
 
 Ne réponds JAMAIS par la solution brute, même si on te demande explicitement.`;
 
+async function callPerplexityAPI(messages: Array<{ role: string; content: string }>) {
+  if (!process.env.PERPLEXITY_API_KEY) {
+    throw new Error('PERPLEXITY_API_KEY environment variable is required');
+  }
+
+  const response = await fetch(PERPLEXITY_API_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'sonar',
+      messages,
+      temperature: 0.7,
+      max_tokens: 400,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`Perplexity API error: ${response.status} - ${error.error?.message || 'Unknown error'}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0]?.message?.content || 'Désolé, je n\'ai pas pu générer de réponse.';
+}
+
 export async function askSocraticTutor(params: SocraticRequest) {
   const supabase = await createClient();
-  const { subjectId, questionId, questionText, selectionRect, zoom, userMessage, insistForAnswer } = params;
+  const { subjectId, questionId, questionText, selectionRect, zoom, userMessage, insistForAnswer, markdownContext } = params;
 
   const {
     data: { user },
@@ -70,22 +97,22 @@ export async function askSocraticTutor(params: SocraticRequest) {
 
   try {
     // Construire le contexte pour l'IA
-    const contextMessage = `Question de l'élève : "${questionText}"
+    const contextMessage = `Voici le contenu du sujet de l'examen :
+---
+${markdownContext || "Contenu non disponible en texte."}
+---
+
+Question de l'élève : "${questionText}"
 ${userMessage ? `Message de suivi : "${userMessage}"` : ''}
 
 ${insistForAnswer ? `L'élève insiste pour avoir la réponse directe. Explique-lui pourquoi c'est mieux pour son apprentissage de ne pas la donner tout de suite.` : ''}`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: SOCRATIC_SYSTEM_PROMPT },
-        { role: 'user', content: contextMessage },
-      ],
-      temperature: 0.7,
-      max_tokens: 400,
-    });
+    const messages = [
+      { role: 'system', content: SOCRATIC_SYSTEM_PROMPT },
+      { role: 'user', content: contextMessage },
+    ];
 
-    const aiResponse = completion.choices[0]?.message?.content || 'Désolé, je n\'ai pas pu générer de réponse.';
+    const aiResponse = await callPerplexityAPI(messages);
 
     // Sauvegarder l'échange pour l'historique
     const { error: insertError } = await supabase
@@ -107,7 +134,7 @@ ${insistForAnswer ? `L'élève insiste pour avoir la réponse directe. Explique-
 
     return { data: { response: aiResponse }, error: null };
   } catch (error) {
-    console.error('Socratic AI error:', error);
+    console.error('Perplexity AI error:', error);
     return { data: null, error: 'ai_service_error' };
   }
 }

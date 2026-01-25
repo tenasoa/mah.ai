@@ -1,8 +1,17 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Loader2, Send, Lightbulb, MessageCircle, ChevronDown } from "lucide-react";
-import { askSocraticTutor, getSocraticHistory } from "@/app/actions/socratic";
+import { Loader2, Send, Lightbulb, MessageCircle, ChevronDown, Sparkles } from "lucide-react";
+import { askSocraticTutor, getSocraticHistory } from "@/app/actions/perplexity";
+
+// Markdown and Math imports
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import remarkBreaks from 'remark-breaks';
+import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
+import 'katex/dist/katex.min.css';
 
 type SelectionRect = {
   x: number;
@@ -17,8 +26,9 @@ interface SocraticSidekickProps {
   subjectId: string;
   questionId: string;
   questionText: string;
-  selectionRect?: SelectionRect | null;
-  zoom?: number;
+  selectionRect: SelectionRect | null;
+  zoom: number;
+  markdownContext?: string;
 }
 
 interface Exchange {
@@ -36,18 +46,54 @@ export function SocraticSidekick({
   questionText,
   selectionRect,
   zoom,
+  markdownContext,
 }: SocraticSidekickProps) {
   const [messages, setMessages] = useState<Exchange[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // États pour le redimensionnement
+  const [width, setWidth] = useState(448); // Largeur par défaut (max-w-md approx)
+  const isResizing = useRef(false);
 
   useEffect(() => {
-    if (isOpen && questionId) {
-      loadHistory();
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
     }
-  }, [isOpen, questionId]);
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  // Logique de redimensionnement
+  useEffect(() => {
+    const startResizing = () => { isResizing.current = true; };
+    const stopResizing = () => { isResizing.current = false; };
+    
+    const resize = (e: MouseEvent) => {
+      if (!isResizing.current) return;
+      
+      // Calculer la nouvelle largeur (distance depuis le bord droit de l'écran)
+      const newWidth = window.innerWidth - e.clientX;
+      
+      // Contraintes : min 320px, max 85% de l'écran
+      if (newWidth > 320 && newWidth < window.innerWidth * 0.85) {
+        setWidth(newWidth);
+      }
+    };
+
+    window.addEventListener("mousemove", resize);
+    window.addEventListener("mouseup", stopResizing);
+    
+    return () => {
+      window.removeEventListener("mousemove", resize);
+      window.removeEventListener("mouseup", stopResizing);
+    };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -55,6 +101,26 @@ export function SocraticSidekick({
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Composant pour rendre les messages de l'IA
+  const AIResponse = ({ content }: { content: string }) => {
+    // Petit hack pour s'assurer que les notations ( ... ) mathématiques sont converties en $ ... $
+    // si l'IA oublie les consignes, ou pour corriger les formats textes courants.
+    const processedContent = content
+      .replace(/\\\((.*?)\\\)/g, '$$$1$$') // Convertir \( ... \) en $ ... $
+      .replace(/\\\[(.*?)\\\]/g, '$$$$$1$$$$'); // Convertir \[ ... \] en $$ ... $$
+
+    return (
+      <div className="prose prose-slate prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-slate-800 prose-pre:text-slate-100">
+        <ReactMarkdown 
+          remarkPlugins={[remarkGfm, remarkMath, remarkBreaks]}
+          rehypePlugins={[rehypeKatex, rehypeRaw]}
+        >
+          {processedContent}
+        </ReactMarkdown>
+      </div>
+    );
   };
 
   const loadHistory = async () => {
@@ -71,6 +137,22 @@ export function SocraticSidekick({
       ? "Je veux vraiment la réponse directe s'il te plaît."
       : input.trim();
 
+    console.log('=== DEBUG handleSend START ===');
+    console.log('messageToSend:', messageToSend);
+    console.log('insistForAnswer:', insistForAnswer);
+    console.log('Data being sent to AI:', {
+      subjectId,
+      questionId,
+      questionText,
+      selectionRect,
+      zoom,
+      userMessage: messageToSend,
+      insistForAnswer,
+      hasMarkdownContext: !!markdownContext
+    });
+    console.log('selectionRect being sent:', selectionRect);
+    console.log('=== END DEBUG handleSend ===');
+    
     setIsLoading(true);
     
     try {
@@ -82,7 +164,10 @@ export function SocraticSidekick({
         zoom,
         userMessage: messageToSend,
         insistForAnswer,
+        markdownContext,
       });
+
+      console.log('🤖 AI Response result:', result);
 
       if (result.data && !result.error) {
         const newExchange: Exchange = {
@@ -109,7 +194,19 @@ export function SocraticSidekick({
         className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
         onClick={onClose}
       />
-      <aside className="absolute right-0 top-0 h-full w-full max-w-md bg-white/95 border-l border-white/40 shadow-2xl shadow-slate-900/10 backdrop-blur-xl animate-in slide-in-from-right duration-200 ease-out flex flex-col">
+      <aside 
+        className="absolute right-0 top-0 h-full bg-white/95 border-l border-white/40 shadow-2xl shadow-slate-900/10 backdrop-blur-xl animate-in slide-in-from-right duration-200 ease-out flex flex-col"
+        style={{ width: `${width}px` }}
+      >
+        {/* Resize Handle */}
+        <div 
+          className="absolute left-0 top-0 w-1.5 h-full cursor-ew-resize hover:bg-violet-500/20 active:bg-violet-500/40 transition-colors z-30"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            isResizing.current = true;
+          }}
+        />
+
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200/60 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -155,19 +252,22 @@ export function SocraticSidekick({
         )}
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto">
+        <div 
+          className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30 pr-1" 
+          style={{ height: '0px' }} // Nécessaire pour forcer le scroll dans un flex-1
+        >
           {showHistory && messages.length > 0 && (
-            <div className="px-5 py-3 space-y-3 max-h-48 overflow-y-auto">
+            <div className="px-5 py-4 space-y-6">
               {messages.map((exchange, index) => (
-                <div key={index} className="space-y-2">
+                <div key={index} className="space-y-3">
                   <div className="flex justify-end">
-                    <div className="max-w-[80%] rounded-xl bg-slate-100 px-3 py-2 text-sm text-slate-700">
+                    <div className="max-w-[85%] rounded-2xl bg-white border border-slate-200 px-4 py-2.5 text-sm text-slate-700 shadow-sm">
                       {exchange.user_message}
                     </div>
                   </div>
                   <div className="flex justify-start">
-                    <div className="max-w-[80%] rounded-xl bg-violet-100 px-3 py-2 text-sm text-slate-700 whitespace-pre-wrap">
-                      {exchange.ai_response}
+                    <div className="max-w-[90%] rounded-2xl bg-violet-50 border border-violet-100 px-4 py-2 text-slate-800 shadow-sm shadow-violet-500/5">
+                      <AIResponse content={exchange.ai_response} />
                     </div>
                   </div>
                 </div>
@@ -177,14 +277,18 @@ export function SocraticSidekick({
           
           {/* Latest response */}
           {messages.length > 0 && !showHistory && (
-            <div className="px-5 py-3">
-              <div className="rounded-xl bg-violet-100 px-3 py-2 text-sm text-slate-700 whitespace-pre-wrap">
-                {messages[messages.length - 1].ai_response}
+            <div className="px-5 py-6">
+              <div className="rounded-2xl bg-violet-50 border border-violet-100 px-5 py-4 text-slate-800 shadow-sm shadow-violet-500/5">
+                <div className="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <Sparkles className="w-3 h-3" />
+                  Réponse du tuteur
+                </div>
+                <AIResponse content={messages[messages.length - 1].ai_response} />
               </div>
             </div>
           )}
           
-          <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} className="h-4" />
         </div>
 
         {/* Input */}

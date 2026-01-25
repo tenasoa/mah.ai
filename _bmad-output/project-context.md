@@ -16,15 +16,15 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 ## Technology Stack & Versions
 
-- **Framework:** Next.js 14+ (App Router)
+- **Framework:** Next.js 16+ (App Router)
 - **Language:** TypeScript
-- **Styling:** Tailwind CSS
+- **Styling:** Tailwind CSS 4.0
 - **Database:** Supabase (PostgreSQL)
 - **Auth:** Supabase Auth (OTP focus)
-- **State Management:** Zustand (Global), SWR/Server Actions (Data), React State (UI)
+- **State Management:** Zustand (Global), React State (UI)
+- **Markdown:** react-markdown, remark-gfm, remark-math, rehype-katex, remark-breaks
 - **PWA:** @serwist/next
 - **Caching:** Upstash Redis (Semantic Cache)
-- **Testing:** Vitest (to be added)
 
 ## Critical Implementation Rules
 
@@ -44,38 +44,35 @@ _This file contains critical rules and patterns that AI agents must follow when 
   - **Domain Components:** "Smart" (connect to Zustand/SWR).
   - **Pages:** Composition only (no logic).
 - **Data Fetching:**
-  - Use Server Actions for mutations.
-  - Use SWR/React Query or plain `fetch` (with tags) for data.
+  - Use Server Actions for mutations and data updates.
   - **NEVER** use `useEffect` for initial data fetching.
 
 ### Testing Rules
-- **Strategy:** Focus on "Critical User Journeys" (Trust, Chat, Exam).
-- **Unit Tests:** Mandatory for `use-trust-store.ts` (State Machine logic) and `lib/utils` (Pure functions).
-- **Tooling:** Vitest (matches implementation speed).
+- **Strategy:** Focus on "Critical User Journeys" (Editor, AI Chat, Trust Payment).
+- **Unit Tests:** Mandatory for `lib/utils` (Pure functions).
+- **Tooling:** Vitest.
 
 ### Code Quality & Style Rules
 - **Formatting:** Prettier default config.
 - **Linting:** `eslint:recommended` + `react-hooks/recommended`.
-- **Comments:** Explain "WHY" not "WHAT". Document complex business logic in `components/domain`.
+- **Comments:** Explain "WHY" not "WHAT".
 - **Naming Conventions:**
   - **Data/DB:** ALWAYS use `snake_case` for database entities and matching TypeScript interfaces. NO mapping to camelCase.
-  - **Components:** `PascalCase` (e.g., `PaymentModal.tsx`).
+  - **Components:** `PascalCase` (e.g., `SubjectReader.tsx`).
   - **Functions/Variables:** `camelCase` (e.g., `calculateGritScore`).
   - **Constants:** `UPPER_SNAKE_CASE`.
 
 ### Global Patterns & Boundaries
 - **Logic Location:** Business logic MUST live in `src/components/domain/`, NOT in `src/app/` pages.
-- **AI Proxy:** NEVER call OpenAI directly from the client. ALWAYS use `/api/ai` to leverage Semantic Caching.
-- **State Buckets:**
-  - **Server:** SWR / Server Components.
-  - **App:** Zustand (`use-trust-store`, `use-grit-store`).
-  - **UI:** local `useState`.
+- **AI Proxy:** NEVER call OpenAI/Perplexity directement depuis le client. ALWAYS use server actions to leverage context injection.
+- **Content Security:** Access is managed via Supabase RLS. Admins have automatic bypass.
 
-### Critical Don't-Miss Rules (PWA & Trust)
-- **"The Snake Rule":** DB properties are ALWAYS snake_case. Logic like `user.first_name` is the standard.
-- **Trust-First UX:** UI must unlock IMMEDIATELY on code entry (Optimistic UI). Show success first, rollback if background validation fails.
+### Critical Don't-Miss Rules (Markdown & AI)
+- **"The Snake Rule":** DB properties are ALWAYS snake_case.
+- **Markdown Context:** AI Sidekick MUST always receive the `markdown_content` of the subject to provide accurate guidance.
+- **Zen Reader:** The reading interface must remain "Zen" (no distractions) and support LaTeX via KaTeX.
+- **Admin Access:** Administrators bypass all credit costs and locking mechanisms.
 - **PWA Ready:** Use the `@serwist/sw` hooks for offline sync logic.
-- **Watermarking:** UI-level watermarking must be applied in `components/domain/subject/PDFViewer`.
 
 ---
 

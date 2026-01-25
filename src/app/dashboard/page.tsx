@@ -229,12 +229,12 @@ export default function DashboardPage() {
                     </span>
                     <span className="font-semibold text-slate-900">Bac 2023</span>
                   </div>
-                  <span className="text-xs text-slate-400 font-medium">PDF • 2.4 MB</span>
+                  <span className="text-xs text-slate-400 font-medium">Contenu Structuré</span>
                 </div>
 
                 {/* Document Preview Lines */}
                 <div className="space-y-3">
-                  <div className="text-sm font-semibold text-slate-700">Exercice 1: Nombres Complexes</div>
+                  <div className="text-sm font-semibold text-slate-700">Chapitre 1: Étude de fonctions</div>
                   <div className="space-y-2">
                     <div className="h-2 rounded-full bg-slate-100 w-full" />
                     <div className="h-2 rounded-full bg-slate-100 w-4/5" />
