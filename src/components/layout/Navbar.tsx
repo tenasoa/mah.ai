@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import { ProfileDropdown } from "@/components/ui/profile-dropdown";
 import { CreditBalance } from "@/components/credits/CreditBalance";
+import { NotificationBell } from "@/components/dashboard/NotificationBell";
 
 // Navigation Items
 export interface NavItem {
@@ -106,11 +107,14 @@ export function Navbar({
           <div className="flex-1 flex items-center justify-end gap-4">
             
             {/* Desktop Profile */}
-            <div className="hidden md:flex items-center">
+            <div className="hidden md:flex items-center gap-2">
               {user ? (
                 <>
                   <CreditBalance />
-                  <ProfileDropdown user={user} isExpanded={true} />
+                  <NotificationBell />
+                  <div className="ml-2">
+                    <ProfileDropdown user={user} isExpanded={true} />
+                  </div>
                 </>
               ) : (
                  <Link

@@ -20,6 +20,8 @@ import {
   Flame,
 } from 'lucide-react';
 import { GritScoreCard } from '@/components/dashboard/GritScoreCard';
+import { BadgesCollection } from '@/components/dashboard/BadgesCollection';
+import { NotificationBell } from '@/components/dashboard/NotificationBell';
 
 type Profile = {
   pseudo: string;
@@ -162,9 +164,6 @@ export default function DashboardPage() {
                 className="w-full lg:w-[280px] pl-11 pr-4 py-3 rounded-xl bg-white border border-slate-200 text-sm text-slate-700 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100 transition-all duration-200"
               />
             </div>
-            <button className="lg:hidden p-3 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
-              <Bell className="w-5 h-5" />
-            </button>
           </div>
         </header>
 
@@ -295,6 +294,11 @@ export default function DashboardPage() {
               Voir le programme
             </button>
           </article>
+        </section>
+
+        {/* Badges Section */}
+        <section className="mt-8">
+          <BadgesCollection userId={user.id} />
         </section>
     </div>
   );

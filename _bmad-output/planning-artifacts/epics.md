@@ -29,17 +29,6 @@ FR14: Édition Markdown : Interface d'édition avec Split View et synchronisatio
 FR15: Modération assistée par IA ("Janitor" local) des commentaires.
 FR16: Notifications de rappel et de réponses (Push/In-app).
 
-### NonFunctional Requirements
-
-NFR1: Chargement initial instantané (Contenu HTML natif).
-NFR2: Réactivité : Navigation interne instantanée (< 100ms).
-NFR3: Disponibilité : 99.9% durant le rush de Mai.
-NFR4: Sécurité : RLS strict sur le contenu Markdown.
-NFR5: Protection : Accès contrôlé par abonnement/crédits.
-NFR6: Accessibilité : Support LaTeX (KaTeX) pour les formules.
-NFR7: PWA Resilience : Offline First (Cache local du texte).
-NFR8: Cost Efficiency : 100% de précision AI via contexte texte pur.
-
 ## Epic List
 
 ### Epic 1: Fondation & Accès "Trust-First"
@@ -55,8 +44,8 @@ Interface de lecture HTML et tutorat IA basé sur le texte structuré.
 **Status:** Completed
 
 ### Epic 4: Ligue Grit & Gamification
-Valoriser l'effort et la régularité via le Grit Score.
-**Status:** In Progress
+Valoriser l'effort et la régularité via le Grit Score et les récompenses.
+**Status:** Completed
 
 ### Epic 5: Gestion du Savoir (Admin & Editor)
 Interface d'édition Markdown professionnelle pour les contributeurs.
@@ -64,31 +53,27 @@ Interface d'édition Markdown professionnelle pour les contributeurs.
 
 ---
 
-## Epic 1: Fondation & Accès "Trust-First"
+## Epic 4: Ligue Grit & Gamification
 
-### Story 1.1: Initialisation du Projet & PWA
+### Story 4.1: Moteur de Score Grit
 Status: Completed
-As a Développeur, I want initialiser le projet avec Next.js 16+, Tailwind 4 et Supabase.
+As a Système, I want calculer des points basés sur le temps de lecture et l'interaction IA.
 
-### Story 1.4: Paiement "Confiance" (Optimistic UI)
+### Story 4.2: Visualisation de Progression
 Status: Completed
-As a Élève, I want saisir mon code Mobile Money et accéder immédiatement au contenu.
+As a Élève, I want voir mes gains de points s'animer en temps réel sur mon Dashboard.
 
----
-
-## Epic 3: Zen Reader & Socratic AI (Markdown)
-
-### Story 3.1: Lecteur Zen HTML
+### Story 4.3: Système de Badges et Succès
 Status: Completed
-As a Élève, I want lire mon sujet dans une interface HTML épurée avec support mathématique.
+As a Élève, I want débloquer des trophées visuels (ex: Oiseau de Nuit, Pionnier).
 
-### Story 3.2: Sidekick IA Contextuel
+### Story 4.4: Notifications de Rétention
 Status: Completed
-As a Élève, I want poser des questions à l'IA qui connaît déjà le texte de mon sujet.
+As a Élève, I want recevoir des messages motivants pour maintenir mon effort.
 
-### Story 3.4: Cache Sémantique Intelligent
+### Story 4.5: Classement National (Leaderboard)
 Status: Completed
-As a Développeur, I want que les réponses de l'IA soient mises en cache dans Redis (Upstash).
+As a Élève, I want voir ma position dans la ligue par rapport aux autres apprenants.
 
 ---
 

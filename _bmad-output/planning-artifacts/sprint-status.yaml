@@ -62,11 +62,12 @@ development_status:
   3-4-cache-semantique-intelligent: done
   epic-3-retrospective: optional
 
-  epic-4: backlog
-  4-1-algorithme-du-grit-score: backlog
-  4-2-visualisation-de-progression-grit-ring: backlog
-  4-4-notifications-de-retention: backlog
-  4-5-classement-des-ligues-anonymise: backlog
+  epic-4: done
+  4-1-algorithme-du-grit-score: done
+  4-2-visualisation-de-progression-grit-ring: done
+  4-3-badges-succes-symboliques: done
+  4-4-notifications-de-retention: done
+  4-5-classement-des-ligues-anonymise: done
   epic-4-retrospective: optional
 
   epic-5: backlog

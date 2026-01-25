@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Award, Star, TrendingUp } from "lucide-react";
+import { Award, Star, TrendingUp, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 interface GritScoreCardProps {
   initialScore: number;
@@ -74,17 +75,13 @@ export function GritScoreCard({ initialScore, userId }: GritScoreCardProps) {
           <Award className="w-3.5 h-3.5" />
           Grit Score
         </span>
-        <div className="flex items-center gap-0.5">
-          {[1, 2, 3, 4, 5].map((i) => {
-            const isFilled = displayScore > (i * 100); // Simple logic: 1 star every 100 points
-            return (
-              <Star 
-                key={i} 
-                className={`w-4 h-4 ${isFilled ? "text-amber-500 fill-amber-500" : "text-slate-200"}`} 
-              />
-            );
-          })}
-        </div>
+        <Link 
+          href="/dashboard/league"
+          className="text-[10px] font-bold text-amber-600 hover:text-amber-700 uppercase tracking-tighter flex items-center gap-1 bg-white/50 px-2 py-1 rounded-lg border border-amber-100 transition-colors"
+        >
+          Voir le classement
+          <ChevronRight className="w-3 h-3" />
+        </Link>
       </div>
 
       <div className="flex-1 flex items-center justify-center relative z-10">
