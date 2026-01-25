@@ -40,11 +40,9 @@ export interface Subject {
   serie: string | null;
   niveau: string | null;
 
-  // PDF Storage
-  pdf_url: string;
-  pdf_storage_path: string | null;
-  pdf_size_bytes: number | null;
-  page_count: number | null;
+  // Content (Markdown/HTML)
+  content_markdown: string;
+  content_html: string | null;
 
   // Thumbnail/Preview
   thumbnail_url: string | null;

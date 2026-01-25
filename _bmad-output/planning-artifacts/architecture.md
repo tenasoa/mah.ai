@@ -33,34 +33,31 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 **Functional Requirements:**
 Architecture must support a **Mobile-First PWA** focused on high-stakes exam preparation.
-- **Core Loop:** "Socratic" AI interaction overlaying PDF content. The AI acts as a tutor, not an answering machine.
-- **Access Control:** "Freemium" model with a unique "Trust-based" manual payment flow to eliminate transaction friction.
-- **Gamification:** Dual tracking system (Performance vs. Grit) requiring persistent state tracking across sessions.
-- **Content Security:** Dynamic watermarking to discourage sharing, handled at the presentation layer.
+- **Core Loop:** "Socratic" AI interaction using Markdown content as context.
+- **Content:** Pure Markdown/HTML architecture. Unified editor with Split View and real-time preview.
+- **Access Control:** "Freemium" model with a unique "Trust-based" manual payment flow. Admins have unlimited bypass.
+- **Gamification:** Grit Score persistent tracking across sessions.
 
 **Non-Functional Requirements:**
-- **Performance (Critical):** strict budget of < 500KB initial load and < 2s TTI on 3G networks.
-- **Cost Efficiency:** AI Architecture must prioritize caching (Semantic Cache) to maintain margin.
-- **Resilience:** System must degrade gracefully on unstable connections (Optimistic UI updates).
-- **Security:** Lightweight DRM (Signed URLs + Watermarking) balanced against performance.
+- **Performance:** Native HTML rendering (zero PDF overhead).
+- **Cost Efficiency:** Socratic AI context optimization via Markdown.
+- **Resilience:** Synchronized scroll and state recovery in the editor.
+- **Security:** RLS-based content protection.
 
 **Scale & Complexity:**
-- **Primary Domain:** EdTech SaaS (B2C).
-- **Complexity Level:** Medium. High constraint environment (Network/Device) increases engineering complexity despite simple feature set.
-- **Estimated Architectural Components:** ~12-15 Core Services (Auth, Payment State Machine, AI Gateway/Cache, PDF Service, User Progression, Admin/Moderation).
+- **Estimated Architectural Components:** ~10-12 Core Services (Auth, Payment, AI Gateway, Markdown Editor, User Progression, Admin).
 
 ### Technical Constraints & Dependencies
 
-- **Stack:** Defined as Next.js (React).
-- **Network:** Must assume high latency / packet loss (3G Madagascar).
-- **Budget:** Strict optimization of Compute and Token usage required.
-- **Payment:** Dependency on manual verification processes (Human-in-the-loop).
+- **Stack:** Next.js 16 (App Router) + Tailwind 4.
+- **Format:** Markdown (GFM) + LaTeX (KaTeX).
+- **Payment:** Manual Mobile Money verification.
 
 ### Cross-Cutting Concerns Identified
 
-1.  **Semantic Caching:** A unified layer to intercept AI requests and serve cached responses for cost/speed.
-2.  **Optimistic State Management:** For payment "trust" access and weak connections.
-3.  **Observability:** Tracking the "Trust Gap" (Fraud rate on immediate access) and AI pedagogical quality.
+1.  **AI Context Injection:** Automatic injection of subject text into AI prompts.
+2.  **Synchronized Scrolling:** UX pattern for the side-by-side editor.
+3.  **Role-Based Access:** Admin privileges for content creation.
 
 ## Starter Template Evaluation
 

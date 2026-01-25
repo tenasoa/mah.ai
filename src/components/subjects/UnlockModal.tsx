@@ -42,7 +42,7 @@ export function UnlockModal({
     setError(null);
 
     try {
-      const result = await unlockSubject(subjectId, creditCost);
+      const result = await unlockSubject(subjectId);
 
       if (result.success) {
         setSuccess(true);

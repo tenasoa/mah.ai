@@ -55,10 +55,10 @@ development_status:
   2-4-systeme-de-credits-deblocage: review
   epic-2-retrospective: optional
 
-  epic-3: backlog
-  3-1-visionneuse-pdf-zen: backlog
-  3-2-interaction-click-to-ask: backlog
-  3-3-tuteur-ia-socratique: backlog
+  epic-3: in-progress
+  3-1-visionneuse-pdf-zen: done
+  3-2-interaction-click-to-ask: done
+  3-3-tuteur-ia-socratique: done
   3-4-cache-semantique-intelligent: backlog
   epic-3-retrospective: optional
 

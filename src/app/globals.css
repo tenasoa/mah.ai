@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
     --font-outfit: "Outfit", sans-serif;
@@ -81,6 +82,24 @@ body {
 /* Typography */
 .font-outfit {
     font-family: var(--font-outfit);
+}
+
+.prose {
+    --tw-prose-headings: var(--foreground);
+    --tw-prose-body: var(--foreground);
+    --tw-prose-bold: var(--foreground);
+    --tw-prose-links: #6366f1;
+    --tw-prose-code: #8b5cf6;
+}
+
+.prose h1, .prose h2, .prose h3 {
+    font-family: var(--font-outfit);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+}
+
+.prose p {
+    line-height: 1.8;
 }
 
 .font-mono {
@@ -485,6 +504,28 @@ body {
 }
 
 /* Utilities */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+    border: 1px solid transparent;
+    background-clip: content-box;
+}
+
 .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;

@@ -8,6 +8,7 @@ import { SubjectReader } from "@/components/subjects/SubjectReader";
 
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
 const fallbackPreviewLines = [
@@ -123,8 +124,9 @@ export async function generateMetadata({
 
 export const dynamic = "force-dynamic";
 
-export default async function SubjectDetailPage({ params }: PageProps) {
+export default async function SubjectDetailPage({ params, searchParams }: PageProps) {
   const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
   const { data, error } = await getSubjectById(resolvedParams.id);
 
   if (error && error === "Sujet non trouvé") {
@@ -149,36 +151,14 @@ export default async function SubjectDetailPage({ params }: PageProps) {
   }
 
   if (data.has_access) {
-    const resolvedPdfUrl =
-      data.pdf_url && (data.pdf_url.startsWith("http://") || data.pdf_url.startsWith("https://"))
-        ? data.pdf_url
-        : null;
-    if (!resolvedPdfUrl) {
-      return (
-        <div className="min-h-[60vh] flex items-center justify-center bg-slate-50 text-slate-900">
-          <div className="max-w-md text-center mah-card">
-            <h1 className="text-2xl font-bold mb-2">PDF indisponible</h1>
-            <p className="text-slate-500 mb-6">
-              Le fichier n&apos;est pas encore disponible pour ce sujet. Reviens un peu plus tard.
-            </p>
-            <Link
-              href="/subjects"
-              className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800"
-            >
-              Retour aux sujets
-            </Link>
-          </div>
-        </div>
-      );
-    }
-
     return (
       <div className="w-full">
         <SubjectReader
           subjectId={data.id}
-          pdfUrl={resolvedPdfUrl}
           title={data.matiere_display}
           subtitle={`${EXAM_TYPE_LABELS[data.exam_type]} ${data.year}${data.serie ? ` • Série ${data.serie}` : ""}`}
+          initialContent={data.content_markdown}
+          forceEdit={resolvedSearchParams.edit === 'true'}
         />
       </div>
     );

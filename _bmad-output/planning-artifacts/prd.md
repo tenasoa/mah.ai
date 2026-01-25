@@ -119,10 +119,10 @@ Notre priorité absolue est d'être prêt pour le **Rush de Mai 2026**. Nous ado
 - **FR4:** Recherche/Filtrage (Année, Série, Matière).
 - **FR5:** "Teaser" Hybride : Aperçu flouté avec 3 premières questions claires (SEO).
 - **FR6:** Déblocage de sujet à l'unité ou activation de Pass Temps.
-- **FR7:** Visionneuse PDF Mobile (Zoom, Scroll fluide).
+- **FR7:** Lecteur Zen HTML : Affichage natif et responsive du contenu Markdown.
 
 ### IA & Pédagogie ("Sujet Vivant")
-- **FR8:** Fil de discussion contextuel par question (click-to-ask).
+- **FR8:** Assistant Contextuel : L'IA analyse le texte Markdown du sujet pour répondre.
 - **FR9:** IA Socratique : Fournit guide/indice, refuse la réponse directe immédiate.
 - **FR10:** Attribution de "Points de Mérite" (Grit Score) pour l'effort.
 
@@ -132,7 +132,7 @@ Notre priorité absolue est d'être prêt pour le **Rush de Mai 2026**. Nous ado
 - **FR13:** Validation/Révocation a posteriori par admin/script.
 
 ### Administration & Qualité
-- **FR14:** Upload et indexation PDF par l'admin.
+- **FR14:** Édition Markdown : Interface d'édition avec Split View (Aperçu en temps réel).
 - **FR15:** Modération assistée par IA ("Janitor" local) des commentaires.
 - **FR16:** Notifications de rappel et de réponses (Rétention).
 

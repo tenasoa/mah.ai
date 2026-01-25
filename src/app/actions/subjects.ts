@@ -67,8 +67,7 @@ export async function getSubjects(params: GetSubjectsParams = {}): Promise<{
         serie,
         niveau,
         thumbnail_url,
-        pdf_url,
-        pdf_storage_path,
+        content_markdown,
         is_free,
         credit_cost,
         view_count
@@ -351,22 +350,6 @@ export async function getSubjectById(id: string): Promise<{
 }> {
   const supabase = await createClient();
 
-  const resolveSignedPdfUrl = async (path: string) => {
-    const normalizedPath = path.replace(/^\/+/, "");
-    const parts = normalizedPath.split("/");
-    const bucketCandidates = ["subjects", "subjets"];
-    const bucketFromPath = bucketCandidates.includes(parts[0]) ? parts[0] : null;
-    const bucket = bucketFromPath || process.env.NEXT_PUBLIC_SUBJECTS_BUCKET || "subjects";
-    const objectPath = bucketFromPath ? parts.slice(1).join("/") : normalizedPath;
-
-    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(objectPath, 60 * 60);
-    if (error || !data?.signedUrl) {
-      console.error("❌ Error creating signed PDF URL:", error);
-      return null;
-    }
-    return data.signedUrl;
-  };
-
   try {
     const { data: subject, error } = await supabase
       .from('subjects')
@@ -389,27 +372,30 @@ export async function getSubjectById(id: string): Promise<{
     let hasAccess = subject.is_free;
     let accessExpiresAt: string | null = null;
 
-    if (user && !subject.is_free) {
-      const { data: accessData } = await supabase
-        .from('user_subject_access')
-        .select('expires_at')
-        .eq('user_id', user.id)
-        .eq('subject_id', id)
-        .or('expires_at.is.null,expires_at.gt.now()')
-        .maybeSingle();
-
-      if (accessData) {
+    if (user) {
+      // 1. Check if user is admin (Automatic access)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile?.role === 'admin') {
         hasAccess = true;
-        accessExpiresAt = accessData.expires_at;
-      }
-    }
+      } 
+      // 2. Check regular access if not admin and not free
+      else if (!subject.is_free) {
+        const { data: accessData } = await supabase
+          .from('user_subject_access')
+          .select('expires_at')
+          .eq('user_id', user.id)
+          .eq('subject_id', id)
+          .or('expires_at.is.null,expires_at.gt.now()')
+          .maybeSingle();
 
-    if (hasAccess) {
-      const rawPath = subject.pdf_storage_path || subject.pdf_url;
-      if (rawPath && !rawPath.startsWith("http://") && !rawPath.startsWith("https://")) {
-        const signedUrl = await resolveSignedPdfUrl(rawPath);
-        if (signedUrl) {
-          subject.pdf_url = signedUrl;
+        if (accessData) {
+          hasAccess = true;
+          accessExpiresAt = accessData.expires_at;
         }
       }
     }
@@ -460,5 +446,110 @@ export async function getSubjectById(id: string): Promise<{
   } catch (err) {
     console.error('Error in getSubjectById:', err);
     return { data: null, error: 'Erreur lors du chargement du sujet' };
+  }
+}
+
+// =====================================================
+// Update Subject Content
+// =====================================================
+
+export async function saveSubjectMarkdown(
+  id: string,
+  content: string
+): Promise<{ success: boolean; error: string | null }> {
+  const supabase = await createClient();
+
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Authentification requise' };
+    }
+
+    // Check if user is admin
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile || profile.role !== 'admin') {
+      // Pour l'instant on limite aux admins, mais on pourrait ouvrir aux contributeurs
+      return { success: false, error: 'Permission refusée' };
+    }
+
+    const { error } = await supabase
+      .from('subjects')
+      .update({ content_markdown: content, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, error: null };
+  } catch (err) {
+    console.error('Error saving markdown:', err);
+    return { success: false, error: 'Erreur lors de la sauvegarde' };
+  }
+}
+
+// =====================================================
+// Create New Subject
+// =====================================================
+
+export async function createSubject(params: {
+  title: string;
+  exam_type: ExamType;
+  year: number;
+  matiere: string;
+  matiere_display: string;
+  serie?: string;
+  niveau?: string;
+  is_free?: boolean;
+  credit_cost?: number;
+}): Promise<{ data: Subject | null; error: string | null }> {
+  const supabase = await createClient();
+
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { data: null, error: 'Authentification requise' };
+    }
+
+    // Check admin
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.role !== 'admin') {
+      return { data: null, error: 'Permission refusée' };
+    }
+
+    const { data, error } = await supabase
+      .from('subjects')
+      .insert({
+        ...params,
+        status: 'published', // Direct publication for now
+        uploaded_by: user.id,
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      return { data: null, error: error.message };
+    }
+
+    return { data, error: null };
+  } catch (err) {
+    console.error('Error creating subject:', err);
+    return { data: null, error: 'Erreur lors de la création' };
   }
 }
