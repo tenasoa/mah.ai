@@ -103,6 +103,12 @@ export function SubjectReader({
     userRoles.includes("superadmin") ||
     userRoles.includes("validator");
 
+  const showToast = (message: string, tone: "success" | "error" = "success") => {
+    setToastTone(tone);
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   const handleStatusUpdate = async (status: SubjectStatus) => {
     setIsValidating(true);
     try {
@@ -657,6 +663,7 @@ export function SubjectReader({
           onOpenResolver={handleOpenResolver}
           onOpenAIResponse={handleOpenAIResponse}
           onOpenSocratic={() => setShowSocraticModal(true)}
+          onFlashMessage={showToast}
         />
       )}
 
