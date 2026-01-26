@@ -125,6 +125,13 @@ export async function rejectPayment(paymentId: string) {
 
   const { error } = await supabase
     .from("payments")
+    .update({ status: "rejected" })
+    .eq("id", paymentId);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
   revalidatePath("/admin/payments");
   return { success: true };
 }

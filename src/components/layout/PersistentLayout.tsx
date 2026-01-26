@@ -38,7 +38,7 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
         // Fetch profile data
         const { data: profile } = await supabase
           .from("profiles")
-          .select("pseudo, etablissement, classe, roles")
+          .select("pseudo, etablissement, classe, roles, avatar_url")
           .eq("id", authUser.id)
           .single();
 
@@ -50,6 +50,7 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
               `${profile.classe || ""} • ${profile.etablissement || ""}`
                 .trim()
                 .replace(/^• |• $/g, "") || "Profil incomplet",
+            avatarUrl: profile.avatar_url || undefined,
           });
         }
       } catch (error) {
@@ -60,7 +61,7 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
     }
 
     loadUserProfile();
-  }, [supabase]);
+  }, [pathname]);
 
   const isAdmin = roles.includes('admin') || roles.includes('superadmin') || roles.includes('validator');
   

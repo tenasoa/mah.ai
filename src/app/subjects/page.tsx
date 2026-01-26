@@ -266,8 +266,10 @@ async function FilterBarWrapper({
 export default async function SubjectsPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const resolvedSearchParams = await searchParams;
+
   return (
     <>
       {/* Header */}
@@ -301,7 +303,7 @@ export default async function SubjectsPage({
             </div>
           }
         >
-          <FilterBarWrapper searchParams={searchParams} />
+          <FilterBarWrapper searchParams={resolvedSearchParams} />
         </Suspense>
       </header>
 
@@ -320,7 +322,7 @@ export default async function SubjectsPage({
           </div>
         }
       >
-        <SubjectsGrid searchParams={searchParams} />
+        <SubjectsGrid searchParams={resolvedSearchParams} />
       </Suspense>
     </>
   );

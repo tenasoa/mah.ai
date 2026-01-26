@@ -2,7 +2,7 @@
 
 import { Search, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, transition, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useEffect } from "react";
 

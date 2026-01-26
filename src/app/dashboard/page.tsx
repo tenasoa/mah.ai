@@ -22,6 +22,7 @@ import {
 import { GritScoreCard } from '@/components/dashboard/GritScoreCard';
 import { BadgesCollection } from '@/components/dashboard/BadgesCollection';
 import { NotificationBell } from '@/components/dashboard/NotificationBell';
+import { getDashboardStats, type DashboardStats } from '@/app/actions/dashboard';
 
 type Profile = {
   pseudo: string;
@@ -61,15 +62,10 @@ const subjects = [
   },
 ];
 
-const quickStats = [
-  { label: 'Exercices', value: '24', icon: Target, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-  { label: 'Streak', value: '12j', icon: Flame, color: 'text-amber-500', bg: 'bg-amber-50' },
-  { label: 'Rang', value: '#42', icon: TrendingUp, color: 'text-pink-500', bg: 'bg-pink-50' },
-];
-
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
@@ -91,13 +87,17 @@ export default function DashboardPage() {
 
     setUser(user);
 
-    const { data: profiles, error } = await supabase
-      .from('profiles')
-      .select('pseudo, etablissement, filiere, classe, grit_score')
-      .eq('id', user.id)
-      .single();
+    const [profileRes, statsRes] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('pseudo, etablissement, filiere, classe, grit_score')
+        .eq('id', user.id)
+        .single(),
+      getDashboardStats()
+    ]);
 
-    if (!error && profiles) {
+    if (!profileRes.error && profileRes.data) {
+      const profiles = profileRes.data;
       const profileData: Profile = {
         pseudo: profiles.pseudo || '',
         etablissement: profiles.etablissement || '',
@@ -108,6 +108,7 @@ export default function DashboardPage() {
       setProfile(profileData);
     }
 
+    setStats(statsRes);
     setLoading(false);
   }
 
@@ -134,6 +135,12 @@ export default function DashboardPage() {
     return 'Bonsoir';
   };
 
+  const quickStats = [
+    { label: 'Exercices', value: stats?.exercises_count.toString() || '0', icon: Target, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { label: 'Streak', value: `${stats?.streak_days || 0}j`, icon: Flame, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { label: 'Rang', value: `#${stats?.rank || '-'}`, icon: TrendingUp, color: 'text-pink-500', bg: 'bg-pink-50' },
+  ];
+
   return (
     <div className="w-full">
         {/* Header */}
@@ -152,16 +159,29 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Search & Actions */}
-          <div className="flex items-center gap-3 animate-slide-up stagger-1">
-            <div className="relative group flex-1 lg:flex-none">
+          {/* Search & Stats */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 animate-slide-up stagger-1">
+            {/* Quick Stats */}
+            <div className="flex items-center gap-2">
+              {quickStats.map((stat) => (
+                <div key={stat.label} className={`flex items-center gap-2 px-3 py-2 rounded-xl ${stat.bg} border border-slate-100`}>
+                  <stat.icon className={`w-4 h-4 ${stat.color}`} />
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">{stat.label}</span>
+                    <span className="text-sm font-black text-slate-700 leading-none">{stat.value}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="relative group flex-1 lg:flex-none w-full sm:w-auto">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-amber-500 transition-colors" />
               <input
                 type="text"
                 placeholder="Rechercher..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full lg:w-[280px] pl-11 pr-4 py-3 rounded-xl bg-white border border-slate-200 text-sm text-slate-700 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100 transition-all duration-200"
+                className="w-full lg:w-[240px] pl-11 pr-4 py-3 rounded-xl bg-white border border-slate-200 text-sm text-slate-700 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100 transition-all duration-200 shadow-sm"
               />
             </div>
           </div>
@@ -171,7 +191,7 @@ export default function DashboardPage() {
         <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 auto-rows-[180px] gap-4 lg:gap-5">
 
           {/* Grit Score Card */}
-          <GritScoreCard initialScore={profile.grit_score} userId={user.id} />
+          <GritScoreCard initialScore={profile.grit_score} userId={user.id} rank={stats?.rank} />
 
           {/* Document Preview Card */}
           <article className="sm:col-span-2 sm:row-span-2 mah-card p-0 overflow-hidden animate-scale-in stagger-1">

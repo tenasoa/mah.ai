@@ -10,6 +10,7 @@ export type ExamType =
   | 'baccalaureat'
   | 'licence'
   | 'master'
+  | 'doctorat'
   | 'dts'
   | 'bts'
   | 'concours'
@@ -115,6 +116,7 @@ export interface SubjectCard {
   credit_cost: number;
   view_count: number;
   has_access?: boolean;
+  status?: SubjectStatus;
 }
 
 // =====================================================

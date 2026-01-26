@@ -8,9 +8,10 @@ import Link from "next/link";
 interface GritScoreCardProps {
   initialScore: number;
   userId: string;
+  rank?: number;
 }
 
-export function GritScoreCard({ initialScore, userId }: GritScoreCardProps) {
+export function GritScoreCard({ initialScore, userId, rank }: GritScoreCardProps) {
   const [score, setScore] = useState(initialScore);
   const [displayScore, setDisplayScore] = useState(0);
   const supabase = createClient();
@@ -111,7 +112,7 @@ export function GritScoreCard({ initialScore, userId }: GritScoreCardProps) {
           <p className="text-[10px] text-slate-500 uppercase tracking-wider">Ce mois</p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-bold text-slate-900">#{Math.max(1, 100 - Math.floor(displayScore / 10))}</p>
+          <p className="text-lg font-bold text-slate-900">#{rank || '-'}</p>
           <p className="text-[10px] text-slate-500 uppercase tracking-wider">Rang</p>
         </div>
       </div>

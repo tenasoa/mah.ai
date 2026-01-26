@@ -12,7 +12,8 @@ import {
   RotateCcw,
   Trash2,
   Filter,
-  Eye
+  Eye,
+  FileText
 } from 'lucide-react';
 import { AdminSidebarWrapper } from '@/components/layout/AdminSidebarWrapper';
 import Link from 'next/link';
@@ -32,7 +33,7 @@ export default async function AdminSubjectsPage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('roles, pseudo')
+    .select('roles, pseudo, avatar_url')
     .eq('id', user.id)
     .single();
 
@@ -57,6 +58,7 @@ export default async function AdminSubjectsPage({
   const adminUser = {
     name: profile?.pseudo || 'Admin',
     subtitle: 'Administrateur',
+    avatarUrl: profile?.avatar_url || undefined,
   };
 
   const getStatusBadge = (status: string) => {

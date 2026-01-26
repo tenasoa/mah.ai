@@ -20,7 +20,7 @@ export default async function AdminAnalyticsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, pseudo')
+    .select('role, pseudo, avatar_url')
     .eq('id', user.id)
     .single();
 
@@ -31,6 +31,7 @@ export default async function AdminAnalyticsPage() {
   const adminUser = {
     name: profile?.pseudo || 'Admin',
     subtitle: 'Administrateur',
+    avatarUrl: profile?.avatar_url || undefined,
   };
 
   return (

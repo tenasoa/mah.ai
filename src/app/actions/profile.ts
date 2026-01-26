@@ -6,11 +6,20 @@ import { UserRole } from '@/lib/types/user';
 
 interface UpdateProfileParams {
   pseudo?: string;
+  full_name?: string;
   bio?: string;
   education_level?: string;
   filiere?: string;
   etablissement?: string;
+  classe?: string;
+  birth_date?: string;
+  address?: string;
+  country?: string;
+  learning_goals?: string[];
+  interests?: string[];
   avatar_url?: string;
+  cover_url?: string;
+  privacy_settings?: any;
 }
 
 export async function getMyProfile() {
@@ -24,6 +33,11 @@ export async function getMyProfile() {
     .select('*')
     .eq('id', user.id)
     .single();
+
+  if (data) {
+    // Inject email from auth user
+    data.email = user.email;
+  }
 
   return { data, error };
 }
@@ -50,6 +64,21 @@ export async function updateProfile(params: UpdateProfileParams) {
   revalidatePath('/dashboard');
   revalidatePath('/profile');
   return { success: true };
+}
+
+export async function getPurchaseHistory() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { data: [], error: 'auth_required' };
+
+  const { data, error } = await supabase
+    .from('credit_purchases')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  return { data: data || [], error };
 }
 
 /**

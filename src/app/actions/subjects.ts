@@ -11,6 +11,7 @@ import type {
   SubjectWithAccess,
   SubjectMetadata,
   ExamType,
+  SubjectStatus,
 } from '@/lib/types/subject';
 
 // =====================================================

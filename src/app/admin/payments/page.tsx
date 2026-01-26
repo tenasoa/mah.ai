@@ -15,7 +15,7 @@ export default async function AdminPaymentsPage() {
   // Double check admin access on page load
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, pseudo, etablissement, classe')
+    .select('role, pseudo, etablissement, classe, avatar_url')
     .eq('id', user.id)
     .single();
 
@@ -37,6 +37,7 @@ export default async function AdminPaymentsPage() {
   const adminUser = {
     name: profile?.pseudo || 'Admin',
     subtitle: 'Administrateur',
+    avatarUrl: profile?.avatar_url || undefined,
   };
 
   return (
