@@ -78,7 +78,7 @@ describe('UnlockModal', () => {
     expect(screen.getByText('Traitement...')).toBeInTheDocument();
     
     await waitFor(() => {
-      expect(unlockSubject).toHaveBeenCalledWith('sub-1', 10);
+      expect(unlockSubject).toHaveBeenCalledWith('sub-1');
       expect(screen.getByText('Sujet débloqué !')).toBeInTheDocument();
     });
 

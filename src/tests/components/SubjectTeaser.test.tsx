@@ -11,6 +11,17 @@ vi.mock('@/app/actions/teaser', () => ({
   recordTeaserCTA: vi.fn().mockResolvedValue({ success: true }),
 }));
 
+vi.mock('@/app/actions/credits', () => ({
+  getCreditBalance: vi.fn().mockResolvedValue(null),
+}));
+
+// Mock router
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+  }),
+}));
+
 // Mock Lucide icons
 vi.mock('lucide-react', () => ({
   Lock: () => <span data-testid="lock-icon">Lock</span>,

@@ -1,35 +1,44 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { askSocraticTutor, getSocraticHistory } from '@/app/actions/socratic';
 import { createClient } from '@/lib/supabase/server';
-
-// Mock OpenAI
-vi.mock('openai', () => ({
-  default: class MockOpenAI {
-    constructor() {}
-    chat = {
-      completions: {
-        create: vi.fn().mockResolvedValue({
-          choices: [
-            {
-              message: {
-                content: 'Quelle piste de réflexion as-tu déjà explorée sur ce concept ?',
-              },
-            },
-          ],
-        }),
-      },
-    };
-  },
-}));
 
 // Mock Supabase
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }));
 
+vi.mock('@/lib/redis', () => ({
+  redis: {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue(null),
+  },
+  getCacheKey: vi.fn().mockReturnValue('cache-key'),
+}));
+
+vi.mock('@/app/actions/grit', () => ({
+  addGritPoints: vi.fn().mockResolvedValue({ success: true }),
+}));
+
 describe('Socratic Actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.PERPLEXITY_API_KEY = 'test-key';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              content: 'Quelle piste de réflexion as-tu déjà explorée sur ce concept ?',
+            },
+          },
+        ],
+      }),
+    }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   describe('askSocraticTutor', () => {
