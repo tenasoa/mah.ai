@@ -31,11 +31,17 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
     setLoading(true);
     setError(null);
 
+    if (!method) {
+      setError("Veuillez choisir un mode de paiement.");
+      setLoading(false);
+      return;
+    }
+
     const result = await submitCreditPurchase({
       amount,
       cost_mga: price,
       payment_method: method.toUpperCase(),
-      payment_reference: reference
+      payment_reference: reference,
     });
 
     if (result.success) {
