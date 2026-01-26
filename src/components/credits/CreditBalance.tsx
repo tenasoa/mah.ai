@@ -46,21 +46,14 @@ export function CreditBalance() {
   if (loading || balance === null) return null;
 
   return (
-    <div className="flex items-center gap-2 mr-4">
-      <div 
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200"
-        title="Votre solde de crédits"
-      >
-        <Coins className="w-4 h-4 text-amber-500 fill-amber-500" />
-        <span className="font-bold text-slate-700 font-mono">{balance}</span>
-      </div>
-      <Link
-        href="/credits" // We'll need a page to buy credits later
-        className="h-8 w-8 flex items-center justify-center rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-sm"
-        title="Recharger"
-      >
-        <Plus className="w-4 h-4" />
-      </Link>
-    </div>
+    <Link
+      href="/credits"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-200 hover:border-amber-300 hover:from-amber-50 hover:to-orange-50 transition-all duration-300 group shadow-sm hover:shadow-md cursor-pointer"
+      title="Solde de crédits - Cliquer pour recharger"
+    >
+      <Coins className="w-4 h-4 text-amber-500 fill-amber-500 group-hover:scale-110 transition-transform" />
+      <span className="font-bold text-slate-700 text-sm font-mono group-hover:text-amber-700 transition-colors">{balance}</span>
+      <Plus className="w-3 h-3 text-slate-400 group-hover:text-amber-600 group-hover:scale-110 transition-all" />
+    </Link>
   );
 }

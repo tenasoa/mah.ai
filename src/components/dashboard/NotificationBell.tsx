@@ -69,11 +69,11 @@ export function NotificationBell() {
     <div className="relative">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`p-3 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all relative ${isOpen ? "ring-4 ring-slate-100 border-slate-300" : ""}`}
+        className={`p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all relative cursor-pointer ${isOpen ? "ring-4 ring-slate-100 border-slate-300" : ""}`}
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="w-4.5 h-4.5" />
         {unreadCount > 0 && (
-          <span className="absolute top-2 right-2 w-4 h-4 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-bounce-soft border-2 border-white">
+          <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-bounce-soft border-2 border-white">
             {unreadCount}
           </span>
         )}

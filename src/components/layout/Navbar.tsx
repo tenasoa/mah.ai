@@ -56,7 +56,7 @@ export function Navbar({
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-16 max-w-8xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo */}
           <div className="flex-none w-32 sm:w-48 flex justify-start">
             <Link href="/" className="flex items-center gap-2 group">
@@ -105,7 +105,7 @@ export function Navbar({
           </nav>
 
           {/* Right Section: Profile & Mobile Toggle */}
-          <div className="flex-none w-32 sm:w-48 flex items-center justify-end gap-2 sm:gap-4">
+          <div className="flex-none w-40 sm:w-56 flex items-center justify-end gap-2 sm:gap-3">
             
             {/* Desktop Profile */}
             <div className="hidden md:flex items-center gap-2">
@@ -113,7 +113,7 @@ export function Navbar({
                 <>
                   <CreditBalance />
                   <NotificationBell />
-                  <div className="ml-2">
+                  <div className="ml-1">
                     <ProfileDropdown user={user} isExpanded={true} />
                   </div>
                 </>
