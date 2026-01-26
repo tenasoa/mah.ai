@@ -139,7 +139,8 @@ async function SubjectsGrid({
   const serie = searchParams.serie as string | undefined;
   const search = searchParams.q as string | undefined;
   const isFree = searchParams.free === 'true';
-  const page = searchParams.page ? parseInt(searchParams.page as string) : 1;
+  const limitParam = searchParams.limit as string | undefined;
+  const pageLimit = Math.max(1, Number(limitParam) || 25);
 
   // Fetch subjects
   const { data, error } = await getSubjects({
@@ -152,8 +153,8 @@ async function SubjectsGrid({
       is_free: isFree || undefined,
     },
     sort: { field: 'year', direction: 'desc' },
-    page,
-    limit: 12,
+    page: 1,
+    limit: pageLimit,
   });
 
   if (error) {
@@ -184,8 +185,8 @@ async function SubjectsGrid({
     );
   }
 
-  // Build pagination URL
-  const buildPageUrl = (newPage: number) => {
+  // Build load more URL
+  const buildLimitUrl = (newLimit: number) => {
     const params = new URLSearchParams();
     if (examType) params.set('type', examType);
     if (year) params.set('year', year.toString());
@@ -193,7 +194,7 @@ async function SubjectsGrid({
     if (serie) params.set('serie', serie);
     if (search) params.set('q', search);
     if (isFree) params.set('free', 'true');
-    if (newPage > 1) params.set('page', newPage.toString());
+    params.set('limit', newLimit.toString());
     const queryString = params.toString();
     return `/subjects${queryString ? `?${queryString}` : ''}`;
   };
@@ -223,29 +224,16 @@ async function SubjectsGrid({
         ))}
       </div>
 
-      {/* Pagination */}
-      {(data.has_more || page > 1) && (
-        <div className="mt-10 flex items-center justify-center gap-3">
-          {page > 1 && (
-            <Link
-              href={buildPageUrl(page - 1)}
-              className="px-5 py-2.5 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold hover:border-slate-300 hover:bg-slate-50 transition-all"
-            >
-              Précédent
-            </Link>
-          )}
-          <span className="px-4 py-2 text-sm text-slate-500">
-            Page {page}
-          </span>
-          {data.has_more && (
-            <Link
-              href={buildPageUrl(page + 1)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 hover:-translate-y-0.5 transition-all"
-            >
-              Suivant
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          )}
+      {/* Load more */}
+      {data.has_more && (
+        <div className="mt-10 flex items-center justify-center">
+          <Link
+            href={buildLimitUrl(pageLimit + 25)}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all"
+          >
+            Charger plus
+            <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
       )}
     </>

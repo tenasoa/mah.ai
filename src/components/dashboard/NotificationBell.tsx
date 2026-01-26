@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bell, X, Info, AlertTriangle, CheckCircle2, Sparkles, Trash2 } from "lucide-react";
-import { getNotifications, markNotificationAsRead, deleteNotification, type Notification } from "@/app/actions/notifications";
+import { markNotificationAsRead, deleteNotification, type Notification } from "@/app/actions/notifications";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
@@ -10,36 +10,113 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
-    loadNotifications();
+    let active = true;
 
-    // Real-time subscription for new notifications
+    supabase.auth.getUser().then(({ data }) => {
+      if (!active) return;
+      setUserId(data.user?.id ?? null);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!active) return;
+        setUserId(session?.user?.id ?? null);
+      },
+    );
+
+    return () => {
+      active = false;
+      authListener?.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!userId) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
+    loadNotifications(userId);
+
     const channel = supabase
-      .channel("new_notifications")
+      .channel("user_notifications")
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "notifications",
+          filter: `user_id=eq.${userId}`,
         },
-        () => {
-          loadNotifications();
-        }
+        (payload) => {
+          const newNotification = payload.new as Notification;
+          setNotifications((prev) => [newNotification, ...prev].slice(0, 20));
+          setUnreadCount((prev) => prev + 1);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const updated = payload.new as Notification;
+          setNotifications((prev) => {
+            const next = prev.map((item) =>
+              item.id === updated.id ? updated : item,
+            );
+            setUnreadCount(next.filter((n) => !n.is_read).length);
+            return next;
+          });
+        },
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [userId]);
 
-  async function loadNotifications() {
-    const data = await getNotifications();
-    setNotifications(data);
-    setUnreadCount(data.filter(n => !n.is_read).length);
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      const target = event.target as Node;
+      if (!menuRef.current.contains(target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
+  async function loadNotifications(id: string) {
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (error) {
+      console.error("Error fetching notifications:", error);
+      return;
+    }
+
+    setNotifications(data || []);
+    setUnreadCount((data || []).filter((n) => !n.is_read).length);
   }
 
   const handleMarkAsRead = async (id: string) => {
@@ -51,9 +128,19 @@ export function NotificationBell() {
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
-    await deleteNotification(id);
-    setNotifications(prev => prev.filter(n => n.id !== id));
-    setUnreadCount(prev => notifications.find(n => n.id === id && !n.is_read) ? prev - 1 : prev);
+    setRemovingIds((prev) => new Set(prev).add(id));
+    setTimeout(async () => {
+      await deleteNotification(id);
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      setUnreadCount((prev) =>
+        notifications.find((n) => n.id === id && !n.is_read) ? prev - 1 : prev,
+      );
+      setRemovingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }, 200);
   };
 
   const getTypeIcon = (type: string) => {
@@ -66,9 +153,14 @@ export function NotificationBell() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={menuRef}>
       <button 
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          setIsOpen((prev) => !prev);
+          if (userId) {
+            loadNotifications(userId);
+          }
+        }}
         className={`p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all relative cursor-pointer ${isOpen ? "ring-4 ring-slate-100 border-slate-300" : ""}`}
       >
         <Bell className="w-4.5 h-4.5" />
@@ -81,8 +173,8 @@ export function NotificationBell() {
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden animate-scale-in">
+          <div className="fixed inset-0 z-[60]" />
+          <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-[70] overflow-hidden animate-scale-in">
             <div className="px-5 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
               <h3 className="font-bold text-slate-900 text-sm">Notifications</h3>
               <span className="text-[10px] font-bold text-slate-400 uppercase">{unreadCount} non lues</span>
@@ -102,7 +194,13 @@ export function NotificationBell() {
                     <div 
                       key={n.id}
                       onClick={() => handleMarkAsRead(n.id)}
-                      className={`group p-4 flex gap-4 cursor-pointer transition-colors ${!n.is_read ? "bg-blue-50/30" : "hover:bg-slate-50"}`}
+                      className={`group p-4 flex gap-4 cursor-pointer transition-all ${
+                        !n.is_read ? "bg-blue-50/30" : "hover:bg-slate-50"
+                      } ${
+                        removingIds.has(n.id)
+                          ? "opacity-0 -translate-x-3 scale-[0.98]"
+                          : "opacity-100 translate-x-0 scale-100"
+                      }`}
                     >
                       <div className="mt-1 flex-shrink-0">
                         {getTypeIcon(n.type)}

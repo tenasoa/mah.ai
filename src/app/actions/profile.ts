@@ -66,19 +66,20 @@ export async function updateProfile(params: UpdateProfileParams) {
   return { success: true };
 }
 
-export async function getPurchaseHistory() {
+export async function getPurchaseHistory(limit = 10) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) return { data: [], error: 'auth_required' };
+  if (!user) return { data: [], total: 0, error: 'auth_required' };
 
-  const { data, error } = await supabase
+  const { data, error, count } = await supabase
     .from('credit_purchases')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(0, Math.max(0, limit - 1));
 
-  return { data: data || [], error };
+  return { data: data || [], total: count || 0, error };
 }
 
 /**

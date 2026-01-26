@@ -1,16 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { 
-  X, 
-  Smartphone, 
-  CreditCard, 
-  CheckCircle2, 
-  Copy, 
-  Loader2, 
+import {
+  X,
+  Smartphone,
+  CheckCircle2,
+  Copy,
+  Loader2,
   AlertCircle,
   ArrowRight,
-  ShieldCheck
 } from "lucide-react";
 import { submitCreditPurchase } from "@/app/actions/credits";
 
@@ -30,18 +28,13 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
-    if (!reference || reference.length < 5) {
-      setError("Référence invalide (min. 5 caractères)");
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     const result = await submitCreditPurchase({
       amount,
       cost_mga: price,
-      payment_method: method?.toUpperCase() || 'MOBILE_MONEY',
+      payment_method: method.toUpperCase(),
       payment_reference: reference
     });
 
@@ -58,8 +51,14 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
     // Could add a toast here
   };
 
+  const paymentNumbers: Record<NonNullable<typeof method>, { display: string; raw: string }> = {
+    mvola: { display: "034 77 130 85", raw: "0347713085" },
+    orange: { display: "032 17 560 02", raw: "0321756002" },
+    airtel: { display: "034 00 000 00", raw: "0340000000" },
+  };
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-20 pb-6 px-4">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
@@ -67,7 +66,7 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
       />
 
       {/* Dialog */}
-      <div className="relative w-full max-w-md bg-white rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+      <div className="relative w-full max-w-md max-h-[calc(100vh-7rem)] bg-white rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
         
         {/* Header */}
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
@@ -83,7 +82,7 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto max-h-[calc(100vh-12rem)]">
           {/* Progress Dots */}
           {step !== 'success' && (
             <div className="flex gap-1.5 mb-6 justify-center">
@@ -149,9 +148,11 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
                 </p>
                 
                 <div className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between mb-4 shadow-inner">
-                  <span className="font-mono font-black text-lg text-slate-900 tracking-tighter">034 00 000 00</span>
+                  <span className="font-mono font-black text-lg text-slate-900 tracking-tighter">
+                    {method ? paymentNumbers[method].display : "—"}
+                  </span>
                   <button 
-                    onClick={() => copyToClipboard("0340000000")}
+                    onClick={() => method && copyToClipboard(paymentNumbers[method].raw)}
                     className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-indigo-600"
                   >
                     <Copy className="w-4 h-4" />
@@ -186,12 +187,11 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
 
               <div className="space-y-4">
                 <div className="relative group">
-                  <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within:text-amber-500 transition-colors" />
                   <input 
                     autoFocus
                     value={reference}
                     onChange={(e) => setReference(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-amber-400 focus:bg-white outline-none font-mono font-bold transition-all text-center tracking-widest"
+                    className="w-full px-4 py-4 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-amber-400 focus:bg-white outline-none font-mono font-bold transition-all text-center tracking-widest"
                     placeholder="Ex: 12345678"
                   />
                 </div>
@@ -206,7 +206,13 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
                   Retour
                 </button>
                 <button 
-                  onClick={handleSubmit}
+                  onClick={() => {
+                    if (!reference || reference.length < 5) {
+                      setError("Référence invalide (min. 5 caractères)");
+                      return;
+                    }
+                    handleSubmit();
+                  }}
                   disabled={loading}
                   className="flex-[2] py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-slate-900/20 hover:bg-emerald-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
@@ -227,9 +233,9 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
               </div>
               
               <div>
-                <h4 className="text-2xl font-black text-slate-900 tracking-tight">Demande enregistrée !</h4>
+                <h4 className="text-2xl font-black text-slate-900 tracking-tight">Merci, demande enregistrée !</h4>
                 <p className="text-slate-500 mt-3 leading-relaxed">
-                  Ton transfert est en cours de vérification par nos administrateurs. Tes crédits seront ajoutés à ton compte sous peu.
+                  Ton transfert est en cours de vérification par nos administrateurs. Tu seras notifié dès que l'achat sera validé. Utilise tes crédits avec modération.
                 </p>
               </div>
 
@@ -244,7 +250,9 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Référence</span>
-                  <span className="text-xs font-mono font-bold text-slate-700">{reference}</span>
+                  <span className="text-xs font-mono font-bold text-slate-700">
+                    {reference}
+                  </span>
                 </div>
               </div>
 

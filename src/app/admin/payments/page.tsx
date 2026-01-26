@@ -4,7 +4,11 @@ import { createClient } from '@/lib/supabase/server';
 import { AlertTriangle } from 'lucide-react';
 import { AdminSidebarWrapper } from '@/components/layout/AdminSidebarWrapper';
 
-export default async function AdminPaymentsPage() {
+export default async function AdminPaymentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ limit?: string }>;
+}) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -31,8 +35,10 @@ export default async function AdminPaymentsPage() {
     );
   }
 
-  const { payments, error } = await getPendingPayments();
-  const pendingCount = payments.length;
+  const { limit } = await searchParams;
+  const pendingLimit = Math.max(1, Number(limit) || 25);
+  const { payments, total, error } = await getPendingPayments(pendingLimit);
+  const pendingCount = total;
 
   const adminUser = {
     name: profile?.pseudo || 'Admin',
@@ -97,6 +103,9 @@ export default async function AdminPaymentsPage() {
                 <tr className="text-left border-b border-slate-200">
                   <th className="py-3 pr-4">Élève</th>
                   <th className="py-3 pr-4">Filière</th>
+                  <th className="py-3 pr-4">Opérateur</th>
+                  <th className="py-3 pr-4">Crédits</th>
+                  <th className="py-3 pr-4">Montant</th>
                   <th className="py-3 pr-4">Code</th>
                   <th className="py-3 pr-4">Date</th>
                   <th className="py-3 pr-4">Statut</th>
@@ -108,7 +117,10 @@ export default async function AdminPaymentsPage() {
                   <tr key={payment.id} className="border-b border-slate-200">
                     <td className="py-4 pr-4">{payment.profile?.pseudo || 'Utilisateur inconnu'}</td>
                     <td className="py-4 pr-4 text-slate-500">{payment.profile?.filiere || 'N/A'}</td>
-                    <td className="py-4 pr-4 font-mono">{payment.reference_code}</td>
+                    <td className="py-4 pr-4 text-slate-600 uppercase text-xs font-bold tracking-wide">{payment.payment_method}</td>
+                    <td className="py-4 pr-4 font-bold text-slate-900">{payment.amount}</td>
+                    <td className="py-4 pr-4 text-slate-700">{payment.cost_mga.toLocaleString('fr-MG')} Ar</td>
+                    <td className="py-4 pr-4 font-mono">{payment.payment_reference || 'Non fournie'}</td>
                     <td className="py-4 pr-4 text-slate-500">
                       {new Date(payment.created_at).toLocaleString('fr-MG')}
                     </td>
@@ -134,6 +146,16 @@ export default async function AdminPaymentsPage() {
           </div>
         )}
       </article>
+      {pendingCount > pendingLimit && (
+        <div className="mt-6 flex justify-center">
+          <a
+            href={`/admin/payments?limit=${pendingLimit + 25}`}
+            className="px-6 py-3 rounded-2xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all"
+          >
+            Charger plus
+          </a>
+        </div>
+      )}
     </AdminSidebarWrapper>
   );
 }

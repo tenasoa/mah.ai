@@ -11,21 +11,24 @@ export const dynamic = "force-dynamic";
 export default async function CreditsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; tx_limit?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { tab = 'packs' } = await searchParams;
+  const { tab = 'packs', tx_limit } = await searchParams;
+  const txLimit = Math.max(1, Number(tx_limit) || 10);
 
   if (!user) {
     redirect("/auth");
   }
 
-  const [balance, dbPrices, transactions] = await Promise.all([
+  const [balance, dbPrices, transactionsResult] = await Promise.all([
     getCreditBalance(),
     getCreditPrices(),
-    getTransactions()
+    getTransactions(txLimit)
   ]);
+  const transactions = transactionsResult.data;
+  const totalTransactions = transactionsResult.total;
 
   // Merge explicit defaults AFTER db prices to force update
   const prices = {
@@ -144,6 +147,16 @@ export default async function CreditsPage({
               <History className="w-5 h-5 text-slate-400" /> Mon Historique
             </h3>
             <TransactionHistory transactions={transactions} />
+            {totalTransactions > txLimit && (
+              <div className="mt-6 flex justify-center">
+                <a
+                  href={`/credits?tab=${tab}&tx_limit=${txLimit + 10}`}
+                  className="px-6 py-3 rounded-2xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all"
+                >
+                  Charger plus
+                </a>
+              </div>
+            )}
           </article>
         </div>
       </div>

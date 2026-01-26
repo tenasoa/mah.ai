@@ -31,16 +31,16 @@ async function checkAdmin() {
   };
 }
 
-export async function getAllUsers(search?: string) {
+export async function getAllUsers(search?: string, limit = 25) {
   const { supabase, isAdmin } = await checkAdmin();
   if (!isAdmin || !supabase) {
     console.error('getAllUsers: Access denied');
-    return { data: [], error: 'Accès refusé' };
+    return { data: [], total: 0, error: 'Accès refusé' };
   }
 
   let query = supabase
     .from('profiles')
-    .select('*');
+    .select('*', { count: 'exact' });
 
   if (search) {
     query = query.or(`pseudo.ilike.%${search}%,full_name.ilike.%${search}%`);
@@ -48,7 +48,7 @@ export async function getAllUsers(search?: string) {
 
   query = query.order('updated_at', { ascending: false });
 
-  const { data, error, status } = await query;
+  const { data, error, status, count } = await query.range(0, Math.max(0, limit - 1));
   
   if (error) {
     console.error('getAllUsers Full Error:', {
@@ -60,7 +60,7 @@ export async function getAllUsers(search?: string) {
     });
   }
   
-  return { data: (data as UserProfile[]) || [], error: error?.message || null };
+  return { data: (data as UserProfile[]) || [], total: count || 0, error: error?.message || null };
 }
 
 export async function updateUserRoles(userId: string, roles: UserRole[]) {

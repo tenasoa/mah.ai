@@ -45,15 +45,25 @@ export default async function AdminSubjectsPage({
   // Filtrage par statut et recherche depuis l'URL
   const currentStatus = resolvedSearchParams.status as SubjectStatus | undefined;
   const searchQuery = resolvedSearchParams.q as string | undefined;
+  const limitParam = resolvedSearchParams.limit as string | undefined;
+  const pageLimit = Math.max(1, Number(limitParam) || 25);
   
   const { data } = await getSubjects({ 
-    limit: 100,
+    limit: pageLimit,
     filters: {
       status: currentStatus || undefined,
       search: searchQuery || undefined
     }
   });
   let subjects = data?.subjects || [];
+  const buildLimitUrl = (newLimit: number) => {
+    const params = new URLSearchParams();
+    if (currentStatus) params.set('status', currentStatus);
+    if (searchQuery) params.set('q', searchQuery);
+    params.set('limit', newLimit.toString());
+    const query = params.toString();
+    return `/admin/subjects${query ? `?${query}` : ''}`;
+  };
 
   const adminUser = {
     name: profile?.pseudo || 'Admin',
@@ -201,7 +211,7 @@ export default async function AdminSubjectsPage({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-black text-slate-900">Gestion des Flux</h2>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{subjects.length} ressources trouvées</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{data?.total || subjects.length} ressources trouvées</p>
                 </div>
                 <AdminSubjectsSearch />
               </div>
@@ -309,6 +319,16 @@ export default async function AdminSubjectsPage({
               </div>
             )}
           </article>
+          {(data?.total || 0) > pageLimit && (
+            <div className="mt-6 flex justify-center">
+              <Link
+                href={buildLimitUrl(pageLimit + 25)}
+                className="px-6 py-3 rounded-2xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all"
+              >
+                Charger plus
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </AdminSidebarWrapper>

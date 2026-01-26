@@ -17,9 +17,10 @@ import { UserRole, ROLE_LABELS } from "@/lib/types/user";
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; limit?: string }>;
 }) {
-  const { q } = await searchParams;
+  const { q, limit } = await searchParams;
+  const pageLimit = Math.max(1, Number(limit) || 25);
   const supabase = await createClient();
   const { data: { user: authUser } } = await supabase.auth.getUser();
 
@@ -34,7 +35,7 @@ export default async function AdminUsersPage({
   const roles = (profile?.roles as string[]) || [];
   if (!roles.includes('admin') && !roles.includes('superadmin')) redirect('/dashboard');
 
-  const { data: users, error } = await getAllUsers(q);
+  const { data: users, total, error } = await getAllUsers(q, pageLimit);
 
   const adminUser = {
     name: profile?.pseudo || 'Admin',
@@ -129,6 +130,16 @@ export default async function AdminUsersPage({
             </div>
           )}
         </article>
+        {total > pageLimit && (
+          <div className="flex justify-center">
+            <a
+              href={`/admin/users${q ? `?q=${encodeURIComponent(q)}&limit=${pageLimit + 25}` : `?limit=${pageLimit + 25}`}`}
+              className="px-6 py-3 rounded-2xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all"
+            >
+              Charger plus
+            </a>
+          </div>
+        )}
       </div>
     </AdminSidebarWrapper>
   );

@@ -88,18 +88,19 @@ export async function consumeCredits(actionType: string, metadata: any = {}) {
 /**
  * Get user transaction history
  */
-export async function getTransactions() {
+export async function getTransactions(limit = 10) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
+  if (!user) return { data: [], total: 0 };
 
-  const { data } = await supabase
+  const { data, count } = await supabase
     .from('transactions')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(0, Math.max(0, limit - 1));
 
-  return data || [];
+  return { data: data || [], total: count || 0 };
 }
 
 /**
@@ -109,7 +110,7 @@ export async function submitCreditPurchase(params: {
   amount: number;
   cost_mga: number;
   payment_method: string;
-  payment_reference: string;
+  payment_reference?: string;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -122,7 +123,7 @@ export async function submitCreditPurchase(params: {
       amount: params.amount,
       cost_mga: params.cost_mga,
       payment_method: params.payment_method,
-      payment_reference: params.payment_reference,
+      payment_reference: params.payment_reference || null,
       status: 'pending'
     });
 

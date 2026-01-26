@@ -30,6 +30,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [purchaseHistory, setPurchaseHistory] = useState<any[]>([]);
+  const [purchaseTotal, setPurchaseTotal] = useState(0);
+  const [purchaseLimit, setPurchaseLimit] = useState(10);
   const [isEditing, setIsEditing] = useState(false);
   const router = useRouter();
   const supabase = createClient();
@@ -42,18 +44,19 @@ export default function ProfilePage() {
         return;
       }
       
-      const [{ data: profile }, { data: history }] = await Promise.all([
+      const [{ data: profile }, { data: history, total }] = await Promise.all([
         getMyProfile(),
-        getPurchaseHistory()
+        getPurchaseHistory(purchaseLimit)
       ]);
 
       if (profile) setUserProfile(profile);
       if (history) setPurchaseHistory(history);
+      if (typeof total === "number") setPurchaseTotal(total);
 
       setLoading(false);
     }
     loadData();
-  }, [router, supabase, isEditing]);
+  }, [router, supabase, isEditing, purchaseLimit]);
 
   if (loading) {
     return (
@@ -293,6 +296,16 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 )) : <p className="text-center py-10 text-slate-400 text-xs italic">Aucune transaction trouvée.</p>}
+                {purchaseTotal > purchaseLimit && (
+                  <div className="pt-2 flex justify-center">
+                    <button
+                      onClick={() => setPurchaseLimit((prev) => prev + 10)}
+                      className="px-6 py-3 rounded-2xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all"
+                    >
+                      Charger plus
+                    </button>
+                  </div>
+                )}
               </div>
             </article>
 
