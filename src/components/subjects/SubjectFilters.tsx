@@ -246,13 +246,12 @@ function ActiveFilterBadge({
   );
 }
 
-// Main SubjectFilters Component
 export function SubjectFilters({ metadata, className = '' }: SubjectFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   // Get current filter values from URL
   const currentType = searchParams.get('type') as ExamType | null;
@@ -311,112 +310,70 @@ export function SubjectFilters({ metadata, className = '' }: SubjectFiltersProps
   }
 
   return (
-    <div className={`bg-white rounded-2xl border border-slate-200 ${className}`}>
-      {/* Mobile Header */}
-      <button
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="w-full flex items-center justify-between p-5 lg:hidden"
-      >
-        <div className="flex items-center gap-3">
-          <SlidersHorizontal className="w-5 h-5 text-slate-600" />
-          <span className="font-semibold text-slate-900">Filtres</span>
+    <div className={`relative ${className}`}>
+      {/* Filter Toggle Button */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={`
+            flex items-center gap-2 px-5 py-2.5 rounded-xl border transition-all duration-200 font-semibold text-sm
+            ${isOpen || activeFilterCount > 0 
+              ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/10" 
+              : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 shadow-sm"}
+          `}
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          {isOpen ? "Masquer les filtres" : "Filtrer les sujets"}
           {activeFilterCount > 0 && (
-            <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">
+            <span className={`
+              ml-1 px-2 py-0.5 rounded-full text-[10px] font-black
+              ${isOpen || activeFilterCount > 0 ? "bg-white/20 text-white" : "bg-amber-100 text-amber-700"}
+            `}>
               {activeFilterCount}
             </span>
           )}
-        </div>
-        <ChevronDown
-          className={`w-5 h-5 text-slate-400 transition-transform ${
-            isMobileOpen ? 'rotate-180' : ''
-          }`}
-        />
-      </button>
+        </button>
 
-      {/* Filter Content */}
-      <div
-        className={`
-          overflow-hidden transition-all duration-300 lg:block
-          ${isMobileOpen ? 'max-h-[800px]' : 'max-h-0 lg:max-h-none'}
-        `}
-      >
-        <div className="p-5 pt-0 lg:pt-5 space-y-4">
-          {/* Active Filters & Clear */}
-          {activeFilterCount > 0 && (
-            <div className="flex items-center flex-wrap gap-2 pb-4 border-b border-slate-100">
-              <span className="text-xs text-slate-500 mr-1">Filtres actifs:</span>
-              {currentType && (
-                <ActiveFilterBadge
-                  label={EXAM_TYPE_LABELS[currentType]}
-                  onRemove={() => updateFilters('type', null)}
-                />
-              )}
-              {currentYear && (
-                <ActiveFilterBadge
-                  label={currentYear}
-                  onRemove={() => updateFilters('year', null)}
-                />
-              )}
-              {currentMatiere && (
-                <ActiveFilterBadge
-                  label={metadata.matieres.find((m) => m.value === currentMatiere)?.label || currentMatiere}
-                  onRemove={() => updateFilters('matiere', null)}
-                />
-              )}
-              {currentSerie && (
-                <ActiveFilterBadge
-                  label={`Série ${currentSerie}`}
-                  onRemove={() => updateFilters('serie', null)}
-                />
-              )}
-              {currentQuery && (
-                <ActiveFilterBadge
-                  label={`"${currentQuery}"`}
-                  onRemove={() => updateFilters('q', null)}
-                />
-              )}
-              <button
-                onClick={clearAllFilters}
-                disabled={isPending}
-                className="ml-auto text-xs text-slate-500 hover:text-red-600 transition-colors flex items-center gap-1"
-              >
-                {isPending ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <X className="w-3 h-3" />
-                )}
-                Tout effacer
+        {activeFilterCount > 0 && (
+          <button
+            onClick={clearAllFilters}
+            className="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1"
+          >
+            <X className="w-3 h-3" />
+            Tout effacer
+          </button>
+        )}
+      </div>
+
+      {/* Filter Content Card */}
+      {isOpen && (
+        <div className="absolute top-full left-0 w-full z-40 mt-2 animate-in slide-in-from-top-2 duration-200">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl shadow-slate-900/10 p-6">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+              <h3 className="font-bold text-slate-900">Critères de recherche</h3>
+              <button onClick={() => setIsOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400">
+                <X className="w-4 h-4" />
               </button>
             </div>
-          )}
 
-          {/* Loading Indicator */}
-          {isPending && (
-            <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Mise à jour des résultats...</span>
-            </div>
-          )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Exam Types */}
+              <FilterSection title="Type d'examen">
+                <DropdownSelect
+                  value={currentType ?? null}
+                  placeholder="Tous les types"
+                  onChange={(value) => updateFilters('type', value)}
+                  disabled={isPending}
+                  options={metadata.exam_types.map((type) => ({
+                    value: type.value,
+                    label: type.label,
+                    count: type.count,
+                  }))}
+                />
+              </FilterSection>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            {/* Exam Types */}
-            <FilterSection title="Type d'examen" defaultOpen={true}>
-              <DropdownSelect
-                value={currentType ?? null}
-                placeholder="Tous les types"
-                onChange={(value) => updateFilters('type', value)}
-                disabled={isPending}
-                options={metadata.exam_types.map((type) => ({
-                  value: type.value,
-                  label: type.label,
-                  count: type.count,
-                }))}
-              />
-            </FilterSection>
-
-            {/* Years */}
-            {metadata.years.length > 0 && (
-              <FilterSection title="Année" defaultOpen={true}>
+              {/* Years */}
+              <FilterSection title="Année">
                 <DropdownSelect
                   value={currentYear ?? null}
                   placeholder="Toutes les années"
@@ -429,11 +386,9 @@ export function SubjectFilters({ metadata, className = '' }: SubjectFiltersProps
                   }))}
                 />
               </FilterSection>
-            )}
 
-            {/* Matieres */}
-            {metadata.matieres.length > 0 && (
-              <FilterSection title="Matière" defaultOpen={true}>
+              {/* Matieres */}
+              <FilterSection title="Matière">
                 <DropdownSelect
                   value={currentMatiere ?? null}
                   placeholder="Toutes les matières"
@@ -446,11 +401,9 @@ export function SubjectFilters({ metadata, className = '' }: SubjectFiltersProps
                   }))}
                 />
               </FilterSection>
-            )}
 
-            {/* Series */}
-            {metadata.series.length > 0 && (
-              <FilterSection title="Série" defaultOpen={false}>
+              {/* Series */}
+              <FilterSection title="Série">
                 <DropdownSelect
                   value={currentSerie ?? null}
                   placeholder="Toutes les séries"
@@ -463,37 +416,41 @@ export function SubjectFilters({ metadata, className = '' }: SubjectFiltersProps
                   }))}
                 />
               </FilterSection>
-            )}
-          </div>
+            </div>
 
-          {/* Quick Filter: Free Only */}
-          <div className="pt-2 border-t border-slate-100">
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <div
-                className={`
-                  relative h-6 w-11 rounded-full transition-colors duration-200
-                  ${searchParams.get('free') === 'true' ? 'bg-emerald-500' : 'bg-slate-200'}
-                `}
-                onClick={() => {
-                  const isFree = searchParams.get('free') === 'true';
-                  updateFilters('free', isFree ? null : 'true');
-                }}
-              >
+            <div className="mt-8 pt-4 border-t border-slate-100 flex justify-between items-center">
+              <label className="flex items-center gap-3 cursor-pointer group">
                 <div
                   className={`
-                    absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm
-                    transition-transform duration-200
-                    ${searchParams.get('free') === 'true' ? 'translate-x-5' : 'translate-x-0'}
+                    relative h-6 w-11 rounded-full transition-colors duration-200
+                    ${searchParams.get('free') === 'true' ? "bg-emerald-500" : "bg-slate-200"}
                   `}
-                />
-              </div>
-              <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors">
-                Sujets gratuits uniquement
-              </span>
-            </label>
+                  onClick={() => {
+                    const isFree = searchParams.get('free') === 'true';
+                    updateFilters('free', isFree ? null : 'true');
+                  }}
+                >
+                  <div
+                    className={`
+                      absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm
+                      transition-transform duration-200
+                      ${searchParams.get('free') === 'true' ? "translate-x-5" : "translate-x-0"}
+                    `}
+                  />
+                </div>
+                <span className="text-sm font-bold text-slate-600">Sujets gratuits</span>
+              </label>
+
+              <button 
+                onClick={() => setIsOpen(false)}
+                className="px-6 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-900/20"
+              >
+                Appliquer
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

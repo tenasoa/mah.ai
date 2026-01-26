@@ -9,10 +9,6 @@ inputDocuments:
 
 # mah.ai - Epic Breakdown (Pure Markdown Architecture)
 
-## Overview
-
-This document provides the complete epic and story breakdown for mah.ai, updated for the Markdown/HTML structured content architecture.
-
 ## Requirements Inventory
 
 ### Functional Requirements
@@ -33,17 +29,6 @@ FR14: Édition Markdown : Interface d'édition avec Split View et synchronisatio
 FR15: Modération assistée par IA ("Janitor" local) des commentaires.
 FR16: Notifications de rappel et de réponses (Push/In-app).
 
-### NonFunctional Requirements
-
-NFR1: Chargement initial instantané (Contenu HTML natif).
-NFR2: Réactivité : Navigation interne instantanée (< 100ms).
-NFR3: Disponibilité : 99.9% durant le rush de Mai.
-NFR4: Sécurité : RLS strict sur le contenu Markdown.
-NFR5: Protection : Accès contrôlé par abonnement/crédits.
-NFR6: Accessibilité : Support LaTeX (KaTeX) pour les formules.
-NFR7: PWA Resilience : Offline First (Cache local du texte).
-NFR8: Cost Efficiency : 100% de précision AI via contexte texte pur.
-
 ## Epic List
 
 ### Epic 1: Fondation & Accès "Trust-First"
@@ -59,11 +44,11 @@ Interface de lecture HTML et tutorat IA basé sur le texte structuré.
 **Status:** Completed
 
 ### Epic 4: Ligue Grit & Gamification
-Valoriser l'effort et la régularité via le Grit Score.
-**Status:** Backlog
+Valoriser l'effort et la régularité via le Grit Score et les récompenses.
+**Status:** Completed
 
 ### Epic 5: Gestion du Savoir (Admin & Editor)
-Interface d'édition Markdown professionnelle pour les contributeurs.
+Interface d'édition Markdown professionnelle pour les contributeurs et analyse stratégique.
 **Status:** Completed
 
 ---
@@ -85,18 +70,20 @@ As a Élève, I want saisir mon code Mobile Money et accéder immédiatement au 
 ### Story 3.1: Lecteur Zen HTML
 Status: Completed
 As a Élève, I want lire mon sujet dans une interface HTML épurée avec support mathématique.
-**Acceptance Criteria:**
-- Rendu Markdown via ReactMarkdown.
-- Support des formules LaTeX via KaTeX.
-- Interface parfaitement responsive.
 
 ### Story 3.2: Sidekick IA Contextuel
 Status: Completed
 As a Élève, I want poser des questions à l'IA qui connaît déjà le texte de mon sujet.
-**Acceptance Criteria:**
-- Injection automatique du Markdown dans le prompt AI.
-- Méthode socratique respectée.
-- Redimensionnement dynamique du panneau Sidekick.
+
+### Story 3.4: Cache Sémantique Intelligent
+Status: Completed
+As a Développeur, I want que les réponses de l'IA soient mises en cache dans Redis (Upstash).
+
+---
+
+## Epic 4: Ligue Grit & Gamification
+Valoriser l'effort et la régularité via le Grit Score et les récompenses.
+**Status:** Completed
 
 ---
 
@@ -105,15 +92,15 @@ As a Élève, I want poser des questions à l'IA qui connaît déjà le texte de
 ### Story 5.1: Éditeur Markdown "StackEdit Style"
 Status: Completed
 As a Administrateur, I want éditer les sujets avec un aperçu scindé et scroll synchronisé.
-**Acceptance Criteria:**
-- Barre d'outils Markdown (Gras, Titres, Math).
-- Synchronisation du défilement entre Édition et Aperçu.
-- Sauvegarde sécurisée via Server Actions.
 
 ### Story 5.2: Gestion Administrative des Sujets
 Status: Completed
 As a Administrateur, I want créer et lister les sujets via une interface dédiée.
+
+### Story 5.3: Tableau de Bord Analytics "Trust Gap"
+Status: Completed
+As a Administrateur, I want visualiser le taux d'utilisation réelle vs les paiements validés.
 **Acceptance Criteria:**
-- Formulaire de création de métadonnées.
-- Redirection automatique vers l'éditeur après création.
-- Accès illimité automatique pour le rôle 'admin'.
+- Calcul en temps réel du Trust Gap Index.
+- Visualisation des revenus et de la conversion.
+- Note stratégique pour l'ajustement du modèle de confiance.

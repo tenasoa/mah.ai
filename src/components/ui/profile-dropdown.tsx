@@ -88,7 +88,7 @@ export function ProfileDropdown({ user, isExpanded = false }: ProfileDropdownPro
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center p-1 rounded-full hover:bg-slate-100 transition-all duration-300 group"
+        className="flex items-center p-1 rounded-full hover:bg-slate-100 transition-all duration-300 group cursor-pointer"
         title="Menu profil"
       >
         {/* Avatar */}
@@ -96,10 +96,10 @@ export function ProfileDropdown({ user, isExpanded = false }: ProfileDropdownPro
           <img
             src={user.avatarUrl}
             alt={user.name}
-            className="h-10 w-10 rounded-full border-2 border-slate-200 object-cover transition-all duration-300 group-hover:border-amber-400"
+            className="h-9 w-9 rounded-full border-2 border-slate-200 object-cover transition-all duration-300 group-hover:border-amber-400"
           />
         ) : (
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-sm transition-all duration-300 group-hover:shadow-lg group-hover:shadow-amber-500/40">
+          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-sm transition-all duration-300 group-hover:shadow-lg group-hover:shadow-amber-500/40">
             {user.name.charAt(0).toUpperCase()}
           </div>
         )}

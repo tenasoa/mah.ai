@@ -5,6 +5,7 @@ import { getSubjectById } from "@/app/actions/subjects";
 import { EXAM_TYPE_LABELS } from "@/lib/types/subject";
 import { SubjectTeaser } from "@/components/subjects/SubjectTeaser";
 import { SubjectReader } from "@/components/subjects/SubjectReader";
+import { createClient } from "@/lib/supabase/server";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -127,6 +128,8 @@ export const dynamic = "force-dynamic";
 export default async function SubjectDetailPage({ params, searchParams }: PageProps) {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   const { data, error } = await getSubjectById(resolvedParams.id);
 
   if (error && error === "Sujet non trouvé") {
@@ -151,6 +154,13 @@ export default async function SubjectDetailPage({ params, searchParams }: PagePr
   }
 
   if (data.has_access) {
+    // On récupère le profil complet pour avoir les rôles
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('roles')
+      .eq('id', user?.id)
+      .single();
+
     return (
       <div className="w-full">
         <SubjectReader
@@ -159,6 +169,8 @@ export default async function SubjectDetailPage({ params, searchParams }: PagePr
           subtitle={`${EXAM_TYPE_LABELS[data.exam_type]} ${data.year}${data.serie ? ` • Série ${data.serie}` : ""}`}
           initialContent={data.content_markdown}
           forceEdit={resolvedSearchParams.edit === 'true'}
+          userRoles={(userProfile?.roles as string[]) || []}
+          initialStatus={data.status}
         />
       </div>
     );

@@ -1,6 +1,8 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { redis, getCacheKey } from '@/lib/redis';
+import { addGritPoints } from './grit';
 
 type SelectionRect = {
   x: number;
@@ -28,7 +30,8 @@ Ton rôle : guider l'apprenant vers la compréhension par des questions ciblées
 Style requis :
 - "Warm Intelligence" : encourageant, clair, pédagogique et sobre.
 - Adapté au niveau de l'apprenant (sois attentif au contenu du sujet pour deviner le niveau).
-- Évite les présentations trop longues ou répétitives sur le "Baccalauréat". Salue brièvement et entre dans le vif du sujet.
+- DISCRÉTION (CRUCIAL) : Ne salue JAMAIS l'utilisateur (Bonjour, Salut, etc.) si vous répondez à un message de suivi. Entrez DIRECTEMENT dans le vif du sujet. Ne faites pas de présentations sur vos sentiments ou votre enthousiasme.
+- Si c'est le TOUT PREMIER message du sujet, un "Bonjour !" très bref est toléré, mais évitez les phrases génériques comme "Je suis ravi de t'aider".
 - Si l'élève insiste, explique avec bienveillance pourquoi tu ne donnes pas la solution tout de suite.
 
 Formatage Mathématique (CRUCIAL) :
@@ -96,7 +99,37 @@ export async function askSocraticTutor(params: SocraticRequest) {
   // }
 
   try {
-    // Construire le contexte pour l'IA
+    // 1. Tenter de récupérer depuis le cache Redis
+    const cacheKey = getCacheKey(subjectId, questionText, userMessage);
+    try {
+      const cachedResponse = await redis.get<string>(cacheKey);
+      if (cachedResponse) {
+        console.log('🚀 AI Cache Hit! Returning stored response.');
+        
+        // On enregistre quand même l'échange dans Supabase pour l'historique de l'utilisateur
+        await supabase.from('socratic_exchanges').insert({
+          user_id: user.id,
+          subject_id: subjectId,
+          question_id: questionId,
+          user_message: userMessage || questionText,
+          ai_response: cachedResponse,
+          insisted_for_answer: insistForAnswer || false,
+        });
+
+        // Bonus Grit pour curiosité (même si c'est du cache)
+        await addGritPoints({
+          amount: 5,
+          action: 'ai_interaction',
+          referenceId: subjectId
+        });
+
+        return { data: { response: cachedResponse }, error: null };
+      }
+    } catch (cacheError) {
+      console.warn('Cache error (ignoring):', cacheError);
+    }
+
+    // 2. Si non présent ou erreur cache, appeler l'API
     const contextMessage = `Voici le contenu du sujet de l'examen :
 ---
 ${markdownContext || "Contenu non disponible en texte."}
@@ -114,7 +147,15 @@ ${insistForAnswer ? `L'élève insiste pour avoir la réponse directe. Explique-
 
     const aiResponse = await callPerplexityAPI(messages);
 
-    // Sauvegarder l'échange pour l'historique
+    // 3. Sauvegarder dans le cache pour les prochains élèves (TTL de 7 jours)
+    try {
+      await redis.set(cacheKey, aiResponse, { ex: 60 * 60 * 24 * 7 });
+      console.log('💾 AI Response cached successfully.');
+    } catch (cacheStoreError) {
+      console.warn('Failed to store in cache:', cacheStoreError);
+    }
+
+    // Sauvegarder l'échange pour l'historique utilisateur (Supabase)
     const { error: insertError } = await supabase
       .from('socratic_exchanges')
       .insert({
@@ -123,14 +164,19 @@ ${insistForAnswer ? `L'élève insiste pour avoir la réponse directe. Explique-
         question_id: questionId,
         user_message: userMessage || questionText,
         ai_response: aiResponse,
-        selection_rect: selectionRect,
-        zoom,
         insisted_for_answer: insistForAnswer || false,
       });
 
     if (insertError) {
       console.error('Error saving socratic exchange:', insertError);
     }
+
+    // Bonus Grit pour interaction réelle
+    await addGritPoints({
+      amount: 10,
+      action: 'ai_interaction',
+      referenceId: subjectId
+    });
 
     return { data: { response: aiResponse }, error: null };
   } catch (error) {

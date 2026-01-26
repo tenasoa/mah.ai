@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Mail, Lock, Loader2, Eye, EyeOff, ArrowRight, UserPlus, LogIn } from 'lucide-react';
+// import { SocialAuthButtons } from './social-auth-buttons'; // Temporairement désactivé
 
 export function EmailPasswordForm() {
   const [email, setEmail] = useState('');

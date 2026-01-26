@@ -16,7 +16,7 @@ export type ExamType =
   | 'concours'
   | 'other';
 
-export type SubjectStatus = 'draft' | 'published' | 'archived';
+export type SubjectStatus = 'draft' | 'pending' | 'published' | 'revision' | 'rejected';
 
 export type AccessType = 'purchase' | 'subscription' | 'free' | 'admin';
 
@@ -39,10 +39,20 @@ export interface Subject {
   matiere_display: string;
   serie: string | null;
   niveau: string | null;
+  
+  // Metadata for specific types (L1/L2, M1/M2, type of concours)
+  exam_metadata: {
+    level?: 'L1' | 'L2' | 'M1' | 'M2';
+    concours_type?: string;
+    [key: string]: any;
+  };
 
   // Content (Markdown/HTML)
   content_markdown: string;
   content_html: string | null;
+
+  // Feedback/Workflow
+  revision_comment?: string | null;
 
   // Thumbnail/Preview
   thumbnail_url: string | null;
@@ -106,6 +116,7 @@ export interface SubjectCard {
   credit_cost: number;
   view_count: number;
   has_access?: boolean;
+  status?: SubjectStatus;
 }
 
 // =====================================================
@@ -120,6 +131,7 @@ export interface SubjectFilters {
   niveau?: string | string[];
   is_free?: boolean;
   search?: string;
+  status?: SubjectStatus | SubjectStatus[];
 }
 
 export interface SubjectSortOptions {
