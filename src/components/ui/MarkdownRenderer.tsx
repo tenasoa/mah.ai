@@ -27,7 +27,7 @@ export function MarkdownRenderer({
   const processedContent = content
     // Convertir les formats LaTeX courants en format $ ... $
     .replace(/\\\((.*?)\\\)/g, "$$$1$$") // \( ... \) → $ ... $
-    .replace(/\\\[(.*?)\\\]/gs, "$$\n$1\n$$") // \[ ... \] → $$ ... $$
+    .replace(/\\\[([\s\S]*?)\\\]/g, "$$\n$1\n$$") // \[ ... \] → $$ ... $$
     // Normaliser les blocs $$...$$ pour forcer un rendu display
     .replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => {
       const trimmed = String(formula).trim();
