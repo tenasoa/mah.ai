@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Check, Zap, Crown, ShieldCheck, ArrowRight } from "lucide-react";
 
 const plans = [
@@ -39,6 +40,8 @@ const plans = [
 ];
 
 export function SubscriptionPlans() {
+  const [comingSoonPlan, setComingSoonPlan] = useState<string | null>(null);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
       {plans.map((plan) => (
@@ -89,6 +92,7 @@ export function SubscriptionPlans() {
           </div>
 
           <button 
+            onClick={() => setComingSoonPlan(plan.id)}
             className={`
               w-full py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2
               ${plan.highlight 
@@ -100,6 +104,11 @@ export function SubscriptionPlans() {
             {plan.cta}
             <ArrowRight className="w-4 h-4" />
           </button>
+          {comingSoonPlan === plan.id && (
+            <p className="mt-3 text-[10px] font-bold uppercase tracking-widest text-amber-600 text-center">
+              Abonnement bientôt disponible
+            </p>
+          )}
         </article>
       ))}
     </div>

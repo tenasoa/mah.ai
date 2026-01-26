@@ -110,18 +110,21 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
 
               <div className="grid grid-cols-1 gap-3">
                 {[
-                  { id: 'mvola', name: 'Mvola', color: 'bg-[#00A1E4]', text: 'text-white' },
-                  { id: 'orange', name: 'Orange Money', color: 'bg-[#FF6600]', text: 'text-white' },
-                  { id: 'airtel', name: 'Airtel Money', color: 'bg-[#E11900]', text: 'text-white' },
+                  { id: 'mvola', name: 'Mvola', color: 'bg-[#00A1E4]', text: 'text-white', disabled: false },
+                  { id: 'orange', name: 'Orange Money', color: 'bg-[#FF6600]', text: 'text-white', disabled: false },
+                  { id: 'airtel', name: 'Airtel Money', color: 'bg-[#E11900]', text: 'text-white', disabled: true },
                 ].map((op) => (
                   <button
                     key={op.id}
                     onClick={() => {
+                      if (op.disabled) return;
                       setMethod(op.id as any);
                       setStep('instructions');
                     }}
+                    disabled={op.disabled}
                     className={`
-                      flex items-center justify-between p-5 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-95
+                      flex items-center justify-between p-5 rounded-2xl border-2 transition-all
+                      ${op.disabled ? "opacity-50 cursor-not-allowed bg-slate-50 border-slate-200" : "hover:scale-[1.02] active:scale-95"}
                       ${method === op.id ? "border-slate-900 bg-slate-50" : "border-slate-100 bg-white"}
                     `}
                   >
@@ -129,7 +132,12 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
                       <div className={`w-10 h-10 rounded-xl ${op.color} flex items-center justify-center font-black text-xs ${op.text}`}>
                         {op.name.charAt(0)}
                       </div>
-                      <span className="font-bold text-slate-900">{op.name}</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-bold text-slate-900">{op.name}</span>
+                        {op.disabled && (
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bientôt disponible</span>
+                        )}
+                      </div>
                     </div>
                     <ArrowRight className="w-4 h-4 text-slate-300" />
                   </button>
