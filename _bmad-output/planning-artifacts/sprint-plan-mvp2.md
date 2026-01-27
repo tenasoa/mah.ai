@@ -16,8 +16,10 @@ Objectif : implémenter progressivement sans casser l’existant.
 ## Sprint 1 — Fondations rôles & gouvernance
 **Objectif :** sécuriser les permissions, flux de validation, et règles business.
 - **Rôles & règles**
-  - SuperAdmin = accès total, crédits illimités, gestion complète.
-  - Utilisateurs = créer/modifier leurs sujets; état "brouillon" jusqu’à validation.
+  - SuperAdmin & Administrateurs = accès total, crédits illimités, gestion complète, ajout de sujets.
+  - Contributeurs = ajout/modification de leurs sujets ; état "brouillon" jusqu'à validation.
+  - Utilisateurs = consultation et achat de sujets (ne peuvent plus ajouter de sujets).
+  - Visiteurs = consultation catalogue uniquement (pas de compte requis).
   - Validateurs = valider/refuser/retourner les sujets.
   - Correcteurs = corriger des sujets et vendre ces corrections.
 - **Règles business**
@@ -47,6 +49,7 @@ Objectif : implémenter progressivement sans casser l’existant.
 **Objectif :** visibilité complète par rôle.
 - **Utilisateurs**
   - Historique mouvements crédits (ventes, achats sujets, achats crédits).
+- **Contributeurs**
   - Sujets créés + statut.
 - **Validateurs**
   - Sujets validés/refusés/retournés.
@@ -68,6 +71,11 @@ Objectif : implémenter progressivement sans casser l’existant.
 
 ## Sprint 5 — Expérience lecture & découverte
 **Objectif :** améliorer la consommation et la conversion.
+- Accès Visiteur : Bouton "Consulter le catalogue" sur la Landing Page.
+- UX Auth : Redirection automatique vers Login après confirmation email.
+- UI : Nouvelle animation de chargement (design moderne).
+- Design : Implémentation complète du Dark Mode.
+- Mobile : Refonte Responsive "Native-like" (navigation, touch).
 - Didacticiel onboarding (nouveaux utilisateurs).
 - Lecteur “Focus” (plein écran + progression).
 - Sauvegarde “Reprendre plus tard”.
