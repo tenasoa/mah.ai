@@ -3,12 +3,15 @@
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { Mail, Lock, Loader2, Eye, EyeOff, ArrowRight, UserPlus, LogIn } from 'lucide-react';
+import { Mail, Lock, Loader2, Eye, EyeOff, ArrowRight, UserPlus, LogIn, School, User, GraduationCap } from 'lucide-react';
 // import { SocialAuthButtons } from './social-auth-buttons'; // Temporairement désactivé
 
 export function EmailPasswordForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [pseudo, setPseudo] = useState('');
+  const [etablissement, setEtablissement] = useState('');
+  const [classe, setClasse] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -31,6 +34,13 @@ export function EmailPasswordForm() {
         const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              pseudo,
+              etablissement,
+              classe,
+            }
+          }
         });
         if (signUpError) throw signUpError;
         setMessage('🎉 Vérifiez votre email pour confirmer votre inscription.');
@@ -81,6 +91,72 @@ export function EmailPasswordForm() {
       )}
 
       <form onSubmit={handleAuth} className="space-y-4">
+        {/* Additional Signup Fields */}
+        {isSignUp && (
+          <div className="space-y-4 animate-slide-down">
+            <div className="space-y-2">
+              <label htmlFor="pseudo" className="text-xs font-semibold text-slate-600 flex items-center gap-2">
+                <User className="w-3.5 h-3.5" />
+                Pseudo
+              </label>
+              <input
+                id="pseudo"
+                type="text"
+                className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white focus:border-amber-400 focus:ring-4 focus:ring-amber-100 hover:border-slate-300"
+                placeholder="Ton surnom"
+                value={pseudo}
+                onChange={(e) => setPseudo(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="etablissement" className="text-xs font-semibold text-slate-600 flex items-center gap-2">
+                  <School className="w-3.5 h-3.5" />
+                  Établissement
+                </label>
+                <input
+                  id="etablissement"
+                  type="text"
+                  className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white focus:border-amber-400 focus:ring-4 focus:ring-amber-100 hover:border-slate-300"
+                  placeholder="Ex: CNTEMAD, Lycée..."
+                  value={etablissement}
+                  onChange={(e) => setEtablissement(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="classe" className="text-xs font-semibold text-slate-600 flex items-center gap-2">
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  Classe
+                </label>
+                <select
+                  id="classe"
+                  className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 outline-none transition-all duration-200 focus:bg-white focus:border-amber-400 focus:ring-4 focus:ring-amber-100 hover:border-slate-300 appearance-none"
+                  value={classe}
+                  onChange={(e) => setClasse(e.target.value)}
+                  required
+                  disabled={isLoading}
+                >
+                  <option value="" disabled>Sélectionner</option>
+                  <option value="Seconde">Seconde</option>
+                  <option value="Première">Première</option>
+                  <option value="Terminale">Terminale</option>
+                  <option value="L1">L1</option>
+                  <option value="L2">L2</option>
+                  <option value="L3">L3</option>
+                  <option value="M1">M1</option>
+                  <option value="M2">M2</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Email Field */}
         <div className="space-y-2">
           <label htmlFor="email" className="text-xs font-semibold text-slate-600 flex items-center gap-2">

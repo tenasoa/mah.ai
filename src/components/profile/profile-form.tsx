@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { 
   Loader2, 
   Hash, 
@@ -22,6 +22,8 @@ import {
   EyeOff, 
   Shield 
 } from 'lucide-react';
+import { adminUpdateUser } from "@/app/actions/admin-users";
+import { updateProfile } from "@/app/actions/profile";
 
 const educationLevelOptions = [
   'Collège',
@@ -34,7 +36,7 @@ const educationLevelOptions = [
   'Autre'
 ];
 
-export function ProfileForm({ onSuccess, onCancel }: { onSuccess?: () => void, onCancel?: () => void }) {
+export function ProfileForm({ userId, onSuccess, onCancel }: { userId?: string, onSuccess?: () => void, onCancel?: () => void }) {
   const [pseudo, setPseudo] = useState('');
   const [full_name, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -75,18 +77,26 @@ export function ProfileForm({ onSuccess, onCancel }: { onSuccess?: () => void, o
 
   useEffect(() => {
     async function getProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      // If userId is provided, we fetch that user, otherwise fetch current auth user
+      let targetId = userId;
+      
+      if (!targetId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        targetId = user?.id;
+        setEmail(user?.email || '');
+      }
+
+      if (targetId) {
         const { data } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', targetId)
           .single();
 
         if (data) {
           setPseudo(data.pseudo || '');
           setFullName(data.full_name || '');
-          setEmail(user.email || '');
+          if (data.email) setEmail(data.email); 
           setBio(data.bio || '');
           setEducationLevel(data.education_level || '');
           setEtablissement(data.etablissement || '');
@@ -107,7 +117,7 @@ export function ProfileForm({ onSuccess, onCancel }: { onSuccess?: () => void, o
       setInitialLoading(false);
     }
     getProfile();
-  }, [supabase]);
+  }, [supabase, userId]);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,37 +193,46 @@ export function ProfileForm({ onSuccess, onCancel }: { onSuccess?: () => void, o
     setLoading(true);
     setError(null);
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const updateData = {
+      pseudo: pseudo || null,
+      full_name: full_name || null,
+      bio: bio || null,
+      education_level: education_level || null,
+      etablissement: etablissement || null,
+      filiere: filiere || null,
+      classe: classe || null,
+      birth_date: birth_date || null,
+      address: address || null,
+      country: country || null,
+      learning_goals,
+      interests,
+      autre: autre || null,
+      avatar_url: avatar_url || null,
+      privacy_settings,
+    };
 
-    if (user) {
-      const { error: updateError } = await supabase.from('profiles').upsert({
-        id: user.id,
-        pseudo,
-        full_name,
-        bio,
-        education_level,
-        etablissement,
-        filiere,
-        classe,
-        birth_date,
-        address,
-        country,
-        learning_goals,
-        interests,
-        autre,
-        avatar_url: avatar_url,
-        privacy_settings,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' });
-
-      if (updateError) {
-        setError(updateError.message);
+    try {
+      let result;
+      
+      if (userId) {
+        // Mode Admin : on utilise l'action serveur avec service_role
+        result = await adminUpdateUser(userId, updateData as any);
       } else {
-        router.refresh(); // Refresh server components
+        // Mode Utilisateur : on utilise l'action standard (limitée à soi-même)
+        result = await updateProfile(updateData);
+      }
+
+      if (!result.success) {
+        setError(result.error || "Une erreur est survenue");
+      } else {
+        router.refresh();
         if (onSuccess) onSuccess();
       }
+    } catch (err: any) {
+      setError(err.message || "Erreur de connexion");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   if (initialLoading) {
@@ -461,36 +480,38 @@ export function ProfileForm({ onSuccess, onCancel }: { onSuccess?: () => void, o
         </div>
       </form>
 
-      {/* Section: Sécurité (Mot de passe) */}
-      <div className="border-t pt-10">
-        <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 mb-6">
-          <Lock className="w-4 h-4 text-amber-500" />
-          Sécurité du compte
-        </h4>
-        
-        <form onSubmit={handlePasswordChange} className="bg-amber-50/30 p-6 rounded-3xl border border-amber-100/50 space-y-4 text-left">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nouveau mot de passe</label>
-              <input type="password" required className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-sm focus:border-amber-400 outline-none" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Confirmer le mot de passe</label>
-              <input type="password" required className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-sm focus:border-amber-400 outline-none" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-            </div>
-          </div>
+      {/* Section: Sécurité (Mot de passe) - Hidden if userId is provided (admin editing another user) */}
+      {!userId && (
+        <div className="border-t pt-10">
+          <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 mb-6">
+            <Lock className="w-4 h-4 text-amber-500" />
+            Sécurité du compte
+          </h4>
           
-          {passwordMsg.text && (
-            <p className={`text-xs font-bold ${passwordMsg.type === 'error' ? 'text-red-500' : 'text-emerald-600'}`}>
-              {passwordMsg.text}
-            </p>
-          )}
+          <form onSubmit={handlePasswordChange} className="bg-amber-50/30 p-6 rounded-3xl border border-amber-100/50 space-y-4 text-left">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nouveau mot de passe</label>
+                <input type="password" required className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-sm focus:border-amber-400 outline-none" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Confirmer le mot de passe</label>
+                <input type="password" required className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-sm focus:border-amber-400 outline-none" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+              </div>
+            </div>
+            
+            {passwordMsg.text && (
+              <p className={`text-xs font-bold ${passwordMsg.type === 'error' ? 'text-red-500' : 'text-emerald-600'}`}>
+                {passwordMsg.text}
+              </p>
+            )}
 
-          <button type="submit" disabled={passwordLoading} className="px-6 py-3 bg-amber-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-amber-600 transition-all disabled:opacity-50">
-            {passwordLoading ? 'Mise à jour...' : 'Modifier le mot de passe'}
-          </button>
-        </form>
-      </div>
+            <button type="submit" disabled={passwordLoading} className="px-6 py-3 bg-amber-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-amber-600 transition-all disabled:opacity-50">
+              {passwordLoading ? 'Mise à jour...' : 'Modifier le mot de passe'}
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

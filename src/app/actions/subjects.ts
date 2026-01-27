@@ -490,25 +490,49 @@ export async function saveSubjectMarkdown(
       return { success: false, error: 'Authentification requise' };
     }
 
-    // Check if user is admin
+    // Check permissions
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('roles')
       .eq('id', user.id)
       .single();
 
-    if (!profile || profile.role !== 'admin') {
-      // Pour l'instant on limite aux admins, mais on pourrait ouvrir aux contributeurs
+    const roles = (profile?.roles as string[]) || [];
+    const isAdmin = roles.includes('admin') || roles.includes('superadmin');
+    const isContributor = roles.includes('contributor');
+
+    if (isAdmin) {
+      // Admins can edit anything
+      const { error } = await supabase
+        .from('subjects')
+        .update({ content_markdown: content, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) return { success: false, error: error.message };
+    } else if (isContributor) {
+      // Contributors can only edit their own subjects if not published
+      const { data: subject } = await supabase
+        .from('subjects')
+        .select('uploaded_by, status')
+        .eq('id', id)
+        .single();
+
+      if (!subject || subject.uploaded_by !== user.id) {
+        return { success: false, error: 'Permission refusée' };
+      }
+
+      if (subject.status === 'published') {
+        return { success: false, error: 'Impossible de modifier un sujet déjà publié' };
+      }
+
+      const { error } = await supabase
+        .from('subjects')
+        .update({ content_markdown: content, updated_at: new Date().toISOString(), status: 'draft' })
+        .eq('id', id);
+
+      if (error) return { success: false, error: error.message };
+    } else {
       return { success: false, error: 'Permission refusée' };
-    }
-
-    const { error } = await supabase
-      .from('subjects')
-      .update({ content_markdown: content, updated_at: new Date().toISOString() })
-      .eq('id', id);
-
-    if (error) {
-      return { success: false, error: error.message };
     }
 
     return { success: true, error: null };
@@ -546,7 +570,7 @@ export async function createSubject(params: {
       return { data: null, error: 'Authentification requise' };
     }
 
-    // Check admin
+    // Check roles
     const { data: profile } = await supabase
       .from('profiles')
       .select('roles')
@@ -554,15 +578,21 @@ export async function createSubject(params: {
       .single();
 
     const roles = (profile?.roles as string[]) || [];
-    if (!roles.includes('admin') && !roles.includes('superadmin')) {
+    const isContributor = roles.includes('contributor');
+    const isAdmin = roles.includes('admin') || roles.includes('superadmin');
+
+    if (!isContributor && !isAdmin) {
       return { data: null, error: 'Permission refusée' };
     }
+
+    // Contributors can only create drafts
+    const status = isAdmin ? (params.status || 'published') : 'draft';
 
     const { data, error } = await supabase
       .from('subjects')
       .insert({
         ...params,
-        status: params.status || 'published',
+        status,
         uploaded_by: user.id,
       })
       .select('*')

@@ -92,21 +92,19 @@ export default function DashboardPage() {
         .from('profiles')
         .select('pseudo, etablissement, filiere, classe, grit_score')
         .eq('id', user.id)
-        .single(),
+        .maybeSingle(),
       getDashboardStats()
     ]);
 
-    if (!profileRes.error && profileRes.data) {
-      const profiles = profileRes.data;
-      const profileData: Profile = {
-        pseudo: profiles.pseudo || '',
-        etablissement: profiles.etablissement || '',
-        filiere: profiles.filiere || '',
-        classe: profiles.classe || '',
-        grit_score: profiles.grit_score || 0,
-      };
-      setProfile(profileData);
-    }
+    const profiles = profileRes.data || {};
+    const profileData: Profile = {
+      pseudo: profiles.pseudo || user.email?.split('@')[0] || 'Élève',
+      etablissement: profiles.etablissement || 'Lycée non renseigné',
+      filiere: profiles.filiere || 'Série non renseignée',
+      classe: profiles.classe || 'Niveau non renseigné',
+      grit_score: profiles.grit_score || 0,
+    };
+    setProfile(profileData);
 
     setStats(statsRes);
     setLoading(false);

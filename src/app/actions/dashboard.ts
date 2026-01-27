@@ -26,9 +26,13 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       .from('profiles')
       .select('streak_days, grit_score')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (profileError) throw profileError;
+
+    // Default values if profile is missing
+    const streakDays = profile?.streak_days || 0;
+    const gritScore = profile?.grit_score || 0;
 
     // 2. Get exercises count (unique questions interacted with)
     const { data: exercises, error: exercisesError } = await supabase
@@ -46,15 +50,15 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     const { count: higherScores, error: rankError } = await supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true })
-      .gt('grit_score', profile.grit_score || 0);
+      .gt('grit_score', gritScore);
 
     if (rankError) throw rankError;
 
     return {
       exercises_count: uniqueExercisesCount,
       rank: (higherScores || 0) + 1,
-      streak_days: profile.streak_days || 0,
-      grit_score: profile.grit_score || 0
+      streak_days: streakDays,
+      grit_score: gritScore
     };
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);

@@ -24,14 +24,52 @@ export async function getCreditBalance(): Promise<number> {
 }
 
 /**
- * Unlock a subject using credits via the centralized consumeCredits logic
+ * Unlock a subject using credits via the centralized purchase_content logic
  */
 export async function unlockSubject(subjectId: string): Promise<UnlockResult> {
-  const result = await consumeCredits('UNLOCK_SUBJECT', { subject_id: subjectId });
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('purchase_content', {
+    p_content_type: 'subject',
+    p_content_id: subjectId
+  });
+
+  if (error) {
+    console.error('Unlock subject error:', error);
+    return { success: false, error: error.message };
+  }
+  
+  const result = data as { success: boolean; error?: string; new_balance?: number };
   
   if (result.success) {
     revalidatePath("/subjects");
     revalidatePath(`/subjects/${subjectId}`);
+    revalidatePath("/dashboard");
+    return { success: true, newBalance: result.new_balance };
+  }
+  
+  return { success: false, error: result.error };
+}
+
+/**
+ * Unlock a correction using credits via the centralized purchase_content logic
+ */
+export async function unlockCorrection(correctionId: string, subjectId: string): Promise<UnlockResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('purchase_content', {
+    p_content_type: 'correction',
+    p_content_id: correctionId
+  });
+
+  if (error) {
+    console.error('Unlock correction error:', error);
+    return { success: false, error: error.message };
+  }
+  
+  const result = data as { success: boolean; error?: string; new_balance?: number };
+  
+  if (result.success) {
+    revalidatePath(`/subjects/${subjectId}`);
+    revalidatePath("/dashboard");
     return { success: true, newBalance: result.new_balance };
   }
   

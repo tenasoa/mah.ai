@@ -31,6 +31,7 @@ export interface UserProfile {
   credits_balance: number;
   grit_score: number;
   streak_days: number;
+  is_blocked: boolean;
   subscription_status: 'free' | 'premium' | 'vip';
   privacy_settings: {
     show_full_name: boolean;
