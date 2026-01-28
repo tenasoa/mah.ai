@@ -157,7 +157,7 @@ export default function DashboardPage() {
               <Calendar className="w-4 h-4" />
               <span>{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-outfit">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-outfit title-elite">
               {greeting()},{' '}
               <span className="text-gradient-grit">{profile.pseudo || 'Élève'}</span> !
             </h1>

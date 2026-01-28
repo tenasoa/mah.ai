@@ -5,8 +5,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-    --font-outfit: "Outfit", sans-serif;
-    --font-inter: "Inter", sans-serif;
+    --font-outfit: var(--font-calsans), "Cal Sans", sans-serif;
+    --font-inter: var(--font-inter), sans-serif;
     --font-mono: "JetBrains Mono", monospace;
 
     --color-grit-start: #f59e0b;
@@ -120,6 +120,26 @@
     opacity: 0.1;
 }
 
+.dark h1.font-outfit,
+.dark h2.font-outfit,
+.dark h3.font-outfit,
+.dark h4.font-outfit,
+.dark h5.font-outfit,
+.dark h6.font-outfit,
+.dark .prose h1,
+.dark .prose h2,
+.dark .prose h3 {
+    color: #f8fafc;
+    text-shadow: 0 1px 0 rgba(2, 6, 23, 0.5), 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+.dark .title-elite {
+    background: linear-gradient(100deg, #f8fafc 0%, #f8fafc 60%, #f59e0b 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
 /* Base Styles */
 * {
     box-sizing: border-box;
@@ -143,6 +163,25 @@ body {
     font-family: var(--font-outfit);
 }
 
+/* Force Cal Sans SemiBold where bold weights are requested (avoid synthetic bold) */
+.font-outfit.font-bold,
+.font-outfit.font-extrabold,
+.font-outfit.font-black {
+    font-weight: 600;
+}
+
+/* Tighter tracking + subtle depth for display headings */
+h1.font-outfit,
+h2.font-outfit,
+h3.font-outfit,
+h4.font-outfit,
+h5.font-outfit,
+h6.font-outfit {
+    color: #0b1220;
+    letter-spacing: -0.03em;
+    text-shadow: 0 1px 0 rgba(15, 23, 42, 0.08), 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
 .prose {
     --tw-prose-headings: var(--foreground);
     --tw-prose-body: var(--foreground);
@@ -153,8 +192,17 @@ body {
 
 .prose h1, .prose h2, .prose h3 {
     font-family: var(--font-outfit);
-    font-weight: 800;
-    letter-spacing: -0.025em;
+    font-weight: 600;
+    color: #0b1220;
+    letter-spacing: -0.03em;
+    text-shadow: 0 1px 0 rgba(15, 23, 42, 0.08), 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
+.title-elite {
+    background: linear-gradient(100deg, #0b1220 0%, #0b1220 55%, #f59e0b 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .prose p {

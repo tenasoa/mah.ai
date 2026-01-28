@@ -62,7 +62,7 @@ export default function AuthPage() {
             Ton tuteur IA personnel
           </div>
 
-          <h1 className="text-4xl xl:text-5xl font-extrabold tracking-tight font-outfit leading-tight">
+          <h1 className="text-4xl xl:text-5xl font-extrabold tracking-tight font-outfit title-elite leading-tight">
             Apprends et réussis avec{' '}
             <span className="text-gradient-grit">l'Intelligence Artificielle</span>
           </h1>
