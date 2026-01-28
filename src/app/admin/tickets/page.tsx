@@ -1,7 +1,8 @@
-import { getAllRequests, runAutoRefund, refundRequest, fulfillRequest } from "@/app/actions/tickets";
+import { getAllRequests, runAutoRefund, refundRequest, fulfillRequest, getRequestStats } from "@/app/actions/tickets";
 import { AdminSidebarWrapper } from "@/components/layout/AdminSidebarWrapper";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { ChatWithUserButton } from "@/components/chat/ChatWithUserButton";
 import { 
   Ticket, 
   Clock, 
@@ -16,7 +17,9 @@ import {
   ExternalLink,
   Coins,
   RefreshCw,
-  Search
+  Search,
+  AlertTriangle,
+  MessageCircle
 } from "lucide-react";
 import Link from "next/link";
 
@@ -40,7 +43,10 @@ export default async function AdminTicketsPage({
   const roles = (profile?.roles as string[]) || [];
   if (!roles.includes('admin') && !roles.includes('superadmin')) redirect('/dashboard');
 
-  const requests = await getAllRequests(status);
+  const [requests, stats] = await Promise.all([
+    getAllRequests(status),
+    getRequestStats()
+  ]);
 
   const adminUser = {
     name: profile?.pseudo || 'Admin',
@@ -81,6 +87,26 @@ export default async function AdminTicketsPage({
                     Lancer Remboursements Auto
                 </button>
             </form>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white p-5 rounded-[24px] border border-slate-200 shadow-sm">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Demandes</p>
+            <p className="text-2xl font-black text-slate-900">{stats.total}</p>
+        </div>
+        <div className="bg-amber-50 p-5 rounded-[24px] border border-amber-100 shadow-sm">
+            <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">En attente</p>
+            <p className="text-2xl font-black text-amber-700">{stats.pending}</p>
+        </div>
+        <div className="bg-emerald-50 p-5 rounded-[24px] border border-emerald-100 shadow-sm">
+            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Satisfaits</p>
+            <p className="text-2xl font-black text-emerald-700">{stats.fulfilled}</p>
+        </div>
+        <div className="bg-indigo-50 p-5 rounded-[24px] border border-indigo-100 shadow-sm">
+            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">Remboursés</p>
+            <p className="text-2xl font-black text-indigo-700">{stats.refunded}</p>
         </div>
       </div>
 
@@ -130,6 +156,7 @@ export default async function AdminTicketsPage({
                                 <div className="flex items-center gap-2">
                                     <User className="w-3.5 h-3.5 text-slate-400" />
                                     <span className="text-xs font-bold text-slate-600">{req.user?.pseudo}</span>
+                                    <ChatWithUserButton userId={req.user_id} pseudo={req.user?.pseudo} />
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
@@ -145,7 +172,7 @@ export default async function AdminTicketsPage({
                         {req.status === 'pending' && (
                             <div className="flex items-center gap-3">
                                 <Link 
-                                    href={`/admin/subjects`}
+                                    href={`/admin/subjects?requestId=${req.id}&matiere=${encodeURIComponent(req.matiere)}&year=${req.year}${req.serie ? `&serie=${encodeURIComponent(req.serie)}` : ''}`}
                                     className="flex-[2] py-3 bg-slate-900 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center justify-center gap-2"
                                 >
                                     <Plus className="w-3.5 h-3.5" />

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useEffect } from "react";
-import { Lock, Unlock, ChevronDown } from "lucide-react";
+import { Lock, Unlock, ChevronDown, Heart, Bookmark, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { SubjectWithAccess } from "@/lib/types/subject";
@@ -13,6 +13,7 @@ import {
 import { recordTeaserView, recordTeaserCTA } from "@/app/actions/teaser";
 import { getCreditBalance } from "@/app/actions/credits";
 import { UnlockModal } from "@/components/subjects/UnlockModal";
+import { createClient } from "@/lib/supabase/client";
 
 interface SubjectTeaserProps {
   subject: SubjectWithAccess;
@@ -22,16 +23,6 @@ interface SubjectTeaserProps {
 
 type TeaserVariant = "control" | "view_full" | "access";
 
-/**
- * Composant SubjectTeaser
- *
- * Affiche un aperçu d'un sujet avec:
- * - Les premières lignes visibles (lisibles par les crawlers SEO)
- * - Un overlay progressif flou pour le reste
- * - CTA pour débloquer le sujet complet
- *
- * Design: Option A (Overlay CSS) pour optimiser SEO
- */
 export function SubjectTeaser({
   subject,
   previewLines = 3,
@@ -42,10 +33,12 @@ export function SubjectTeaser({
   const icon = MATIERE_ICONS[subject.matiere] || "📚";
   const [variant, setVariant] = useState<TeaserVariant>("control");
   const [isMounted, setIsMounted] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
   
   // Unlock Logic State
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const supabase = createClient();
 
   // Parse preview text into lines
   const previewContent = useMemo(() => {
@@ -77,11 +70,42 @@ export function SubjectTeaser({
     // Record View with Variant
     recordTeaserView(subject.id, "direct", selectedVariant).catch(console.error);
     
+    // Check if bookmarked
+    const checkBookmark = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data } = await supabase
+                .from('bookmarks')
+                .select('id')
+                .eq('user_id', user.id)
+                .eq('subject_id', subject.id)
+                .maybeSingle();
+            setIsBookmarked(!!data);
+        }
+    };
+    checkBookmark();
+
     // Fetch user balance
     getCreditBalance().then(setCreditBalance);
 
     onTeaserViewed?.();
-  }, [subject.id, onTeaserViewed]);
+  }, [subject.id, onTeaserViewed, supabase]);
+
+  const toggleBookmark = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        router.push(`/auth?next=/subjects/${subject.id}`);
+        return;
+    }
+
+    if (isBookmarked) {
+        await supabase.from('bookmarks').delete().eq('user_id', user.id).eq('subject_id', subject.id);
+        setIsBookmarked(false);
+    } else {
+        await supabase.from('bookmarks').insert({ user_id: user.id, subject_id: subject.id });
+        setIsBookmarked(true);
+    }
+  };
 
   const getCTALabel = () => {
     if (!isMounted) return "Débloquer le sujet complet";
@@ -105,244 +129,199 @@ export function SubjectTeaser({
       // User not logged in
       router.push(`/auth?next=/subjects/${subject.id}`);
     } else {
-      router.push(`/subjects/${subject.id}`);
+      setIsUnlockModalOpen(true);
     }
-  };
-
-  const handleUnlock = () => {
-    // If not authenticated, redirect to login
-    // Note: In a real app check auth state here
-    const isAuthenticated = false; // TODO: Pass auth state
-    if (!isAuthenticated) {
-        router.push(`/auth?next=/subjects/${subject.id}`);
-        return;
-    }
-    setIsUnlockModalOpen(true);
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-2xl mx-auto space-y-8">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div>
-            <div className="flex items-center gap-3 mb-3">
-              <div
-                className={`h-12 w-12 rounded-xl flex items-center justify-center text-2xl ${colors.bg} ${colors.border} border`}
-              >
-                {icon}
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-slate-900">
-                  {subject.matiere_display}
-                </h1>
-                <p className="text-slate-500">
-                  {EXAM_TYPE_LABELS[subject.exam_type]} {subject.year}
-                  {subject.serie && ` • Série ${subject.serie}`}
-                </p>
-              </div>
+      <header className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div
+              className={`h-16 w-16 rounded-[24px] flex items-center justify-center text-3xl ${colors.bg} ${colors.border} border shadow-sm dark:shadow-none transition-colors duration-300`}
+            >
+              {icon}
+            </div>
+            <div>
+              <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight font-outfit">
+                {subject.matiere_display}
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2 mt-1">
+                <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">{EXAM_TYPE_LABELS[subject.exam_type]}</span>
+                <span>•</span>
+                <span>Année {subject.year}</span>
+                {subject.serie && (
+                    <>
+                        <span>•</span>
+                        <span>Série {subject.serie}</span>
+                    </>
+                )}
+              </p>
             </div>
           </div>
 
-          {/* Access Badge */}
           <div className="flex items-center gap-2">
+            <button 
+                onClick={toggleBookmark}
+                className={`p-3 rounded-2xl border transition-all ${
+                    isBookmarked 
+                    ? "bg-rose-50 border-rose-100 text-rose-500 shadow-lg shadow-rose-500/10" 
+                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 hover:text-rose-500"
+                }`}
+            >
+                <Bookmark className={`w-5 h-5 ${isBookmarked ? "fill-current" : ""}`} />
+            </button>
+            
             {subject.has_access ? (
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-100 text-emerald-700">
+              <div className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800 shadow-sm">
                 <Unlock className="w-4 h-4" />
-                <span className="font-semibold">Accès débloqué</span>
+                <span className="font-black uppercase tracking-widest text-[10px]">Accès débloqué</span>
               </div>
             ) : subject.is_free ? (
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-100 text-blue-700">
+              <div className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800 shadow-sm">
                 <Unlock className="w-4 h-4" />
-                <span className="font-semibold">Gratuit</span>
+                <span className="font-black uppercase tracking-widest text-[10px]">Gratuit</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 text-slate-600">
+              <div className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800 shadow-sm">
                 <Lock className="w-4 h-4" />
-                <span className="font-semibold">
-                  {subject.credit_cost} crédit(s)
+                <span className="font-black uppercase tracking-widest text-[10px]">
+                  {subject.credit_cost} crédit{subject.credit_cost > 1 ? 's' : ''}
                 </span>
               </div>
             )}
           </div>
         </div>
+      </header>
 
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-slate-500">
-          <Link href="/subjects" className="hover:text-slate-700 underline">
-            Sujets
-          </Link>
-          <span>›</span>
-          <Link
-            href={`/subjects?type=${subject.exam_type}`}
-            className="hover:text-slate-700 underline"
-          >
-            {EXAM_TYPE_LABELS[subject.exam_type]}
-          </Link>
-          <span>›</span>
-          <Link
-            href={`/subjects?year=${subject.year}`}
-            className="hover:text-slate-700 underline"
-          >
-            {subject.year}
-          </Link>
-          <span>›</span>
-          <span className="text-slate-700 font-medium">
-            {subject.matiere_display}
-          </span>
-        </nav>
-      </div>
-
-      {/* Preview Content */}
-      <div className="relative bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
-        {/* Visible Content - Fully readable (SEO friendly) */}
-        <div className="p-8">
-          <div className="prose prose-sm max-w-none">
+      {/* Preview Card */}
+      <article className="relative bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-2xl shadow-slate-200/50 dark:shadow-none transition-colors duration-300">
+        <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-amber-400 to-orange-500" />
+        
+        <div className="p-8 md:p-12">
+          <div className="prose dark:prose-invert prose-slate max-w-none">
             {previewContent.visibleLines.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {previewContent.visibleLines.map((line, idx) => (
-                  <div key={idx} className="text-slate-700 leading-relaxed">
+                  <p key={idx} className="text-slate-700 dark:text-slate-300 leading-relaxed text-lg italic border-l-4 border-amber-100 dark:border-amber-900/50 pl-6 py-1">
                     {line}
-                  </div>
+                  </p>
                 ))}
               </div>
+            ) : !subject.has_access ? (
+              <div className="space-y-6 opacity-20 blur-sm select-none pointer-events-none">
+                <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-lg italic border-l-4 border-slate-100 dark:border-slate-800 pl-6 py-1">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                </p>
+                <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-lg italic border-l-4 border-slate-100 dark:border-slate-800 pl-6 py-1">
+                  Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                </p>
+              </div>
             ) : (
-              <div className="text-slate-500 italic">
-                Aucun aperçu disponible pour ce sujet
+              <div className="text-slate-400 italic text-center py-10">
+                Aperçu non disponible pour le moment.
               </div>
             )}
           </div>
         </div>
 
-        {/* Hidden Content with Blur Overlay (SEO concern: text is still in DOM) */}
-        {previewContent.hiddenLines.length > 0 && (
-          <div className="relative px-8 pb-8">
-            {/* Gradient Overlay (opaque au démarrage, transparent au-dessus du visible) */}
-            <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-transparent via-slate-50/50 to-slate-50 pointer-events-none" />
+        {/* Hidden Content with Blur or Placeholder */}
+        {(!subject.has_access) && (
+          <div className="relative px-8 md:px-12 pb-12">
+            <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-transparent via-white dark:via-slate-900 to-white dark:to-slate-950 pointer-events-none" />
 
-            {/* Blurred Hidden Content */}
-            <div className="relative blur-sm opacity-60 select-none pointer-events-none space-y-4">
-              {previewContent.hiddenLines.map((line, idx) => (
-                <div key={idx} className="text-slate-700 leading-relaxed">
+            <div className="relative blur-md opacity-30 select-none pointer-events-none space-y-6">
+              {previewContent.hiddenLines.length > 0 ? previewContent.hiddenLines.map((line, idx) => (
+                <p key={idx} className="text-slate-700 dark:text-slate-300 text-lg leading-relaxed border-l-4 border-transparent pl-6 py-1">
                   {line}
-                </div>
-              ))}
+                </p>
+              )) : (
+                <>
+                  <p className="text-slate-700 dark:text-slate-300 text-lg leading-relaxed border-l-4 border-transparent pl-6 py-1">
+                    Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+                  </p>
+                  <p className="text-slate-700 dark:text-slate-300 text-lg leading-relaxed border-l-4 border-transparent pl-6 py-1">
+                    Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                  </p>
+                </>
+              )}
             </div>
 
-            {/* CTA Overlay - Centered */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="text-center pointer-events-auto">
-                <ChevronDown className="w-8 h-8 text-slate-400 mx-auto mb-3 animate-bounce" />
-                <p className="text-sm font-medium text-slate-500">
-                  {previewContent.hiddenLines.length} autres questions
-                  verrouillées
+            {/* CTA Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center p-6 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm">
+              <div className="text-center animate-in fade-in zoom-in duration-700">
+                <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-full shadow-2xl border border-slate-100 dark:border-slate-700 flex items-center justify-center mx-auto mb-4 animate-bounce-soft">
+                    <Lock className="w-8 h-8 text-amber-500" />
+                </div>
+                <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
+                  Contenu Verrouillé
                 </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 uppercase tracking-tighter">Débloquez ce sujet pour accéder à toutes les questions</p>
+                
+                <button
+                  onClick={handleUnlockClick}
+                  className="mt-6 px-10 py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black uppercase tracking-widest text-xs transition-all shadow-xl shadow-amber-500/20 active:scale-95 pointer-events-auto"
+                >
+                  {subject.is_free ? "Accéder Gratuitement" : getCTALabel()}
+                </button>
               </div>
             </div>
           </div>
         )}
-      </div>
+      </article>
 
-      {/* CTA Section */}
-      <div className="mt-8 flex flex-col gap-4">
+      {/* Main CTAs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {!subject.has_access ? (
-          <>
-            <Link
-              href={
-                subject.is_free
-                  ? `/subjects/${subject.id}`
-                  : `/auth?next=/subjects/${subject.id}`
-              }
-              onClick={handleUnlockClick}
-              className="
-                w-full px-6 py-4 rounded-xl
-                bg-gradient-to-r from-amber-500 to-amber-600
-                text-white font-bold text-lg
-                hover:from-amber-600 hover:to-amber-700
-                transition-all duration-200
-                shadow-lg hover:shadow-xl
-                flex items-center justify-center gap-2
-                group
-              "
-            >
-              <Unlock className="w-5 h-5 group-hover:scale-110 transition-transform" />
-              {subject.is_free
-                ? "Accéder au sujet complet"
-                : getCTALabel()}
-            </Link>
-
-            {!subject.is_free && (
-              <p className="text-center text-slate-600 text-sm">
-                ou{" "}
-                <Link
-                  href="/auth"
-                  className="text-amber-600 hover:underline font-semibold"
-                >
-                  connectez-vous
-                </Link>{" "}
-                si vous avez déjà un accès
-              </p>
-            )}
-          </>
+          <button
+            onClick={handleUnlockClick}
+            className="w-full px-8 py-5 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase tracking-widest hover:bg-amber-500 dark:hover:bg-amber-400 transition-all shadow-xl shadow-slate-900/20 flex items-center justify-center gap-3 group"
+          >
+            <Unlock className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            {subject.is_free ? "Accéder Gratuitement" : getCTALabel()}
+          </button>
         ) : (
           <Link
             href={`/subjects/${subject.id}`}
-            className="
-              w-full px-6 py-4 rounded-xl
-              bg-gradient-to-r from-emerald-500 to-emerald-600
-              text-white font-bold text-lg
-              hover:from-emerald-600 hover:to-emerald-700
-              transition-all duration-200
-              shadow-lg hover:shadow-xl
-              flex items-center justify-center gap-2
-              group
-            "
+            className="w-full px-8 py-5 rounded-2xl bg-emerald-600 text-white font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20 flex items-center justify-center gap-3"
           >
-            <Unlock className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            Consulter le sujet complet
+            <Unlock className="w-5 h-5" />
+            Consulter le sujet
           </Link>
         )}
 
-        {/* Secondary CTA */}
         <button
           onClick={() => {
-            // Analytics event for sharing
-            recordTeaserCTA(subject.id, "share", variant).catch(console.error);
-            if (typeof window !== "undefined" && (window as any).gtag) {
-              (window as any).gtag("event", "teaser_share", {
-                subject_id: subject.id,
-                exam_type: subject.exam_type,
-              });
+            if (navigator.share) {
+                navigator.share({
+                    title: `Sujet ${subject.matiere_display} ${subject.year}`,
+                    text: `Réviser sur mah.ai`,
+                    url: window.location.href
+                });
             }
-            // TODO: Implement share functionality
           }}
-          className="
-            w-full px-6 py-3 rounded-xl
-            bg-slate-100 hover:bg-slate-200
-            text-slate-700 font-semibold
-            transition-colors duration-200
-            flex items-center justify-center gap-2
-          "
+          className="w-full px-8 py-5 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-3"
         >
-          Partager cet aperçu
+          <Share2 className="w-5 h-5" />
+          Partager
         </button>
       </div>
 
-      {/* Info Section */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-slate-50 rounded-lg p-4 text-center">
-          <p className="text-2xl font-bold text-slate-900">
-            {subject.view_count.toLocaleString()}
-          </p>
-          <p className="text-xs text-slate-500 mt-1">Consultations</p>
+      {/* Stats & Info */}
+      <div className="grid grid-cols-3 gap-4 pt-8 border-t border-slate-200 dark:border-slate-800">
+        <div className="text-center">
+            <p className="text-2xl font-black text-slate-900 dark:text-white">{subject.view_count.toLocaleString()}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vues</p>
         </div>
-        <div className="bg-slate-50 rounded-lg p-4 text-center">
-          <p className="text-2xl font-bold text-slate-900">
-            {subject.created_at
-              ? new Date(subject.created_at).getFullYear()
-              : "?"}
-          </p>
-          <p className="text-xs text-slate-500 mt-1">Année d&apos;ajout</p>
+        <div className="text-center">
+            <p className="text-2xl font-black text-slate-900 dark:text-white">{subject.is_free ? '0' : subject.credit_cost}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Coût (Crédits)</p>
+        </div>
+        <div className="text-center">
+            <p className="text-2xl font-black text-slate-900 dark:text-white">{new Date(subject.created_at || '').getFullYear()}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mise en ligne</p>
         </div>
       </div>
 

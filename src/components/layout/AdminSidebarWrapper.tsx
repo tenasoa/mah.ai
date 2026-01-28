@@ -78,28 +78,27 @@ export function AdminSidebarWrapper({
   const allNavItems = [...resolvedNavItems, dashboardNavItem];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col transition-colors duration-500">
       {/* Ambient Background - Admin theme */}
       <div className="mah-ambient">
         <div
-          className="mah-blob"
+          className="mah-blob opacity-20 dark:opacity-10"
           style={{
             width: '500px',
             height: '500px',
-            background: '#c7d2fe',
+            background: 'linear-gradient(135deg, #c7d2fe 0%, #4338ca 100%)',
             top: '-100px',
             left: '-100px',
           }}
         />
         <div
-          className="mah-blob"
+          className="mah-blob opacity-18 dark:opacity-10"
           style={{
             width: '400px',
             height: '400px',
-            background: '#fed7aa',
+            background: 'linear-gradient(135deg, #fed7aa 0%, #b45309 100%)',
             bottom: '-120px',
             right: '-80px',
-            opacity: 0.18,
           }}
         />
       </div>

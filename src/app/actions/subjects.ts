@@ -559,6 +559,7 @@ export async function createSubject(params: {
   credit_cost?: number;
   exam_metadata?: any;
   status?: SubjectStatus;
+  requestId?: string;
 }): Promise<{ data: Subject | null; error: string | null }> {
   const supabase = await createClient();
 
@@ -589,10 +590,13 @@ export async function createSubject(params: {
     // Contributors can only create drafts
     const status = isAdmin ? (params.status || 'published') : 'draft';
 
+    // Extract requestId from params to avoid inserting it into subjects table
+    const { requestId, ...subjectData } = params;
+
     const { data, error } = await supabase
       .from('subjects')
       .insert({
-        ...params,
+        ...subjectData,
         status,
         uploaded_by: user.id,
       })
@@ -601,6 +605,31 @@ export async function createSubject(params: {
 
     if (error) {
       return { data: null, error: error.message };
+    }
+
+    // If there is a requestId, fulfill it
+    if (requestId && data) {
+      const { data: requestData } = await supabase
+        .from('subject_requests')
+        .update({
+          status: 'fulfilled',
+          subject_id: data.id,
+          fulfilled_at: new Date().toISOString()
+        })
+        .eq('id', requestId)
+        .select('user_id')
+        .single();
+
+      // Create notification for the user
+      if (requestData?.user_id) {
+        await supabase.from('notifications').insert({
+          user_id: requestData.user_id,
+          title: 'Sujet disponible !',
+          content: `Le sujet "${params.title}" que vous avez demandé est maintenant disponible sur mah.ai.`,
+          type: 'info',
+          metadata: { subject_id: data.id, request_id: requestId }
+        });
+      }
     }
 
     return { data, error: null };

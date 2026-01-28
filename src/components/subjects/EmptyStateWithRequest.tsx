@@ -3,9 +3,19 @@
 import { useState } from "react";
 import { FileText, Plus } from "lucide-react";
 import { SubjectRequestModal } from "./SubjectRequestModal";
+import { useRouter } from "next/navigation";
 
-export function EmptyStateWithRequest({ searchQuery }: { searchQuery?: string }) {
+export function EmptyStateWithRequest({ searchQuery, isAuthenticated }: { searchQuery?: string; isAuthenticated: boolean }) {
   const [isModalOpen, setIsOpen] = useState(false);
+  const router = useRouter();
+
+  const handleRequestClick = () => {
+    if (!isAuthenticated) {
+      router.push(`/auth?next=/subjects${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`);
+      return;
+    }
+    setIsOpen(true);
+  };
 
   return (
     <div className="text-center py-12 px-6 bg-white rounded-[32px] border border-slate-200 shadow-xl shadow-slate-200/50 animate-in fade-in zoom-in duration-500 max-w-2xl mx-auto">
@@ -23,7 +33,7 @@ export function EmptyStateWithRequest({ searchQuery }: { searchQuery?: string })
       
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={handleRequestClick}
           className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-slate-900 text-white font-bold uppercase tracking-widest text-[10px] hover:bg-indigo-600 transition-all shadow-lg shadow-slate-900/20"
         >
           <Plus className="w-4 h-4" />

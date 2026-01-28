@@ -3,13 +3,16 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Navbar, type NavItem, type UserProfile } from "@/components/layout/Navbar";
-import { LayoutGrid, BookOpen, ShieldAlert } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { LayoutGrid, BookOpen, ShieldAlert, MessageCircle } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ReactNode } from "react";
+import { MobileNav } from "@/components/layout/MobileNav";
+import { useToast } from "@/components/ui/Toast";
 
 const baseNavItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/subjects", label: "Sujets", icon: BookOpen },
+  { href: "/chat", label: "Messages", icon: MessageCircle },
 ];
 
 interface PersistentLayoutProps {
@@ -21,7 +24,13 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
   const [roles, setRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  const isZenMode = searchParams.get('zen') === 'true';
+
+  const { toast } = useToast();
+  const [hasNotifiedProfile, setHasNotifiedProfile] = useState(false);
 
   useEffect(() => {
     async function loadUserProfile() {
@@ -38,12 +47,23 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
         // Fetch profile data
         const { data: profile } = await supabase
           .from("profiles")
-          .select("pseudo, etablissement, classe, roles, avatar_url")
+          .select("pseudo, etablissement, classe, roles, avatar_url, bio")
           .eq("id", authUser.id)
           .single();
 
         if (profile) {
           setRoles((profile.roles as string[]) || []);
+          const isComplete = profile.pseudo && profile.etablissement && profile.classe && profile.bio;
+          
+          if (!isComplete && !hasNotifiedProfile && pathname !== "/profile") {
+            toast(
+              "Ton profil n'attend que toi ! Complète-le pour une meilleure expérience.",
+              "profile",
+              8000
+            );
+            setHasNotifiedProfile(true);
+          }
+
           setUser({
             name: profile.pseudo || "Élève",
             subtitle:
@@ -61,7 +81,7 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
     }
 
     loadUserProfile();
-  }, [pathname]);
+  }, [pathname, hasNotifiedProfile]);
 
   const isAdmin = roles.includes('admin') || roles.includes('superadmin') || roles.includes('validator');
   
@@ -76,18 +96,20 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = "/";
+    window.location.href = "/?logout=true";
   };
 
-  // Don't render layout for auth pages
-  if (pathname?.startsWith("/auth") || pathname === "/" || pathname?.startsWith("/admin")) {
-    return <>{children}</>;
-  }
+  // Return early for auth pages but keep the context available
+  const isExcluded = pathname?.startsWith("/auth") || pathname === "/" || pathname?.startsWith("/admin");
 
   const isReaderRoute = pathname?.startsWith("/subjects/") && pathname !== "/subjects";
 
+  if (isExcluded) {
+    return <>{children}</>;
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col transition-colors duration-300">
       {/* Ambient Background */}
       <div className="mah-ambient">
         <div className="mah-blob mah-blob-1" />
@@ -95,22 +117,26 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
         <div className="mah-blob mah-blob-3" />
       </div>
 
-      <Navbar
-        navItems={currentNavItems}
-        user={user}
-        onLogout={handleLogout}
-      />
+      {!isZenMode && (
+        <Navbar
+            navItems={currentNavItems}
+            user={user}
+            onLogout={handleLogout}
+        />
+      )}
 
       {/* Main Content */}
       <main
         className={
           isReaderRoute
-            ? "relative z-10 flex-1 w-full"
-            : "relative z-10 flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-8 lg:px-8"
+            ? `relative z-10 flex-1 w-full ${isZenMode ? 'h-screen' : 'pb-20 md:pb-0'}`
+            : "relative z-10 flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-8 lg:px-8 pb-24 md:pb-8"
         }
       >
         {children}
       </main>
+
+      {!isZenMode && <MobileNav />}
     </div>
   );
 }

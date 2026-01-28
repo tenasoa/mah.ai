@@ -1,6 +1,9 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import "./globals.css";
 import { PersistentLayout } from "@/components/layout/PersistentLayout";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { ToastProvider } from "@/components/ui/Toast";
 
 export const metadata: Metadata = {
   title: "mah.ai - Votre Tuteur IA Socratique",
@@ -15,7 +18,13 @@ export default function RootLayout({
   return (
     <html lang="fr" className="font-outfit font-inter" suppressHydrationWarning>
       <body className="font-inter" suppressHydrationWarning>
-        <PersistentLayout>{children}</PersistentLayout>
+        <ThemeProvider>
+          <ToastProvider>
+            <Suspense fallback={null}>
+              <PersistentLayout>{children}</PersistentLayout>
+            </Suspense>
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

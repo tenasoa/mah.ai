@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Sparkles,
@@ -38,6 +38,8 @@ import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import { getUserCreditsAndSubscriptionClient } from "@/lib/credits-client";
 import { createClient } from "@/lib/supabase/client";
 import { SubjectStatus } from "@/lib/types/subject";
+import { useTheme } from "@/components/providers/ThemeProvider";
+import { SubjectComments } from "./SubjectComments";
 
 interface SubjectReaderProps {
   subjectId: string;
@@ -68,6 +70,7 @@ export function SubjectReader({
 }: SubjectReaderProps) {
   const router = useRouter();
   const supabase = createClient();
+  const { theme } = useTheme();
   const [content, setContent] = useState(initialContent || "");
   const [markdownContent, setMarkdownContent] = useState(initialContent || "");
   const [isEditing, setIsEditing] = useState(forceEdit);
@@ -81,7 +84,8 @@ export function SubjectReader({
   const [viewMode, setViewMode] = useState<"single" | "split" | "full">(
     "single",
   );
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const searchParams = useSearchParams();
+  const isZen = searchParams.get('zen') === 'true';
 
   // Nouveaux états pour les fonctionnalités
   const [userCredits, setUserCredits] = useState(0);
@@ -97,6 +101,7 @@ export function SubjectReader({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastTone, setToastTone] = useState<"success" | "error">("success");
   const [messages, setMessages] = useState<QuestionMessage[]>([]);
+  const [showComments, setShowComments] = useState(false);
 
   const canValidate =
     userRoles.includes("admin") ||
@@ -111,6 +116,16 @@ export function SubjectReader({
     setToastTone(tone);
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const toggleZen = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (isZen) {
+      params.delete('zen');
+    } else {
+      params.set('zen', 'true');
+    }
+    router.push(`${window.location.pathname}?${params.toString()}`);
   };
 
   const handleStatusUpdate = async (status: SubjectStatus) => {
@@ -286,8 +301,7 @@ export function SubjectReader({
 
   const handleSaveMarkdown = async () => {
     if (!markdownContent.trim()) {
-      setToastTone("error");
-      setToastMessage("Le contenu ne peut pas être vide");
+      showToast("Le contenu ne peut pas être vide", "error");
       return;
     }
 
@@ -295,19 +309,15 @@ export function SubjectReader({
     try {
       const result = await saveSubjectMarkdown(subjectId, markdownContent);
       if (result.success) {
-        setToastTone("success");
-        setToastMessage("Sujet mis à jour avec succès");
+        showToast("Sujet mis à jour avec succès");
         setIsEditing(false);
       } else {
-        setToastTone("error");
-        setToastMessage(result.error || "Erreur lors de la sauvegarde");
+        showToast(result.error || "Erreur lors de la sauvegarde", "error");
       }
     } catch (error) {
-      setToastTone("error");
-      setToastMessage("Erreur de connexion");
+      showToast("Erreur de connexion", "error");
     } finally {
       setIsSaving(false);
-      setTimeout(() => setToastMessage(null), 3000);
     }
   };
 
@@ -351,10 +361,10 @@ export function SubjectReader({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-slate-50">
+    <div className="flex flex-col h-[calc(100vh-4rem)] bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
       {/* Admin Validation Bar - Only visible if not published */}
       {canValidate && currentStatus !== "published" && (
-        <div className="bg-slate-900 text-white px-6 py-3 flex items-center justify-between z-[40] animate-in slide-in-from-top duration-300">
+        <div className="bg-slate-900 dark:bg-slate-900 border-b border-white/10 text-white px-6 py-3 flex items-center justify-between z-[40] animate-in slide-in-from-top duration-300">
           <div className="flex items-center gap-4 text-sm font-bold">
             <span className="flex items-center gap-2 text-amber-400 uppercase tracking-widest text-[10px]">
               <AlertTriangle className="w-4 h-4" />
@@ -428,31 +438,49 @@ export function SubjectReader({
       )}
 
       {/* Top Navigation Bar */}
-      <div className="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between z-30 shadow-sm">
+      <div className="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 flex items-center justify-between z-30 shadow-sm transition-colors">
         <div className="flex items-center gap-4">
           <button
             onClick={handleBack}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-500"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-slate-500 dark:text-slate-400"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-sm font-bold text-slate-900 leading-none">
+            <h1 className="text-sm font-bold text-slate-900 dark:text-white leading-none">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-[11px] text-slate-500 mt-1">{subtitle}</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{subtitle}</p>
             )}
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={toggleZen}
+            className={`p-2 rounded-lg transition-all ${isZen ? 'bg-amber-100 text-amber-600 shadow-sm' : 'hover:bg-slate-100 text-slate-500'}`}
+            title={isZen ? "Quitter le mode Zen" : "Mode Zen (Lecture Focus)"}
+          >
+            {isZen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+          </button>
+
+          <button
+            onClick={() => setShowComments(!showComments)}
+            className={`p-2 rounded-lg transition-all ${showComments ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'hover:bg-slate-100 text-slate-500'}`}
+            title={showComments ? "Masquer les commentaires" : "Afficher les commentaires"}
+          >
+            <MessageSquare className="w-5 h-5" />
+          </button>
+
+          <div className="h-6 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1" />
+
           {isEditing && (
             <button
               onClick={() =>
                 setViewMode(viewMode === "split" ? "full" : "split")
               }
-              className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg flex items-center gap-2 transition-colors"
+              className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg flex items-center gap-2 transition-colors"
             >
               {viewMode === "full" ? (
                 <Columns className="w-4 h-4" />
@@ -463,13 +491,13 @@ export function SubjectReader({
             </button>
           )}
 
-          <div className="h-6 w-[1px] bg-slate-200 mx-2" />
+          <div className="h-6 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2" />
 
           {canEdit && (
             !isEditing ? (
               <button
                 onClick={() => setIsEditing(true)}
-                className="px-4 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 flex items-center gap-2 transition-all shadow-sm"
+                className="px-4 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 transition-all shadow-sm"
               >
                 <Edit3 className="w-4 h-4" />
                 Modifier
@@ -478,7 +506,7 @@ export function SubjectReader({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="px-4 py-1.5 text-slate-600 hover:text-slate-900 text-sm font-medium"
+                  className="px-4 py-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-sm font-medium"
                 >
                   Annuler
                 </button>
@@ -500,74 +528,74 @@ export function SubjectReader({
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden flex relative bg-slate-100">
+      <div className="flex-1 overflow-hidden flex relative bg-slate-100 dark:bg-slate-950">
         {/* Main Workspace */}
         <div className="flex-1 flex overflow-hidden gap-4 p-4">
           {/* Editor Panel */}
           {isEditing && (
             <div
-              className={`${viewMode === "split" ? "w-1/2" : "w-full"} h-full flex flex-col bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden`}
+              className={`${viewMode === "split" ? "w-1/2" : "w-full"} h-full flex flex-col bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800 overflow-hidden`}
             >
-              <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-1 overflow-x-auto no-scrollbar">
+              <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 flex items-center gap-1 overflow-x-auto no-scrollbar">
                 <button
                   onClick={() => insertText("# ", "")}
-                  className="p-1.5 hover:bg-white hover:shadow-sm rounded text-xs font-bold text-slate-600"
+                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs font-bold text-slate-600 dark:text-slate-400"
                 >
                   H1
                 </button>
                 <button
                   onClick={() => insertText("## ", "")}
-                  className="p-1.5 hover:bg-white hover:shadow-sm rounded text-xs font-bold text-slate-600"
+                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs font-bold text-slate-600 dark:text-slate-400"
                 >
                   H2
                 </button>
                 <button
                   onClick={() => insertText("**", "**")}
-                  className="p-1.5 hover:bg-white hover:shadow-sm rounded text-xs font-bold text-slate-600"
+                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs font-bold text-slate-600 dark:text-slate-400"
                 >
                   B
                 </button>
                 <button
                   onClick={() => insertText("*", "*")}
-                  className="p-1.5 hover:bg-white hover:shadow-sm rounded text-xs italic text-slate-600"
+                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs italic text-slate-600 dark:text-slate-400"
                 >
                   I
                 </button>
                 <button
                   onClick={() => insertText("<u>", "</u>")}
-                  className="p-1.5 hover:bg-white hover:shadow-sm rounded text-xs text-slate-600"
+                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs text-slate-600 dark:text-slate-400"
                 >
                   <UnderlineIcon className="w-3 h-3" />
                 </button>
-                <div className="w-[1px] h-4 bg-slate-300 mx-1" />
+                <div className="w-[1px] h-4 bg-slate-300 dark:bg-slate-700 mx-1" />
                 <button
                   onClick={() => insertText("- ", "")}
-                  className="p-1.5 hover:bg-white hover:shadow-sm rounded text-xs text-slate-600"
+                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs text-slate-600 dark:text-slate-400"
                 >
                   Liste
                 </button>
                 <button
                   onClick={() => insertText("1. ", "")}
-                  className="p-1.5 hover:bg-white hover:shadow-sm rounded text-xs text-slate-600"
+                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs text-slate-600 dark:text-slate-400"
                 >
                   Num
                 </button>
                 <button
                   onClick={() => insertText("> ", "")}
-                  className="p-1.5 hover:bg-white hover:shadow-sm rounded text-xs text-slate-600"
+                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs text-slate-600 dark:text-slate-400"
                 >
                   Citation
                 </button>
-                <div className="w-[1px] h-4 bg-slate-300 mx-1" />
+                <div className="w-[1px] h-4 bg-slate-300 dark:bg-slate-700 mx-1" />
                 <button
                   onClick={() => insertText("$$", "$$")}
-                  className="p-1.5 hover:bg-white hover:shadow-sm rounded text-xs text-slate-600"
+                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs text-slate-600 dark:text-slate-400"
                 >
                   Math
                 </button>
                 <button
                   onClick={() => insertText("```\n", "\n```")}
-                  className="p-1.5 hover:bg-white hover:shadow-sm rounded text-xs text-slate-600"
+                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs text-slate-600 dark:text-slate-400"
                 >
                   Code
                 </button>
@@ -577,7 +605,7 @@ export function SubjectReader({
                 onScroll={handleEditorScroll}
                 value={markdownContent}
                 onChange={(e) => setMarkdownContent(e.target.value)}
-                className="flex-1 w-full p-8 outline-none resize-none font-mono text-sm leading-relaxed text-slate-800 bg-transparent"
+                className="flex-1 w-full p-8 outline-none resize-none font-mono text-sm leading-relaxed text-slate-800 dark:text-slate-200 bg-transparent custom-scrollbar"
                 placeholder="# Titre du sujet\n\n## Exercice 1\nÉcrivez ici le contenu de l'examen..."
                 autoFocus
               />
@@ -588,7 +616,7 @@ export function SubjectReader({
           {(!isEditing || viewMode === "split") && (
             <div
               ref={previewRef}
-              className="flex-1 h-full bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-y-auto overflow-x-hidden"
+              className="flex-1 h-full bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800 overflow-y-auto overflow-x-hidden transition-colors custom-scrollbar"
             >
               <div className="min-h-full flex flex-col">
                 <div className="h-1.5 bg-gradient-to-r from-violet-500 to-purple-500 w-full" />
@@ -596,24 +624,24 @@ export function SubjectReader({
                   {markdownContent ? (
                     <MarkdownRenderer
                       content={markdownContent}
-                      variant="light"
+                      variant={theme === "dark" ? "dark" : "light"}
                     />
                   ) : (
                     <div className="h-full flex flex-col items-center justify-center text-center py-20">
-                      <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
-                        <BookOpen className="w-10 h-10 text-slate-200" />
+                      <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
+                        <BookOpen className="w-10 h-10 text-slate-200 dark:text-slate-700" />
                       </div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                         Aucun contenu disponible
                       </h3>
-                      <p className="text-slate-500 max-w-xs">
+                      <p className="text-slate-500 dark:text-slate-400 max-w-xs">
                         Ce sujet n&apos;a pas encore été édité par la communauté
                         mah.ai.
                       </p>
                       {canEdit && (
                         <button
                           onClick={() => setIsEditing(true)}
-                          className="mt-6 text-violet-600 font-semibold hover:text-violet-700 flex items-center gap-2"
+                          className="mt-6 text-violet-600 dark:text-violet-400 font-semibold hover:text-violet-700 dark:hover:text-violet-300 flex items-center gap-2"
                         >
                           <Edit3 className="w-4 h-4" />
                           Commencer l&apos;édition
@@ -621,6 +649,7 @@ export function SubjectReader({
                       )}
                     </div>
                   )}
+                  {!isEditing && showComments && <SubjectComments subjectId={subjectId} />}
                 </div>
               </div>
             </div>

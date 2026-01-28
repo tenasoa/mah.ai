@@ -41,8 +41,9 @@ function SubjectCard({
     <Link
       href={href}
       className={`
-        group relative mah-card overflow-hidden
-        hover:border-amber-200 hover:shadow-lg hover:shadow-amber-500/10
+        group relative mah-card overflow-hidden transition-all duration-300
+        hover:border-amber-200 dark:hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10
+        bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800
       `}
     >
       {/* Content */}
@@ -50,24 +51,24 @@ function SubjectCard({
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div
-            className={`h-12 w-12 rounded-xl flex items-center justify-center text-2xl ${colors.bg} ${colors.border} border`}
+            className={`h-12 w-12 rounded-xl flex items-center justify-center text-2xl ${colors.bg} ${colors.border} border shadow-sm dark:shadow-none transition-colors duration-300`}
           >
             {icon}
           </div>
 
           <div className="flex items-center gap-2">
             {subject.is_free ? (
-              <span className="px-2 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center gap-1">
+              <span className="px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold flex items-center gap-1 border border-emerald-200/50 dark:border-emerald-800/50">
                 <Unlock className="w-3 h-3" />
                 Gratuit
               </span>
             ) : subject.has_access ? (
-              <span className="px-2 py-1 rounded-lg bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center gap-1">
+              <span className="px-2 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-bold flex items-center gap-1 border border-indigo-200/50 dark:border-indigo-800/50">
                 <Unlock className="w-3 h-3" />
                 Débloqué
               </span>
             ) : (
-              <span className="px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold flex items-center gap-1">
+              <span className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold flex items-center gap-1 border border-slate-200/50 dark:border-slate-700/50">
                 <Lock className="w-3 h-3" />
                 {subject.credit_cost} crédit{subject.credit_cost > 1 ? 's' : ''}
               </span>
@@ -78,36 +79,36 @@ function SubjectCard({
         {/* Exam Type Badge */}
         <div className="mt-4">
           <span
-            className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${colors.bg} ${colors.text}`}
+            className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${colors.bg} ${colors.text} border dark:border-white/10`}
           >
             {EXAM_TYPE_LABELS[subject.exam_type]} {subject.year}
           </span>
         </div>
 
         {/* Title & Description */}
-        <div className="mt-3 flex-1">
+        <div className="mt-4 flex-1">
           <h3
-            className={`font-bold text-slate-900 group-hover:text-amber-600 transition-colors ${
+            className={`font-black text-slate-900 dark:text-white group-hover:text-amber-500 transition-colors ${
               'text-base'
-            }`}
+            } leading-tight font-outfit`}
           >
             {subject.matiere_display}
           </h3>
           {subject.serie && (
-            <p className="text-sm text-slate-500 mt-1">Série {subject.serie}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 font-bold uppercase tracking-tighter">Série {subject.serie}</p>
           )}
           {subject.niveau && (
-            <p className="text-xs text-slate-400 mt-0.5">{subject.niveau}</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 uppercase font-medium">{subject.niveau}</p>
           )}
         </div>
 
         {/* Footer */}
-        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-1 text-xs text-slate-400">
+        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
             <Eye className="w-3.5 h-3.5" />
             <span>{subject.view_count.toLocaleString()} vues</span>
           </div>
-          <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-amber-500 group-hover:translate-x-1 transition-all" />
+          <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-700 group-hover:text-amber-500 group-hover:translate-x-1 transition-all" />
         </div>
       </div>
     </Link>
@@ -117,19 +118,19 @@ function SubjectCard({
 // Skeleton Loader
 function SubjectCardSkeleton() {
   return (
-    <div className="mah-card animate-pulse">
+    <div className="mah-card bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 animate-pulse">
       <div className="flex items-start justify-between">
-        <div className="h-12 w-12 rounded-xl bg-slate-200" />
-        <div className="h-6 w-16 rounded-lg bg-slate-200" />
+        <div className="h-12 w-12 rounded-xl bg-slate-100 dark:bg-slate-800" />
+        <div className="h-6 w-16 rounded-lg bg-slate-100 dark:bg-slate-800" />
       </div>
-      <div className="mt-4 h-6 w-24 rounded-full bg-slate-200" />
-      <div className="mt-3">
-        <div className="h-5 w-3/4 rounded bg-slate-200" />
-        <div className="h-4 w-1/2 rounded bg-slate-200 mt-2" />
+      <div className="mt-4 h-5 w-24 rounded-full bg-slate-100 dark:bg-slate-800" />
+      <div className="mt-4 space-y-2">
+        <div className="h-5 w-3/4 rounded bg-slate-100 dark:bg-slate-800" />
+        <div className="h-3 w-1/2 rounded bg-slate-100 dark:bg-slate-800 mt-2" />
       </div>
-      <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-        <div className="h-4 w-16 rounded bg-slate-200" />
-        <div className="h-5 w-5 rounded bg-slate-200" />
+      <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <div className="h-3 w-16 rounded bg-slate-100 dark:bg-slate-800" />
+        <div className="h-5 w-5 rounded bg-slate-100 dark:bg-slate-800" />
       </div>
     </div>
   );
@@ -177,7 +178,7 @@ async function SubjectsGrid({
   }
 
   if (!data || data.subjects.length === 0) {
-    return <EmptyStateWithRequest searchQuery={search} />;
+    return <EmptyStateWithRequest searchQuery={search} isAuthenticated={isAuthenticated} />;
   }
 
   // Build load more URL
@@ -280,12 +281,12 @@ export default async function SubjectsPage({
         {/* Filters (Client Component with Server Data) */}
         <Suspense
           fallback={
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 animate-pulse">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 animate-pulse">
               <div className="space-y-4">
-                <div className="h-4 w-24 bg-slate-200 rounded" />
+                <div className="h-4 w-24 bg-slate-100 dark:bg-slate-800 rounded" />
                 <div className="flex gap-2">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="h-8 w-20 bg-slate-200 rounded-full" />
+                    <div key={i} className="h-8 w-20 bg-slate-100 dark:bg-slate-800 rounded-full" />
                   ))}
                 </div>
               </div>

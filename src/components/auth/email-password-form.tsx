@@ -74,8 +74,8 @@ export function EmailPasswordForm() {
     <div className="space-y-5">
       {/* Error Message */}
       {error && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-3 animate-slide-down">
-          <div className="h-5 w-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm flex items-start gap-3 animate-slide-down">
+          <div className="h-5 w-5 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
             <span className="text-red-500 text-xs">!</span>
           </div>
           <p>{error}</p>
@@ -84,8 +84,8 @@ export function EmailPasswordForm() {
 
       {/* Success Message */}
       {message && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm flex items-start gap-3 animate-slide-down">
-          <div className="h-5 w-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-sm flex items-start gap-3 animate-slide-down">
+          <div className="h-5 w-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
             <span className="text-emerald-500 text-xs">✓</span>
           </div>
           <p>{message}</p>
@@ -97,14 +97,14 @@ export function EmailPasswordForm() {
         {isSignUp && (
           <div className="space-y-4 animate-slide-down">
             <div className="space-y-2">
-              <label htmlFor="pseudo" className="text-xs font-semibold text-slate-600 flex items-center gap-2">
+              <label htmlFor="pseudo" className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
                 <User className="w-3.5 h-3.5" />
                 Pseudo
               </label>
               <input
                 id="pseudo"
                 type="text"
-                className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white focus:border-amber-400 focus:ring-4 focus:ring-amber-100 hover:border-slate-300"
+                className="w-full px-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white dark:focus:bg-slate-800 focus:border-amber-400 focus:ring-4 focus:ring-amber-100 hover:border-slate-300 dark:hover:border-slate-600"
                 placeholder="Ton surnom"
                 value={pseudo}
                 onChange={(e) => setPseudo(e.target.value)}
@@ -115,15 +115,15 @@ export function EmailPasswordForm() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="etablissement" className="text-xs font-semibold text-slate-600 flex items-center gap-2">
+                <label htmlFor="etablissement" className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
                   <School className="w-3.5 h-3.5" />
                   Établissement
                 </label>
                 <input
                   id="etablissement"
                   type="text"
-                  className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white focus:border-amber-400 focus:ring-4 focus:ring-amber-100 hover:border-slate-300"
-                  placeholder="Ex: CNTEMAD, Lycée..."
+                  className="w-full px-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white dark:focus:bg-slate-800 focus:border-amber-400 focus:ring-4 focus:ring-amber-100 hover:border-slate-300 dark:hover:border-slate-600"
+                  placeholder="Ex: CNTEMAD..."
                   value={etablissement}
                   onChange={(e) => setEtablissement(e.target.value)}
                   required
@@ -132,27 +132,27 @@ export function EmailPasswordForm() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="classe" className="text-xs font-semibold text-slate-600 flex items-center gap-2">
+                <label htmlFor="classe" className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
                   <GraduationCap className="w-3.5 h-3.5" />
                   Classe
                 </label>
                 <select
                   id="classe"
-                  className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 outline-none transition-all duration-200 focus:bg-white focus:border-amber-400 focus:ring-4 focus:ring-amber-100 hover:border-slate-300 appearance-none"
+                  className="w-full px-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white outline-none transition-all duration-200 focus:bg-white dark:focus:bg-slate-800 focus:border-amber-400 focus:ring-4 focus:ring-amber-100 hover:border-slate-300 dark:hover:border-slate-600 appearance-none"
                   value={classe}
                   onChange={(e) => setClasse(e.target.value)}
                   required
                   disabled={isLoading}
                 >
-                  <option value="" disabled>Sélectionner</option>
-                  <option value="Seconde">Seconde</option>
-                  <option value="Première">Première</option>
-                  <option value="Terminale">Terminale</option>
-                  <option value="L1">L1</option>
-                  <option value="L2">L2</option>
-                  <option value="L3">L3</option>
-                  <option value="M1">M1</option>
-                  <option value="M2">M2</option>
+                  <option value="" disabled className="bg-white dark:bg-slate-900">Sélectionner</option>
+                  <option value="Seconde" className="bg-white dark:bg-slate-900">Seconde</option>
+                  <option value="Première" className="bg-white dark:bg-slate-900">Première</option>
+                  <option value="Terminale" className="bg-white dark:bg-slate-900">Terminale</option>
+                  <option value="L1" className="bg-white dark:bg-slate-900">L1</option>
+                  <option value="L2" className="bg-white dark:bg-slate-900">L2</option>
+                  <option value="L3" className="bg-white dark:bg-slate-900">L3</option>
+                  <option value="M1" className="bg-white dark:bg-slate-900">M1</option>
+                  <option value="M2" className="bg-white dark:bg-slate-900">M2</option>
                 </select>
               </div>
             </div>
@@ -161,7 +161,7 @@ export function EmailPasswordForm() {
 
         {/* Email Field */}
         <div className="space-y-2">
-          <label htmlFor="email" className="text-xs font-semibold text-slate-600 flex items-center gap-2">
+          <label htmlFor="email" className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
             <Mail className="w-3.5 h-3.5" />
             Adresse Email
           </label>
@@ -170,32 +170,27 @@ export function EmailPasswordForm() {
               id="email"
               type="email"
               autoComplete="email"
-              className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white focus:border-amber-400 focus:ring-4 focus:ring-amber-100 hover:border-slate-300"
+              className="w-full px-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white dark:focus:bg-slate-800 focus:border-amber-400 focus:ring-4 focus:ring-amber-100 hover:border-slate-300 dark:hover:border-slate-600"
               placeholder="ton.email@exemple.mg"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={isLoading}
             />
-            {email && !isLoading && (
-              <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse-soft" />
-              </div>
-            )}
           </div>
         </div>
 
         {/* Password Field */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label htmlFor="password" className="text-xs font-semibold text-slate-600 flex items-center gap-2">
+            <label htmlFor="password" className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
               <Lock className="w-3.5 h-3.5" />
               Mot de passe
             </label>
             {!isSignUp && (
               <button
                 type="button"
-                className="text-xs text-amber-600 hover:text-amber-700 font-medium transition-colors"
+                className="text-xs text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 font-medium transition-colors"
               >
                 Mot de passe oublié ?
               </button>
@@ -206,7 +201,7 @@ export function EmailPasswordForm() {
               id="password"
               type={showPassword ? 'text' : 'password'}
               autoComplete={isSignUp ? 'new-password' : 'current-password'}
-              className="w-full px-4 py-3.5 pr-12 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white focus:border-amber-400 focus:ring-4 focus:ring-amber-100 hover:border-slate-300"
+              className="w-full px-4 py-3.5 pr-12 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white dark:focus:bg-slate-800 focus:border-amber-400 focus:ring-4 focus:ring-amber-100 hover:border-slate-300 dark:hover:border-slate-600"
               placeholder="••••••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -217,7 +212,7 @@ export function EmailPasswordForm() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-1"
               tabIndex={-1}
             >
               {showPassword ? (
@@ -227,11 +222,6 @@ export function EmailPasswordForm() {
               )}
             </button>
           </div>
-          {isSignUp && (
-            <p className="text-xs text-slate-400 mt-1.5">
-              Minimum 6 caractères requis
-            </p>
-          )}
         </div>
 
         {/* Submit Button */}
@@ -243,14 +233,14 @@ export function EmailPasswordForm() {
           {isLoading ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              <span>{isSignUp ? 'Création en cours...' : 'Connexion en cours...'}</span>
+              <span>{isSignUp ? 'Création...' : 'Connexion...'}</span>
             </>
           ) : (
             <>
               {isSignUp ? (
                 <>
                   <UserPlus className="w-5 h-5" />
-                  <span>Créer mon compte</span>
+                  <span>S'inscrire</span>
                 </>
               ) : (
                 <>
@@ -267,10 +257,10 @@ export function EmailPasswordForm() {
       {/* Toggle Auth Mode */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-slate-200"></div>
+          <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-white px-4 text-sm text-slate-400">ou</span>
+          <span className="bg-white dark:bg-slate-900 px-4 text-sm text-slate-400">ou</span>
         </div>
       </div>
 
@@ -282,7 +272,7 @@ export function EmailPasswordForm() {
           setMessage(null);
         }}
         disabled={isLoading}
-        className="w-full py-3.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 font-semibold transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 disabled:opacity-50"
+        className="w-full py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-semibold transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 disabled:opacity-50"
       >
         {isSignUp ? (
           <>

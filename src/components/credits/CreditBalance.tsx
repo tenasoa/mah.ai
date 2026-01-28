@@ -48,12 +48,12 @@ export function CreditBalance() {
   return (
     <Link
       href="/credits"
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-200 hover:border-amber-300 hover:from-amber-50 hover:to-orange-50 transition-all duration-300 group shadow-sm hover:shadow-md cursor-pointer"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-500 hover:from-amber-50 dark:hover:from-amber-900/20 hover:to-orange-50 dark:hover:to-orange-900/20 transition-all duration-300 group shadow-sm hover:shadow-md cursor-pointer"
       title="Solde de crédits - Cliquer pour recharger"
     >
       <Coins className="w-4 h-4 text-amber-500 fill-amber-500 group-hover:scale-110 transition-transform" />
-      <span className="font-bold text-slate-700 text-sm font-mono group-hover:text-amber-700 transition-colors">{balance}</span>
-      <Plus className="w-3 h-3 text-slate-400 group-hover:text-amber-600 group-hover:scale-110 transition-all" />
+      <span className="font-bold text-slate-700 dark:text-slate-200 text-sm font-mono group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">{balance}</span>
+      <Plus className="w-3 h-3 text-slate-400 dark:text-slate-500 group-hover:text-amber-600 dark:group-hover:text-amber-400 group-hover:scale-110 transition-all" />
     </Link>
   );
 }

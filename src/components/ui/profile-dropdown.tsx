@@ -80,7 +80,7 @@ export function ProfileDropdown({ user, isExpanded = false }: ProfileDropdownPro
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push("/auth");
+    window.location.href = "/?logout=true";
   };
 
   return (
@@ -88,7 +88,7 @@ export function ProfileDropdown({ user, isExpanded = false }: ProfileDropdownPro
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center p-1 rounded-full hover:bg-slate-100 transition-all duration-300 group cursor-pointer"
+        className="flex items-center p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300 group cursor-pointer"
         title="Menu profil"
       >
         {/* Avatar */}
@@ -110,25 +110,25 @@ export function ProfileDropdown({ user, isExpanded = false }: ProfileDropdownPro
         <Portal>
           <div
             ref={dropdownRef}
-            className="fixed bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200 w-48"
+            className="fixed bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-200 w-48"
             style={{
               top: `${dropdownPos.top}px`,
               left: `${dropdownPos.left}px`,
               zIndex: 9999,
             }}
           >
-            <div className="lg:hidden px-4 py-3 border-b border-slate-100 bg-slate-50">
-               <p className="text-sm font-semibold text-slate-900">{user.name}</p>
-               <p className="text-xs text-slate-500 truncate">{user.subtitle}</p>
+            <div className="lg:hidden px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+               <p className="text-sm font-semibold text-slate-900 dark:text-white">{user.name}</p>
+               <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.subtitle}</p>
             </div>
 
             <Link
               href="/profile"
-              className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-100"
+              className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-b border-slate-100 dark:border-slate-800"
               onClick={() => setIsOpen(false)}
             >
-              <User className="w-4 h-4 text-slate-600" />
-              <span className="text-sm font-medium text-slate-700">
+              <User className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Mon profil
               </span>
             </Link>
@@ -138,7 +138,7 @@ export function ProfileDropdown({ user, isExpanded = false }: ProfileDropdownPro
                 setIsOpen(false);
                 handleLogout();
               }}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors text-left"
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors text-left"
             >
               <LogOut className="w-4 h-4 text-red-600" />
               <span className="text-sm font-medium text-red-600">

@@ -8,5 +8,28 @@ sprints:
     summary: "Standardisation des rôles, calcul automatique des commissions (20%/15%), gestion administrative des membres et création automatique de profil."
   - id: 2
     name: "Ticket 'demande de sujet' + remboursement auto"
-    status: "in-progress"
-    priority: "high"
+    status: "completed"
+    completed_at: "2026-01-28"
+    summary: "Système de tickets pour les sujets manquants (coût 2 crédits), interface d'administration pour la gestion des demandes avec liaison automatique lors de la création de sujet, notifications utilisateurs et mécanisme de remboursement automatique après 3 jours."
+  - id: 3
+    name: "Tableau de bord des membres"
+    status: "completed"
+    completed_at: "2026-01-28"
+    summary: "Refonte du Dashboard pour être sensible aux rôles (Admin, Contributeur, Élève). Historique complet des mouvements de crédits et des revenus (Earnings) intégré au profil. Vue consolidée pour les SuperAdmins."
+  - id: 4
+    name: "Messagerie instantanée"
+    status: "completed"
+    completed_at: "2026-01-28"
+    summary: "Système de chat en temps réel via Supabase Realtime. Interface type WhatsApp avec liste de conversations, historique des messages, indicateurs de statut et intégration dans la gestion des tickets pour les admins."
+  - id: 5
+    name: "Expérience lecture & découverte"
+    status: "completed"
+    completed_at: "2026-01-28"
+    summary: "Amélioration globale de l'UX/UI. Introduction du LoadingScreen moderne, intégration complète du Dark Mode, navigation mobile optimisée (MobileNav), système de favoris (Bookmarks) et tutoriel d'onboarding pour les nouveaux utilisateurs."
+  - id: 6
+    name: "Recherche intelligente & communauté"
+    status: "completed"
+    completed_at: "2026-01-28"
+    summary: "Intégration d'un système de commentaires pour l'échange d'astuces sur les sujets. Implémentation du mode Zen pour une lecture sans distraction."
+last_updated: "2026-01-28"
+current_sprint: 6

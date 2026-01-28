@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   Sparkles,
   BookOpen,
@@ -31,6 +32,7 @@ import {
   Sun,
   Moon,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 // ─── DONNÉES ───
 
@@ -113,36 +115,31 @@ const examTypes = [
 
 const typewriterWords = ["MASTER", "LICENCE", "BACC", "BEPC", "CEPE", "divers CONCOURS"];
 
-// ─── COMPOSANT PRINCIPAL ───
-export default function LandingPage() {
+import { AuthModal } from "@/components/auth/AuthModal";
+import { useToast } from "@/components/ui/Toast";
+
+// ─── COMPOSANT INTERNE AVEC RECHERCHE ───
+function LandingPageContent() {
   const [mounted, setMounted] = useState(false);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [currentText, setCurrentText] = useState(typewriterWords[0]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
-    // Check for saved theme preference
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "dark") {
-      setIsDarkMode(true);
-      document.documentElement.classList.add("dark");
+    if (searchParams.get("logout") === "true") {
+      toast("Déconnexion réussie. À bientôt !", "success");
+      // Nettoyer l'URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
     }
-  }, []);
-
-  // Toggle Dark Mode
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-    if (!isDarkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  };
+  }, [searchParams, toast]);
 
   // Typewriter effect
   useEffect(() => {
@@ -176,6 +173,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 overflow-x-hidden transition-colors duration-300">
+
       {/* ─── AMBIENT BACKGROUND ─── */}
       <div className="mah-ambient">
         <div className="mah-blob mah-blob-1 dark:opacity-10" />
@@ -230,21 +228,15 @@ export default function LandingPage() {
             {/* Right Side Actions */}
             <div className="flex items-center gap-3">
               {/* Dark Mode Toggle */}
-              <button
-                onClick={toggleDarkMode}
-                className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
-                aria-label="Toggle dark mode"
-              >
-                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </button>
+              <ThemeToggle />
 
               {/* Desktop CTA */}
-              <Link
-                href="/auth"
-                className="hidden sm:flex px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[11px] font-bold uppercase tracking-wider shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/30 hover:-translate-y-0.5 transition-all"
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="hidden sm:flex px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[11px] font-bold uppercase tracking-wider shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/30 hover:-translate-y-0.5 transition-all cursor-pointer"
               >
                 Se connecter
-              </Link>
+              </button>
 
               {/* Mobile Menu Button */}
               <button
@@ -713,6 +705,19 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+      />
     </div>
+  );
+}
+
+export default function LandingPage() {
+  return (
+    <Suspense fallback={null}>
+      <LandingPageContent />
+    </Suspense>
   );
 }

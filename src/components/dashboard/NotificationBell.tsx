@@ -157,45 +157,43 @@ export function NotificationBell() {
       <button 
         onClick={() => {
           setIsOpen((prev) => !prev);
-          if (userId) {
+          if (userId && !isOpen) {
             loadNotifications(userId);
           }
         }}
-        className={`p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all relative cursor-pointer ${isOpen ? "ring-4 ring-slate-100 border-slate-300" : ""}`}
+        className={`p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all relative z-[71] cursor-pointer ${isOpen ? "ring-4 ring-slate-100 dark:ring-slate-800 border-slate-300 dark:border-slate-700 shadow-sm" : ""}`}
       >
         <Bell className="w-4.5 h-4.5" />
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-bounce-soft border-2 border-white">
+          <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-bounce-soft border-2 border-white dark:border-slate-900">
             {unreadCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <>
-          <div className="fixed inset-0 z-[60]" />
-          <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-[70] overflow-hidden animate-scale-in">
-            <div className="px-5 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 text-sm">Notifications</h3>
-              <span className="text-[10px] font-bold text-slate-400 uppercase">{unreadCount} non lues</span>
+        <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 z-[70] overflow-hidden animate-scale-in">
+            <div className="px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm">Notifications</h3>
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">{unreadCount} non lues</span>
             </div>
 
             <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
               {notifications.length === 0 ? (
                 <div className="py-12 text-center">
-                  <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Bell className="w-6 h-6 text-slate-200" />
+                  <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Bell className="w-6 h-6 text-slate-200 dark:text-slate-700" />
                   </div>
-                  <p className="text-sm text-slate-400">Aucune notification</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500">Aucune notification</p>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
                   {notifications.map((n) => (
                     <div 
                       key={n.id}
                       onClick={() => handleMarkAsRead(n.id)}
                       className={`group p-4 flex gap-4 cursor-pointer transition-all ${
-                        !n.is_read ? "bg-blue-50/30" : "hover:bg-slate-50"
+                        !n.is_read ? "bg-blue-50/30 dark:bg-blue-900/10" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
                       } ${
                         removingIds.has(n.id)
                           ? "opacity-0 -translate-x-3 scale-[0.98]"
@@ -206,13 +204,13 @@ export function NotificationBell() {
                         {getTypeIcon(n.type)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm leading-snug mb-1 ${!n.is_read ? "font-bold text-slate-900" : "text-slate-600"}`}>
+                        <p className={`text-sm leading-snug mb-1 ${!n.is_read ? "font-bold text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-400"}`}>
                           {n.title}
                         </p>
-                        <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-slate-500 dark:text-slate-500 line-clamp-2 leading-relaxed">
                           {n.content}
                         </p>
-                        <p className="text-[10px] text-slate-400 mt-2 font-medium">
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-medium">
                           {new Date(n.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
@@ -229,17 +227,16 @@ export function NotificationBell() {
             </div>
 
             {notifications.length > 0 && (
-              <div className="p-3 bg-slate-50 border-t border-slate-100 text-center">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 text-center">
                 <button 
                   onClick={() => setIsOpen(false)}
-                  className="text-[10px] font-bold text-slate-500 uppercase hover:text-slate-900 transition-colors"
+                  className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase hover:text-slate-900 dark:hover:text-white transition-colors"
                 >
                   Fermer
                 </button>
               </div>
             )}
           </div>
-        </>
       )}
     </div>
   );

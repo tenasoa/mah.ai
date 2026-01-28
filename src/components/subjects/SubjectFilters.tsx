@@ -165,9 +165,9 @@ function DropdownSelect({
         onKeyDown={handleTriggerKeyDown}
         disabled={disabled}
         className={`
-          w-full flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm
+          w-full flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm
           transition-all duration-200 disabled:opacity-50
-          ${isOpen ? 'border-amber-400 ring-4 ring-amber-100' : 'hover:border-amber-300'}
+          ${isOpen ? 'border-amber-400 ring-4 ring-amber-100 dark:ring-amber-900/20' : 'hover:border-amber-300 dark:hover:border-slate-600'}
         `}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
@@ -180,7 +180,7 @@ function DropdownSelect({
 
       {isOpen && (
         <div
-          className="absolute z-20 mt-2 w-full rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-900/5 max-h-64 overflow-auto"
+          className="absolute z-20 mt-2 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg shadow-slate-900/5 max-h-64 overflow-auto custom-scrollbar"
           role="listbox"
           tabIndex={-1}
           onKeyDown={handleListKeyDown}
@@ -194,7 +194,7 @@ function DropdownSelect({
             ref={(element) => {
               optionRefs.current[0] = element;
             }}
-            className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+            className="w-full text-left px-3 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50"
           >
             {placeholder}
           </button>
@@ -209,8 +209,8 @@ function DropdownSelect({
               ref={(element) => {
                 optionRefs.current[index + 1] = element;
               }}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-amber-50 ${
-                option.value === value ? 'text-amber-700 font-semibold' : 'text-slate-700'
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20 ${
+                option.value === value ? 'text-amber-700 dark:text-amber-400 font-semibold' : 'text-slate-700 dark:text-slate-300'
               }`}
             >
               {option.label}
@@ -263,6 +263,18 @@ export function SubjectFilters({ metadata, className = '' }: SubjectFiltersProps
   // Count active filters
   const activeFilterCount = [currentType, currentYear, currentMatiere, currentSerie, currentQuery].filter(Boolean).length;
 
+  // Click outside to close
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      if (isOpen && containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [isOpen]);
+
   // Update URL with new params
   const updateFilters = useCallback(
     (key: string, value: string | null) => {
@@ -282,6 +294,9 @@ export function SubjectFilters({ metadata, className = '' }: SubjectFiltersProps
         router.push(`${pathname}${queryString ? `?${queryString}` : ''}`, {
           scroll: false,
         });
+
+        // Close after slightly delayed for feedback
+        setTimeout(() => setIsOpen(false), 300);
       });
     },
     [pathname, router, searchParams]
@@ -296,12 +311,12 @@ export function SubjectFilters({ metadata, className = '' }: SubjectFiltersProps
 
   if (!metadata) {
     return (
-      <div className={`bg-white rounded-2xl border border-slate-200 p-5 ${className}`}>
+      <div className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 ${className}`}>
         <div className="animate-pulse space-y-4">
-          <div className="h-4 w-24 bg-slate-200 rounded" />
+          <div className="h-4 w-24 bg-slate-200 dark:bg-slate-800 rounded" />
           <div className="flex gap-2">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-8 w-20 bg-slate-200 rounded-full" />
+              <div key={i} className="h-8 w-20 bg-slate-200 dark:bg-slate-800 rounded-full" />
             ))}
           </div>
         </div>
@@ -310,7 +325,7 @@ export function SubjectFilters({ metadata, className = '' }: SubjectFiltersProps
   }
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} ref={containerRef}>
       {/* Filter Toggle Button */}
       <div className="flex items-center justify-between mb-4">
         <button
@@ -318,8 +333,8 @@ export function SubjectFilters({ metadata, className = '' }: SubjectFiltersProps
           className={`
             flex items-center gap-2 px-5 py-2.5 rounded-xl border transition-all duration-200 font-semibold text-sm
             ${isOpen || activeFilterCount > 0 
-              ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/10" 
-              : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 shadow-sm"}
+              ? "bg-slate-900 dark:bg-amber-500 text-white border-slate-900 dark:border-amber-500 shadow-lg shadow-slate-900/10 dark:shadow-amber-500/20" 
+              : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm"}
           `}
         >
           <SlidersHorizontal className="w-4 h-4" />
@@ -327,7 +342,7 @@ export function SubjectFilters({ metadata, className = '' }: SubjectFiltersProps
           {activeFilterCount > 0 && (
             <span className={`
               ml-1 px-2 py-0.5 rounded-full text-[10px] font-black
-              ${isOpen || activeFilterCount > 0 ? "bg-white/20 text-white" : "bg-amber-100 text-amber-700"}
+              ${isOpen || activeFilterCount > 0 ? "bg-white/20 text-white" : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"}
             `}>
               {activeFilterCount}
             </span>
@@ -348,10 +363,10 @@ export function SubjectFilters({ metadata, className = '' }: SubjectFiltersProps
       {/* Filter Content Card */}
       {isOpen && (
         <div className="absolute top-full left-0 w-full z-40 mt-2 animate-in slide-in-from-top-2 duration-200">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl shadow-slate-900/10 p-6">
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-              <h3 className="font-bold text-slate-900">Critères de recherche</h3>
-              <button onClick={() => setIsOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl shadow-slate-900/10 dark:shadow-none p-6">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-bold text-slate-900 dark:text-white">Critères de recherche</h3>
+              <button onClick={() => setIsOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -418,12 +433,12 @@ export function SubjectFilters({ metadata, className = '' }: SubjectFiltersProps
               </FilterSection>
             </div>
 
-            <div className="mt-8 pt-4 border-t border-slate-100 flex justify-between items-center">
+            <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
               <label className="flex items-center gap-3 cursor-pointer group">
                 <div
                   className={`
                     relative h-6 w-11 rounded-full transition-colors duration-200
-                    ${searchParams.get('free') === 'true' ? "bg-emerald-500" : "bg-slate-200"}
+                    ${searchParams.get('free') === 'true' ? "bg-emerald-500" : "bg-slate-200 dark:bg-slate-800"}
                   `}
                   onClick={() => {
                     const isFree = searchParams.get('free') === 'true';
@@ -432,18 +447,18 @@ export function SubjectFilters({ metadata, className = '' }: SubjectFiltersProps
                 >
                   <div
                     className={`
-                      absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm
+                      absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white dark:bg-slate-400 shadow-sm
                       transition-transform duration-200
                       ${searchParams.get('free') === 'true' ? "translate-x-5" : "translate-x-0"}
                     `}
                   />
                 </div>
-                <span className="text-sm font-bold text-slate-600">Sujets gratuits</span>
+                <span className="text-sm font-bold text-slate-600 dark:text-slate-400">Sujets gratuits</span>
               </label>
 
               <button 
                 onClick={() => setIsOpen(false)}
-                className="px-6 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-900/20"
+                className="px-6 py-2 bg-slate-900 dark:bg-amber-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-900/20 dark:shadow-none"
               >
                 Appliquer
               </button>

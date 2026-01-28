@@ -97,6 +97,36 @@ export async function getAllRequests(status?: string) {
 }
 
 /**
+ * Admin: Get requests statistics
+ */
+export async function getRequestStats() {
+  const supabase = await createClient();
+  
+  const { data, error } = await supabase
+    .from('subject_requests')
+    .select('status');
+
+  if (error) return { pending: 0, fulfilled: 0, refunded: 0, expired: 0 };
+
+  const stats = {
+    pending: 0,
+    fulfilled: 0,
+    refunded: 0,
+    expired: 0,
+    total: data.length
+  };
+
+  data.forEach(req => {
+    if (req.status === 'pending') stats.pending++;
+    else if (req.status === 'fulfilled') stats.fulfilled++;
+    else if (req.status === 'refunded') stats.refunded++;
+    else if (req.status === 'expired') stats.expired++;
+  });
+
+  return stats;
+}
+
+/**
  * Admin: Mark a request as fulfilled
  */
 export async function fulfillRequest(requestId: string, subjectId: string) {
