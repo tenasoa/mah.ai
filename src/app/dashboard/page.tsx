@@ -18,6 +18,7 @@ import {
   Calendar,
   Award,
   Flame,
+  Ticket,
 } from 'lucide-react';
 import { GritScoreCard } from '@/components/dashboard/GritScoreCard';
 import { BadgesCollection } from '@/components/dashboard/BadgesCollection';
@@ -286,6 +287,27 @@ export default function DashboardPage() {
             <p className="mt-3 font-bold text-slate-900">Focus Session</p>
             <p className="text-xs text-slate-500">Mode Deep Work</p>
           </article>
+
+          {/* Subject Request Reminder Card (Dynamic) */}
+          {(stats?.pending_requests_count || 0) > 0 && (
+            <Link href="/profile" className="mah-card bg-indigo-900 text-white border-none group animate-slide-up stagger-6">
+              <div className="flex items-start justify-between">
+                <div className="h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center border border-white/10">
+                  <Ticket className="w-6 h-6 text-indigo-300" />
+                </div>
+                <span className="px-2 py-1 rounded-lg bg-indigo-500 text-[10px] font-black uppercase tracking-tighter">En cours</span>
+              </div>
+              <div className="mt-auto">
+                <h3 className="text-base font-bold text-white leading-tight">
+                  {stats?.pending_requests_count} demande{stats?.pending_requests_count! > 1 ? 's' : ''} de sujet{stats?.pending_requests_count! > 1 ? 's' : ''}
+                </h3>
+                <div className="flex items-center gap-2 mt-2 text-indigo-300 text-xs font-medium">
+                  <span>Voir l'état de recherche</span>
+                  <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </Link>
+          )}
 
           {/* Upcoming Exam Banner */}
           <article className="xl:col-span-4 sm:row-span-2 mah-card mah-card-lg flex-row items-center gap-4 bg-gradient-to-r from-amber-50 via-white to-indigo-50 border-l-4 border-l-amber-500 animate-slide-up stagger-6">

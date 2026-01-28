@@ -49,7 +49,6 @@ export default async function proxy(request: NextRequest) {
   const isAdminRoute = pathname.startsWith("/admin");
   const isProtectedRoute =
     pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/subjects") ||
     pathname.startsWith("/profile");
 
   const redirectWithCookies = (url: URL) => {

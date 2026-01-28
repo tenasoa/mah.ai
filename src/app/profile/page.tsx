@@ -21,15 +21,20 @@ import {
   CheckCircle2, 
   Star,
   GraduationCap,
-  Plus
+  Plus,
+  Ticket,
+  Clock,
+  ExternalLink
 } from "lucide-react";
 import { getMyProfile, getPurchaseHistory } from "@/app/actions/profile";
+import { getMyRequests } from "@/app/actions/tickets";
 import { ROLE_LABELS, type UserProfile } from "@/lib/types/user";
 
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [purchaseHistory, setPurchaseHistory] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<any[]>([]);
   const [purchaseTotal, setPurchaseTotal] = useState(0);
   const [purchaseLimit, setPurchaseLimit] = useState(10);
   const [isEditing, setIsEditing] = useState(false);
@@ -44,14 +49,20 @@ export default function ProfilePage() {
         return;
       }
       
-      const [{ data: profile }, { data: history, total }] = await Promise.all([
+      const [
+        { data: profile }, 
+        { data: history, total },
+        { data: ticketList }
+      ] = await Promise.all([
         getMyProfile(),
-        getPurchaseHistory(purchaseLimit)
+        getPurchaseHistory(purchaseLimit),
+        getMyRequests()
       ]);
 
       if (profile) setUserProfile(profile);
       if (history) setPurchaseHistory(history);
       if (typeof total === "number") setPurchaseTotal(total);
+      if (ticketList) setTickets(ticketList);
 
       setLoading(false);
     }
@@ -272,73 +283,104 @@ export default function ProfilePage() {
           </div>
         </article>
 
-        {/* History & Transactions Sections (Tabs potential) */}
+        {/* History & Transactions Sections */}
         {!isEditing && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <article className="mah-card">
-              <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
-                <History className="w-5 h-5 text-indigo-500" />
-                Historique d'achat
-              </h3>
-              <div className="space-y-4">
-                {purchaseHistory.length > 0 ? purchaseHistory.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-200 transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-indigo-600 font-black text-sm">+{item.amount}</div>
-                      <div>
-                        <p className="text-xs font-bold text-slate-700">{item.payment_method}</p>
-                        <p className="text-[10px] text-slate-400">{new Date(item.created_at).toLocaleDateString('fr-MG')}</p>
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Purchase History */}
+              <article className="mah-card">
+                <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
+                  <History className="w-5 h-5 text-indigo-500" />
+                  Historique d'achat
+                </h3>
+                <div className="space-y-4">
+                  {purchaseHistory.length > 0 ? purchaseHistory.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-200 transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-indigo-600 font-black text-sm">+{item.amount}</div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-700">{item.payment_method}</p>
+                          <p className="text-[10px] text-slate-400">{new Date(item.created_at).toLocaleDateString('fr-MG')}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-black text-slate-900">{item.cost_mga.toLocaleString()} Ar</p>
+                        <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${item.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{item.status}</span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs font-black text-slate-900">{item.cost_mga.toLocaleString()} Ar</p>
-                      <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${item.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{item.status}</span>
+                  )) : <p className="text-center py-10 text-slate-400 text-xs italic">Aucune transaction trouvée.</p>}
+                  {purchaseTotal > purchaseLimit && (
+                    <div className="pt-2 flex justify-center">
+                      <button
+                        onClick={() => setPurchaseLimit((prev) => prev + 10)}
+                        className="px-6 py-3 rounded-2xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all"
+                      >
+                        Charger plus
+                      </button>
                     </div>
-                  </div>
-                )) : <p className="text-center py-10 text-slate-400 text-xs italic">Aucune transaction trouvée.</p>}
-                {purchaseTotal > purchaseLimit && (
-                  <div className="pt-2 flex justify-center">
-                    <button
-                      onClick={() => setPurchaseLimit((prev) => prev + 10)}
-                      className="px-6 py-3 rounded-2xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all"
-                    >
-                      Charger plus
-                    </button>
-                  </div>
-                )}
-              </div>
-            </article>
+                  )}
+                </div>
+              </article>
 
-            <article className="mah-card">
-              <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-amber-500" />
-                Paramètres de confidentialité
-              </h3>
-              <div className="space-y-4">
-                <p className="text-xs text-slate-500 leading-relaxed mb-4">Ces réglages contrôlent ce que les autres utilisateurs voient sur votre profil public.</p>
-                <div className="space-y-3">
-                  {[
-                    { key: 'show_full_name', label: 'Afficher mon nom complet' },
-                    { key: 'show_email', label: 'Afficher mon email' },
-                    { key: 'show_birth_date', label: 'Afficher ma date de naissance' },
-                    { key: 'show_address', label: 'Afficher mon adresse' },
-                  ].map((setting) => (
-                    <div key={setting.key} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                      <span className="text-xs font-bold text-slate-700">{setting.label}</span>
-                      {userProfile?.privacy_settings?.[setting.key as keyof typeof userProfile.privacy_settings] ? (
-                        <div className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-[9px] font-black uppercase">Public</div>
-                      ) : (
-                        <div className="px-2 py-1 bg-slate-200 text-slate-500 rounded text-[9px] font-black uppercase">Privé</div>
+              {/* Subject Requests */}
+              <article className="mah-card">
+                <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
+                  <Ticket className="w-5 h-5 text-amber-500" />
+                  Mes Demandes de Sujets
+                </h3>
+                <div className="space-y-4">
+                  {tickets.length > 0 ? tickets.map((ticket) => (
+                    <div key={ticket.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{ticket.matiere}</p>
+                          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Année {ticket.year} {ticket.serie ? `• Série ${ticket.serie}` : ''}</p>
+                        </div>
+                        {ticket.status === 'pending' && <span className="flex items-center gap-1 text-[9px] font-black uppercase text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100"><Clock className="w-2.5 h-2.5" /> En recherche</span>}
+                        {ticket.status === 'fulfilled' && <span className="flex items-center gap-1 text-[9px] font-black uppercase text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100"><CheckCircle2 className="w-2.5 h-2.5" /> Trouvé</span>}
+                        {ticket.status === 'refunded' && <span className="flex items-center gap-1 text-[9px] font-black uppercase text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100"><History className="w-2.5 h-2.5" /> Remboursé</span>}
+                      </div>
+                      {ticket.status === 'fulfilled' && ticket.subject_id && (
+                        <Link 
+                          href={`/subjects/${ticket.subject_id}`}
+                          className="flex items-center justify-center gap-2 w-full py-2 bg-white border border-emerald-200 text-emerald-700 text-[10px] font-black uppercase rounded-xl hover:bg-emerald-50 transition-all"
+                        >
+                          Voir le sujet <ExternalLink className="w-3 h-3" />
+                        </Link>
                       )}
                     </div>
-                  ))}
+                  )) : (
+                    <div className="text-center py-10">
+                      <p className="text-slate-400 text-xs italic">Aucune demande en cours.</p>
+                      <Link href="/subjects" className="text-amber-600 text-[10px] font-black uppercase tracking-widest mt-2 block hover:underline">Chercher un sujet</Link>
+                    </div>
+                  )}
                 </div>
-                <button 
-                  onClick={() => setIsEditing(true)}
-                  className="w-full mt-4 py-3 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all"
-                >
-                  Modifier les accès
-                </button>
+              </article>
+            </div>
+
+            {/* Privacy Settings Card */}
+            <article className="mah-card">
+              <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-emerald-500" />
+                Paramètres de confidentialité
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { key: 'show_full_name', label: 'Nom complet' },
+                  { key: 'show_email', label: 'Email' },
+                  { key: 'show_birth_date', label: 'Date de naissance' },
+                  { key: 'show_address', label: 'Adresse' },
+                ].map((setting) => (
+                  <div key={setting.key} className="flex flex-col justify-center p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center gap-2">
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{setting.label}</span>
+                    {userProfile?.privacy_settings?.[setting.key as keyof typeof userProfile.privacy_settings] ? (
+                      <div className="inline-block mx-auto px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-[9px] font-black uppercase border border-emerald-200">Public</div>
+                    ) : (
+                      <div className="inline-block mx-auto px-2 py-1 bg-slate-200 text-slate-500 rounded text-[9px] font-black uppercase border border-emerald-300">Privé</div>
+                    )}
+                  </div>
+                ))}
               </div>
             </article>
           </div>

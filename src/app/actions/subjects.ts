@@ -381,6 +381,7 @@ export async function getSubjectById(id: string): Promise<{
       .single();
 
     if (error) {
+      console.error('❌ getSubjectById Error:', error.message, error.code, 'ID:', id);
       if (error.code === 'PGRST116') {
         return { data: null, error: 'Sujet non trouvé' };
       }

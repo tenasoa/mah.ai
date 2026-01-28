@@ -1,7 +1,7 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Mail, Lock, Loader2, Eye, EyeOff, ArrowRight, UserPlus, LogIn, School, User, GraduationCap } from 'lucide-react';
 // import { SocialAuthButtons } from './social-auth-buttons'; // Temporairement désactivé
@@ -19,6 +19,7 @@ export function EmailPasswordForm() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   const isLoading = loading || isPending;
@@ -51,7 +52,8 @@ export function EmailPasswordForm() {
         });
         if (signInError) throw signInError;
         startTransition(() => {
-          router.push('/dashboard');
+          const next = searchParams.get('next') || '/dashboard';
+          router.push(next);
         });
       }
     } catch (err: any) {

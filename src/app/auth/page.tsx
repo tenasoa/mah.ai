@@ -2,8 +2,8 @@
 
 import { EmailPasswordForm } from '@/components/auth/email-password-form';
 import { OtpForm } from '@/components/auth/otp-form';
-import { Sparkles, GraduationCap, Trophy, Users, Zap, BookOpen, CheckCircle2 } from 'lucide-react';
-import { useState } from 'react';
+import { Sparkles, GraduationCap, Trophy, Users, Zap, BookOpen, CheckCircle2, Loader2 } from 'lucide-react';
+import { useState, Suspense } from 'react';
 
 const features = [
   {
@@ -46,7 +46,7 @@ export default function AuthPage() {
         {/* Logo */}
         <div className="flex items-center gap-3 group">
           <img
-            src="/icons/icon-512x512.png"
+            src="/icons/logoIcon.png"
             alt="Mah.ai Logo"
             className="h-12 w-12 rounded-xl shadow-lg shadow-orange-500/25"
           />
@@ -108,7 +108,7 @@ export default function AuthPage() {
           {/* Mobile Logo */}
           <div className="flex lg:hidden items-center justify-center gap-3 mb-8">
             <img
-              src="/icons/icon-512x512.png"
+              src="/icons/logoIcon.png"
               alt="Mah.ai Logo"
               className="h-11 w-11 rounded-xl shadow-lg shadow-orange-500/25"
             />
@@ -161,7 +161,9 @@ export default function AuthPage() {
 
             {/* Forms */}
             <div className="animate-slide-up">
-              {authMethod === 'email' ? <EmailPasswordForm /> : <OtpForm />}
+              <Suspense fallback={<div className="h-64 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>}>
+                {authMethod === 'email' ? <EmailPasswordForm /> : <OtpForm />}
+              </Suspense>
             </div>
 
             {/* Divider */}
