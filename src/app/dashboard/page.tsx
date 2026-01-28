@@ -12,6 +12,7 @@ import {
   Timer,
   TrendingUp,
   Target,
+  ArrowRight,
   ChevronRight,
   Play,
   Bell,
@@ -97,7 +98,7 @@ export default function DashboardPage() {
       getDashboardStats()
     ]);
 
-    const profiles = profileRes.data || {};
+    const profiles = (profileRes.data ?? {}) as Partial<Profile>;
     const profileData: Profile = {
       pseudo: profiles.pseudo || user.email?.split('@')[0] || 'Élève',
       etablissement: profiles.etablissement || 'Lycée non renseigné',

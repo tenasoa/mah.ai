@@ -136,7 +136,7 @@ export function Navbar({
             {mounted && navItems.map((item) => {
               const isParentActive = pathname === item.href || 
                                    pathname.startsWith(`${item.href}/`) || 
-                                   item.subItems?.some(sub => pathname === sub.href);
+                                   (item.subItems?.some(sub => pathname === sub.href) ?? false);
               
               if (item.subItems && item.subItems.length > 0) {
                 return <NavDropdown key={item.label} item={item} isActive={isParentActive} />;
