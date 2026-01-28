@@ -85,25 +85,25 @@ export async function getSubjects(params: GetSubjectsParams = {}): Promise<{
     
     let userProfile = null;
     if (user) {
-      const { data } = await supabase.from('profiles').select('roles').eq('id', user.id).single();
+      const { data } = await supabase.from('profiles').select('roles').eq('id', user.id).maybeSingle();
       userProfile = data;
     }
     const roles = (userProfile?.roles as string[]) || [];
     const isAdmin = roles.includes('admin') || roles.includes('superadmin') || roles.includes('validator');
 
-    // Apply filters
-    if (filters) {
-      if (filters.status) {
-        if (Array.isArray(filters.status)) {
-          query = query.in('status', filters.status);
-        } else {
-          query = query.eq('status', filters.status);
-        }
-      } else if (!isAdmin) {
-        // Default behavior for catalog (students only see published)
-        query = query.eq('status', 'published');
+    // Default behavior for catalog (students only see published)
+    if (!isAdmin) {
+      query = query.eq('status', 'published');
+    } else if (filters?.status) {
+      if (Array.isArray(filters.status)) {
+        query = query.in('status', filters.status);
+      } else {
+        query = query.eq('status', filters.status);
       }
+    }
 
+    // Apply other filters
+    if (filters) {
       if (filters.exam_type) {
         if (Array.isArray(filters.exam_type)) {
           query = query.in('exam_type', filters.exam_type);
@@ -378,14 +378,15 @@ export async function getSubjectById(id: string): Promise<{
       .from('subjects')
       .select('*, status, revision_comment')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('❌ getSubjectById Error:', error.message, error.code, 'ID:', id);
-      if (error.code === 'PGRST116') {
-        return { data: null, error: 'Sujet non trouvé' };
-      }
       return { data: null, error: error.message };
+    }
+
+    if (!subject) {
+      return { data: null, error: 'Sujet non trouvé' };
     }
 
     // Check user access
@@ -452,7 +453,7 @@ export async function getSubjectById(id: string): Promise<{
       .from('subjects')
       .select('view_count')
       .eq('id', id)
-      .single();
+      .maybeSingle();
       
     if (updatedCount) {
         subject.view_count = updatedCount.view_count;
@@ -496,7 +497,7 @@ export async function saveSubjectMarkdown(
       .from('profiles')
       .select('roles')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     const roles = (profile?.roles as string[]) || [];
     const isAdmin = roles.includes('admin') || roles.includes('superadmin');
@@ -514,9 +515,9 @@ export async function saveSubjectMarkdown(
       // Contributors can only edit their own subjects if not published
       const { data: subject } = await supabase
         .from('subjects')
-        .select('uploaded_by, status')
-        .eq('id', id)
-        .single();
+      .select('uploaded_by, status')
+      .eq('id', id)
+      .maybeSingle();
 
       if (!subject || subject.uploaded_by !== user.id) {
         return { success: false, error: 'Permission refusée' };
@@ -577,7 +578,7 @@ export async function createSubject(params: {
       .from('profiles')
       .select('roles')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     const roles = (profile?.roles as string[]) || [];
     const isContributor = roles.includes('contributor');
@@ -601,7 +602,7 @@ export async function createSubject(params: {
         uploaded_by: user.id,
       })
       .select('*')
-      .single();
+      .maybeSingle();
 
     if (error) {
       return { data: null, error: error.message };
@@ -618,7 +619,7 @@ export async function createSubject(params: {
         })
         .eq('id', requestId)
         .select('user_id')
-        .single();
+      .maybeSingle();
 
       // Create notification for the user
       if (requestData?.user_id) {
@@ -658,7 +659,7 @@ export async function updateSubjectStatus(
       .from('profiles')
       .select('roles')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     const roles = profile?.roles || [];
     const canValidate = roles.includes('admin') || roles.includes('superadmin') || roles.includes('validator');

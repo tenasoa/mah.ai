@@ -29,10 +29,9 @@ import {
   FlaskConical,
   MapPin,
   Atom,
-  Sun,
-  Moon,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { SupportWorkflow } from "@/components/support/SupportWorkflow";
 
 // ─── DONNÉES ───
 
@@ -126,6 +125,7 @@ function LandingPageContent() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [supportType, setSupportType] = useState<'coffee' | 'major' | null>(null);
 
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -658,10 +658,16 @@ function LandingPageContent() {
             rémunérer les professeurs malgaches qui créent les corrigés.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4 lg:gap-5">
-            <button className="flex items-center justify-center gap-3 px-6 lg:px-8 py-3.5 lg:py-4 bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl lg:rounded-2xl font-bold uppercase tracking-wider text-[11px] hover:border-amber-300 dark:hover:border-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-all shadow-lg">
+            <button 
+              onClick={() => setSupportType('coffee')}
+              className="flex items-center justify-center gap-3 px-6 lg:px-8 py-3.5 lg:py-4 bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl lg:rounded-2xl font-bold uppercase tracking-wider text-[11px] hover:border-amber-300 dark:hover:border-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-all shadow-lg"
+            >
               <Coffee className="w-4 h-4 text-amber-600" /> Offrir un café (1 000 Ar)
             </button>
-            <button className="flex items-center justify-center gap-3 px-6 lg:px-8 py-3.5 lg:py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl lg:rounded-2xl font-bold uppercase tracking-wider text-[11px] shadow-xl shadow-orange-500/25 hover:shadow-2xl transition-all">
+            <button 
+              onClick={() => setSupportType('major')}
+              className="flex items-center justify-center gap-3 px-6 lg:px-8 py-3.5 lg:py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl lg:rounded-2xl font-bold uppercase tracking-wider text-[11px] shadow-xl shadow-orange-500/25 hover:shadow-2xl transition-all"
+            >
               <Heart className="w-4 h-4" /> Soutien majeur
             </button>
           </div>
@@ -710,6 +716,13 @@ function LandingPageContent() {
         isOpen={isAuthModalOpen} 
         onClose={() => setIsAuthModalOpen(false)} 
       />
+
+      {supportType && (
+        <SupportWorkflow 
+          type={supportType} 
+          onClose={() => setSupportType(null)} 
+        />
+      )}
     </div>
   );
 }

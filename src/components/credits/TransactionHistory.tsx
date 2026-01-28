@@ -13,12 +13,12 @@ interface Transaction {
 export function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
   if (transactions.length === 0) {
     return (
-      <div className="text-center py-16 bg-slate-50 rounded-[32px] border border-dashed border-slate-200">
-        <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-          <History className="w-8 h-8 text-slate-300" />
+      <div className="text-center py-16 bg-slate-50 dark:bg-slate-800/20 rounded-[32px] border border-dashed border-slate-200 dark:border-slate-800">
+        <div className="h-16 w-16 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-slate-100 dark:border-slate-800">
+          <History className="w-8 h-8 text-slate-300 dark:text-slate-600" />
         </div>
-        <p className="text-slate-500 font-medium">Aucun mouvement pour le moment.</p>
-        <p className="text-xs text-slate-400 mt-1">Tes futures transactions s'afficheront ici.</p>
+        <p className="text-slate-500 dark:text-slate-400 font-medium">Aucun mouvement pour le moment.</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Tes futures transactions s'afficheront ici.</p>
       </div>
     );
   }
@@ -31,18 +31,18 @@ export function TransactionHistory({ transactions }: { transactions: Transaction
         return (
           <div 
             key={tx.id}
-            className="flex items-center justify-between p-5 bg-slate-50/50 hover:bg-slate-50 rounded-2xl border border-slate-100 transition-colors group"
+            className="flex items-center justify-between p-5 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 transition-colors group"
           >
             <div className="flex items-center gap-4">
               <div className={`
                 h-12 w-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110
-                ${isPositive ? "bg-emerald-100 text-emerald-600" : "bg-indigo-100 text-indigo-600"}
+                ${isPositive ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" : "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"}
               `}>
                 {isPositive ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
               </div>
               
               <div>
-                <p className="text-sm font-bold text-slate-900 leading-tight">
+                <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
                   {tx.description || (isPositive ? "Recharge de crédits" : "Déblocage de contenu")}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
@@ -56,9 +56,9 @@ export function TransactionHistory({ transactions }: { transactions: Transaction
                     })}
                   </span>
                   <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${
-                    tx.type === 'purchase' ? 'bg-amber-50 border-amber-100 text-amber-600' : 
-                    tx.type === 'unlock' ? 'bg-indigo-50 border-indigo-100 text-indigo-600' :
-                    'bg-slate-100 border-slate-200 text-slate-500'
+                    tx.type === 'purchase' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-900/40 text-amber-600 dark:text-amber-400' : 
+                    tx.type === 'unlock' ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400' :
+                    'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
                   }`}>
                     {tx.type}
                   </span>
@@ -67,7 +67,7 @@ export function TransactionHistory({ transactions }: { transactions: Transaction
             </div>
 
             <div className="text-right">
-              <p className={`text-xl font-black font-mono tracking-tighter ${isPositive ? "text-emerald-600" : "text-slate-900"}`}>
+              <p className={`text-xl font-black font-mono tracking-tighter ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"}`}>
                 {isPositive ? `+${tx.amount}` : tx.amount}
               </p>
               <div className="flex items-center justify-end gap-1 text-[9px] text-slate-400 font-bold uppercase mt-0.5">

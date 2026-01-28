@@ -49,9 +49,9 @@ function SubjectCard({
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col">
         {/* Header */}
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-2">
           <div
-            className={`h-12 w-12 rounded-xl flex items-center justify-center text-2xl ${colors.bg} ${colors.border} border shadow-sm dark:shadow-none transition-colors duration-300`}
+            className={`h-10 w-10 rounded-xl flex items-center justify-center text-xl ${colors.bg} ${colors.border} border shadow-sm dark:shadow-none transition-colors duration-300`}
           >
             {icon}
           </div>
@@ -103,12 +103,12 @@ function SubjectCard({
         </div>
 
         {/* Footer */}
-        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            <Eye className="w-3.5 h-3.5" />
+        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+            <Eye className="w-3 h-3" />
             <span>{subject.view_count.toLocaleString()} vues</span>
           </div>
-          <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-700 group-hover:text-amber-500 group-hover:translate-x-1 transition-all" />
+          <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-700 group-hover:text-amber-500 group-hover:translate-x-1 transition-all" />
         </div>
       </div>
     </Link>
@@ -118,10 +118,10 @@ function SubjectCard({
 // Skeleton Loader
 function SubjectCardSkeleton() {
   return (
-    <div className="mah-card bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 animate-pulse">
+    <div className="mah-card bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 animate-pulse p-4">
       <div className="flex items-start justify-between">
-        <div className="h-12 w-12 rounded-xl bg-slate-100 dark:bg-slate-800" />
-        <div className="h-6 w-16 rounded-lg bg-slate-100 dark:bg-slate-800" />
+        <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800" />
+        <div className="h-6 w-14 rounded-lg bg-slate-100 dark:bg-slate-800" />
       </div>
       <div className="mt-4 h-5 w-24 rounded-full bg-slate-100 dark:bg-slate-800" />
       <div className="mt-4 space-y-2">

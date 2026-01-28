@@ -68,12 +68,12 @@ export default async function CreditsPage({
 
       {/* Navigation Tabs */}
       <div className="flex justify-center">
-        <div className="inline-flex p-1.5 bg-slate-100 rounded-3xl border border-slate-200 shadow-inner">
+        <div className="inline-flex p-1.5 bg-slate-100 dark:bg-slate-800/50 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-inner">
           <a 
             href="/credits?tab=packs"
             className={`
               flex items-center gap-2 px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all
-              ${tab === 'packs' ? "bg-white text-slate-900 shadow-md" : "text-slate-500 hover:text-slate-700"}
+              ${tab === 'packs' ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-md" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}
             `}
           >
             <Zap className={`w-4 h-4 ${tab === 'packs' ? "text-amber-500" : ""}`} />
@@ -83,7 +83,7 @@ export default async function CreditsPage({
             href="/credits?tab=subs"
             className={`
               flex items-center gap-2 px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all
-              ${tab === 'subs' ? "bg-white text-slate-900 shadow-md" : "text-slate-500 hover:text-slate-700"}
+              ${tab === 'subs' ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-md" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}
             `}
           >
             <Crown className={`w-4 h-4 ${tab === 'subs' ? "text-indigo-500" : ""}`} />
@@ -97,20 +97,20 @@ export default async function CreditsPage({
         {tab === 'packs' ? (
           <>
             <div className="flex items-center gap-3 mb-8">
-              <div className="p-2 bg-amber-100 rounded-xl text-amber-600">
+              <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-xl text-amber-600 dark:text-amber-400">
                 <Sparkles className="w-5 h-5" />
               </div>
-              <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Packs de recharge</h2>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Packs de recharge</h2>
             </div>
             <PricingTiers prices={prices} />
           </>
         ) : (
           <>
             <div className="flex items-center gap-3 mb-8">
-              <div className="p-2 bg-indigo-100 rounded-xl text-indigo-600">
+              <div className="p-2 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl text-indigo-600 dark:text-indigo-400">
                 <Crown className="w-5 h-5" />
               </div>
-              <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Formules Illimitées</h2>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Formules Illimitées</h2>
             </div>
             <SubscriptionPlans />
           </>
@@ -120,8 +120,8 @@ export default async function CreditsPage({
       {/* Info & History Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-8">
         <div className="lg:col-span-1 space-y-6">
-          <article className="mah-card bg-indigo-50 border-indigo-100 p-8">
-            <h3 className="text-lg font-black text-indigo-900 mb-6 flex items-center gap-2">
+          <article className="mah-card bg-indigo-50 dark:bg-indigo-950/20 border-indigo-100 dark:border-indigo-900/30 p-8 shadow-xl">
+            <h3 className="text-lg font-black text-indigo-900 dark:text-indigo-300 mb-6 flex items-center gap-2">
               <ShieldCheck className="w-5 h-5" /> Pourquoi mah.ai ?
             </h3>
             <ul className="space-y-4">
@@ -132,8 +132,8 @@ export default async function CreditsPage({
                 "Solution 100% locale",
                 "Zéro engagement (Packs)"
               ].map((text, i) => (
-                <li key={i} className="flex items-start gap-3 text-sm text-indigo-700 font-medium">
-                  <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+                <li key={i} className="flex items-start gap-3 text-sm text-indigo-700 dark:text-indigo-400 font-medium tracking-tight">
+                  <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0" />
                   {text}
                 </li>
               ))}
@@ -142,9 +142,9 @@ export default async function CreditsPage({
         </div>
 
         <div className="lg:col-span-2">
-          <article className="mah-card p-8 h-full">
-            <h3 className="text-lg font-black text-slate-900 mb-8 flex items-center gap-2">
-              <History className="w-5 h-5 text-slate-400" /> Mon Historique
+          <article className="mah-card p-8 h-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-xl">
+            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-8 flex items-center gap-2">
+              <History className="w-5 h-5 text-slate-400 dark:text-slate-500" /> Mon Historique
             </h3>
             <TransactionHistory transactions={transactions} />
             {totalTransactions > txLimit && (

@@ -49,3 +49,38 @@ export async function submitTrustPayment(referenceCode: string) {
     return { error: "Une erreur inattendue est survenue." };
   }
 }
+
+export async function submitSupportPayment(params: {
+  amount_mga: number;
+  payment_method: string;
+  payment_reference: string;
+  support_type: 'coffee' | 'major';
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Vous devez être connecté pour effectuer un don." };
+  }
+
+  try {
+    const { error } = await supabase.from('payments').insert({
+      user_id: user.id,
+      amount: params.amount_mga,
+      payment_method: params.payment_method,
+      reference_code: params.payment_reference,
+      status: 'pending_support',
+      metadata: { support_type: params.support_type }
+    });
+
+    if (error) {
+      console.error("Support payment error:", error);
+      return { error: "Erreur lors de l'enregistrement. Réessayez." };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error("Support payment exception:", err);
+    return { error: "Une erreur inattendue est survenue." };
+  }
+}

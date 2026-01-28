@@ -50,8 +50,8 @@ export function SubscriptionPlans() {
           className={`
             relative p-8 rounded-[40px] border-2 transition-all duration-500 flex flex-col
             ${plan.highlight 
-              ? "border-amber-400 bg-white shadow-2xl shadow-amber-100 scale-105 z-10"
-              : "border-slate-100 bg-slate-50/50 hover:bg-white hover:border-indigo-200"
+              ? "border-amber-400 bg-white dark:bg-slate-900 shadow-2xl shadow-amber-100 dark:shadow-amber-900/10 scale-105 z-10"
+              : "border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-white dark:hover:bg-slate-800"
             }
           `}
         >
@@ -64,19 +64,19 @@ export function SubscriptionPlans() {
           <div className="mb-8">
             <div className={`
               inline-flex p-3 rounded-2xl mb-6
-              ${plan.id === 'vip' ? "bg-amber-100 text-amber-600" : "bg-indigo-100 text-indigo-600"}
+              ${plan.id === 'vip' ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" : "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"}
             `}>
               {plan.id === 'vip' ? <Crown className="w-6 h-6" /> : <Zap className="w-6 h-6" />}
             </div>
-            <h3 className="text-2xl font-black text-slate-900 tracking-tight">{plan.name}</h3>
-            <p className="text-sm text-slate-500 mt-2">{plan.description}</p>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{plan.name}</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">{plan.description}</p>
           </div>
 
           <div className="mb-8">
             <div className="flex items-baseline gap-1">
-              <span className="text-5xl font-black text-slate-900">{plan.price.toLocaleString()}</span>
-              <span className="text-lg font-bold text-slate-400">Ar</span>
-              <span className="text-sm text-slate-400 font-medium ml-1">/ {plan.period}</span>
+              <span className="text-5xl font-black text-slate-900 dark:text-white">{plan.price.toLocaleString()}</span>
+              <span className="text-lg font-bold text-slate-400 dark:text-slate-500">Ar</span>
+              <span className="text-sm text-slate-400 dark:text-slate-500 font-medium ml-1">/ {plan.period}</span>
             </div>
           </div>
 
@@ -86,7 +86,7 @@ export function SubscriptionPlans() {
                 <div className={`mt-1 p-0.5 rounded-full ${plan.id === 'vip' ? "bg-amber-500" : "bg-indigo-500"}`}>
                   <Check className="w-3 h-3 text-white" strokeWidth={4} />
                 </div>
-                <span className="text-sm font-bold text-slate-700">{feat}</span>
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{feat}</span>
               </div>
             ))}
           </div>
@@ -96,8 +96,8 @@ export function SubscriptionPlans() {
             className={`
               w-full py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2
               ${plan.highlight 
-                ? "bg-slate-900 text-white hover:bg-amber-500"
-                : "bg-white text-slate-900 border-2 border-slate-200 hover:border-indigo-500 hover:text-indigo-600"
+                ? "bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 hover:bg-amber-500 dark:hover:bg-amber-400"
+                : "bg-white dark:bg-slate-800 text-slate-900 dark:text-white border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:text-indigo-600"
               }
             `}
           >

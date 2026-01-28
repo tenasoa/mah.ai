@@ -35,10 +35,10 @@ export function PricingTiers({ prices }: PricingTiersProps) {
                   ? "bg-[#0f0a05] text-white border-none shadow-2xl shadow-amber-900/20" 
                   : isPopular 
                     ? "bg-blue-600 text-white border-none scale-105 z-10 shadow-2xl shadow-blue-200"
-                    : "bg-white text-slate-900 border-slate-100 shadow-xl"
+                    : "bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-100 dark:border-slate-800 shadow-xl"
                 }
-                ${isPopular && !isVIP ? "ring-4 ring-blue-50" : ""}
-                ${!isPopular && !isVIP ? "hover:border-indigo-100" : ""}
+                ${isPopular && !isVIP ? "ring-4 ring-blue-50 dark:ring-blue-900/20" : ""}
+                ${!isPopular && !isVIP ? "hover:border-indigo-100 dark:hover:border-indigo-900/50" : ""}
               `}
             >
               {isPopular && (
@@ -50,28 +50,28 @@ export function PricingTiers({ prices }: PricingTiersProps) {
               <div className="mb-8">
                 <div className={`
                   inline-flex p-3 rounded-2xl mb-6
-                  ${isVIP ? "bg-amber-500/10 text-amber-500" : isPopular ? "bg-white/20 text-white" : "bg-amber-50 text-amber-600"}
+                  ${isVIP ? "bg-amber-500/10 text-amber-500" : isPopular ? "bg-white/20 text-white" : "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"}
                 `}>
                   {isVIP ? <Star className="w-6 h-6" /> : <Coins className="w-6 h-6" />}
                 </div>
-                <h3 className={`text-2xl font-black tracking-tight ${isVIP || isPopular ? "text-white" : "text-slate-900"}`}>
+                <h3 className={`text-2xl font-black tracking-tight ${isVIP || isPopular ? "text-white" : "text-slate-900 dark:text-white"}`}>
                   Pack {tier.amount} crédits
                 </h3>
-                <p className={`text-sm mt-2 ${isVIP ? "text-slate-400" : isPopular ? "text-blue-100" : "text-slate-500"}`}>
+                <p className={`text-sm mt-2 ${isVIP ? "text-slate-400" : isPopular ? "text-blue-100" : "text-slate-500 dark:text-slate-400"}`}>
                   {tier.amount} sujets d'examens complets
                 </p>
               </div>
 
               <div className="mb-10">
                 <div className="flex items-baseline gap-1">
-                  <span className={`text-4xl font-black ${isVIP ? "text-amber-500" : isPopular ? "text-white" : "text-slate-900"}`}>
+                  <span className={`text-4xl font-black ${isVIP ? "text-amber-500" : isPopular ? "text-white" : "text-slate-900 dark:text-white"}`}>
                     {tier.price.toLocaleString()}
                   </span>
-                  <span className={`text-lg font-bold ${isVIP ? "text-amber-200/40" : isPopular ? "text-blue-200" : "text-slate-400"}`}>
+                  <span className={`text-lg font-bold ${isVIP ? "text-amber-200/40" : isPopular ? "text-blue-200" : "text-slate-400 dark:text-slate-500"}`}>
                     Ar
                   </span>
                 </div>
-                <p className={`text-[10px] mt-1 font-bold uppercase tracking-widest ${isVIP ? "text-amber-600/80" : isPopular ? "text-blue-200/80" : "text-indigo-600"}`}>
+                <p className={`text-[10px] mt-1 font-bold uppercase tracking-widest ${isVIP ? "text-amber-600/80" : isPopular ? "text-blue-200/80" : "text-indigo-600 dark:text-indigo-400"}`}>
                   Paiement unique
                 </p>
               </div>
@@ -84,8 +84,8 @@ export function PricingTiers({ prices }: PricingTiersProps) {
                   tier.amount === 100 ? "Bonus exclusifs" : null
                 ].filter(Boolean).map((feat, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <ShieldCheck className={`w-4 h-4 ${isVIP ? "text-amber-500" : isPopular ? "text-blue-200" : "text-emerald-500"}`} />
-                    <span className={`text-sm ${isVIP ? "text-slate-300" : isPopular ? "text-white" : "text-slate-600"}`}>{feat}</span>
+                    <ShieldCheck className={`w-4 h-4 ${isVIP ? "text-amber-500" : isPopular ? "text-blue-200" : "text-emerald-500 dark:text-emerald-400"}`} />
+                    <span className={`text-sm ${isVIP ? "text-slate-300" : isPopular ? "text-white" : "text-slate-600 dark:text-slate-300"}`}>{feat}</span>
                   </div>
                 ))}
               </div>
@@ -97,8 +97,8 @@ export function PricingTiers({ prices }: PricingTiersProps) {
                   ${isVIP 
                     ? "bg-amber-500 text-black hover:bg-amber-400" 
                     : isPopular 
-                      ? "bg-white text-blue-600 hover:bg-blue-50" 
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      ? "bg-white text-blue-600 hover:bg-blue-50 shadow-lg shadow-blue-500/20" 
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
                   }
                 `}
               >

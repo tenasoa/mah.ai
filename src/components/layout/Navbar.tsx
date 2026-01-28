@@ -175,7 +175,7 @@ export function Navbar({
           <div className="flex-none w-40 sm:w-56 flex items-center justify-end gap-2 sm:gap-3">
             
             {/* Theme Toggle */}
-            <ThemeToggle className="hidden sm:flex" />
+            <ThemeToggle className="hidden md:flex" />
 
             {/* Desktop Profile */}
             <div className="hidden md:flex items-center gap-2">
@@ -200,7 +200,12 @@ export function Navbar({
             {/* Mobile: Notification Bell instead of Menu */}
             <div className="md:hidden flex items-center gap-3">
                 <ThemeToggle />
-                {user && <NotificationBell />}
+                {user && (
+                  <>
+                    <CreditBalance />
+                    <NotificationBell />
+                  </>
+                )}
             </div>
           </div>
         </div>

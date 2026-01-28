@@ -9,21 +9,41 @@ import {
   Loader2,
   AlertCircle,
   ArrowRight,
+  Heart,
+  Coffee
 } from "lucide-react";
-import { submitCreditPurchase } from "@/app/actions/credits";
+import { submitSupportPayment } from "@/app/actions/payment";
 
-interface RechargeWorkflowProps {
-  amount: number;
-  price: number;
+interface SupportWorkflowProps {
+  type: 'coffee' | 'major';
   onClose: () => void;
 }
 
-type Step = 'method' | 'instructions' | 'reference' | 'success';
+type Step = 'method' | 'instructions' | 'success';
 
-export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowProps) {
+export function SupportWorkflow({ type, onClose }: SupportWorkflowProps) {
+  const configs = {
+    coffee: {
+      title: "Offrir un café",
+      amount: 1000,
+      icon: Coffee,
+      color: "text-amber-600",
+      bg: "bg-amber-50"
+    },
+    major: {
+      title: "Soutien majeur",
+      amount: 5000,
+      icon: Heart,
+      color: "text-rose-600",
+      bg: "bg-rose-50"
+    }
+  };
+
+  const config = configs[type];
+
   const [step, setStep] = useState<Step>('method');
   const [method, setMethod] = useState<'mvola' | 'orange' | 'airtel' | null>(null);
-  const [reference, setReference] = useState('');
+  const [amount, setAmount] = useState(config.amount);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,11 +57,11 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
       return;
     }
 
-    const result = await submitCreditPurchase({
-      amount,
-      cost_mga: price,
+    const result = await submitSupportPayment({
+      amount_mga: amount,
       payment_method: method.toUpperCase(),
-      payment_reference: reference,
+      payment_reference: 'Soutien-' + Date.now(), // Generate a placeholder reference
+      support_type: type
     });
 
     if (result.success) {
@@ -54,14 +74,15 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    // Could add a toast here
   };
 
   const paymentNumbers: Record<NonNullable<typeof method>, { display: string; raw: string }> = {
     mvola: { display: "034 77 130 85", raw: "0347713085" },
     orange: { display: "032 17 560 02", raw: "0321756002" },
-    airtel: { display: "034 00 000 00", raw: "0340000000" },
+    airtel: { display: "033 00 000 00", raw: "0330000000" }, // Mock data, actual might differ
   };
+
+  const Icon = config.icon;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-20 pb-6 px-4">
@@ -72,13 +93,18 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
       />
 
       {/* Dialog */}
-      <div className="relative w-full max-w-md max-h-[calc(100vh-7rem)] bg-white dark:bg-slate-900 rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 border border-white/10 text-slate-900 dark:text-white">
+      <div className="relative w-full max-w-md max-h-[calc(100vh-7rem)] bg-white dark:bg-slate-900 rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 border border-white/10">
         
         {/* Header */}
         <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
-          <div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Pack {amount} crédits</h3>
-            <p className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest">{price.toLocaleString()} Ar</p>
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-xl ${config.bg} dark:bg-slate-800`}>
+              <Icon className={`w-5 h-5 ${config.color}`} />
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">{config.title}</h3>
+              <p className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest">{amount.toLocaleString()} Ar</p>
+            </div>
           </div>
           <button 
             onClick={onClose}
@@ -92,7 +118,7 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
           {/* Progress Dots */}
           {step !== 'success' && (
             <div className="flex gap-1.5 mb-6 justify-center">
-              {['method', 'instructions', 'reference'].map((s) => (
+              {['method', 'instructions'].map((s) => (
                 <div 
                   key={s} 
                   className={`h-1.5 rounded-full transition-all duration-500 ${
@@ -110,8 +136,22 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
                 <div className="h-16 w-16 bg-amber-50 dark:bg-amber-900/20 rounded-3xl flex items-center justify-center mx-auto mb-4">
                   <Smartphone className="w-8 h-8 text-amber-600 dark:text-amber-500" />
                 </div>
-                <h4 className="font-bold text-slate-900 dark:text-white">Mode de paiement</h4>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Sélectionne ton opérateur Mobile Money</p>
+                <h4 className="font-bold text-slate-900 dark:text-white">Détails du don</h4>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Choisis ton montant et ton mode de paiement</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Montant du don (Ar)</label>
+                <div className="relative">
+                  <input 
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(Number(e.target.value))}
+                    className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 focus:border-amber-400 focus:bg-white dark:focus:bg-slate-700 outline-none font-bold transition-all text-lg text-slate-900 dark:text-white"
+                    placeholder="Entrez le montant..."
+                  />
+                  <div className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-300 dark:text-slate-600">Ar</div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
@@ -158,7 +198,7 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
               <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-[32px] border border-slate-100 dark:border-slate-800">
                 <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Instructions de transfert</p>
                 <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-6">
-                  Envoie exactement <span className="font-black text-slate-900 dark:text-white underline underline-offset-4">{price.toLocaleString()} Ar</span> au numéro suivant :
+                  Envoie exactement <span className="font-black text-slate-900 dark:text-white underline underline-offset-4">{amount.toLocaleString()} Ar</span> au numéro suivant :
                 </p>
                 
                 <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between mb-4 shadow-inner">
@@ -178,63 +218,21 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
               <div className="flex items-start gap-3 text-left p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-900/30">
                 <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed font-medium">
-                  Une fois le transfert effectué, tu recevras un SMS de confirmation contenant un <strong>code de référence</strong>. Tu devras le saisir à l'étape suivante.
+                  Assure-toi de transférer le montant exact indiqué ci-dessus. Ta contribution sera validée manuellement par notre équipe.
                 </p>
               </div>
 
               <button 
-                onClick={() => setStep('reference')}
-                className="w-full py-4 bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-slate-900/20 dark:shadow-amber-500/20 hover:bg-amber-600 transition-all"
+                onClick={handleSubmit}
+                disabled={loading}
+                className="w-full py-4 bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-slate-900/20 dark:shadow-amber-500/20 hover:bg-emerald-600 dark:hover:bg-amber-400 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                J'ai effectué le transfert
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "J'ai effectué le transfert"}
               </button>
             </div>
           )}
 
-          {/* STEP 3: Reference */}
-          {step === 'reference' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 text-center">
-              <div>
-                <h4 className="font-black text-slate-900 dark:text-white">Validation de la transaction</h4>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Saisis le code de référence reçu par SMS</p>
-              </div>
 
-              <div className="space-y-4">
-                <div className="relative group">
-                  <input 
-                    autoFocus
-                    value={reference}
-                    onChange={(e) => setReference(e.target.value)}
-                    className="w-full px-4 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 focus:border-amber-400 focus:bg-white dark:focus:bg-slate-700 outline-none font-mono font-bold transition-all text-center tracking-widest text-slate-900 dark:text-white"
-                    placeholder="Ex: 12345678"
-                  />
-                </div>
-                {error && <p className="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/20 py-2 rounded-lg">{error}</p>}
-              </div>
-
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => setStep('instructions')}
-                  className="flex-1 py-4 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold uppercase tracking-widest text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
-                >
-                  Retour
-                </button>
-                <button 
-                  onClick={() => {
-                    if (!reference || reference.length < 5) {
-                      setError("Référence invalide (min. 5 caractères)");
-                      return;
-                    }
-                    handleSubmit();
-                  }}
-                  disabled={loading}
-                  className="flex-[2] py-4 bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-slate-900/20 dark:shadow-amber-500/20 hover:bg-cyan-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Valider la recharge"}
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* STEP 4: Success */}
           {step === 'success' && (
@@ -247,32 +245,32 @@ export function RechargeWorkflow({ amount, price, onClose }: RechargeWorkflowPro
               </div>
               
               <div>
-                <h4 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Merci, demande enregistrée !</h4>
+                <h4 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Merci infiniment !</h4>
                 <p className="text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">
-                  Ton transfert est en cours de vérification par nos administrateurs. Tu seras notifié dès que l'achat sera validé. Utilise tes crédits avec modération.
+                  Ton soutien a été enregistré. Nos administrateurs vont vérifier la transaction. Ton aide est précieuse pour la communauté Mah.ai !
                 </p>
               </div>
 
               <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[32px] border border-slate-100 dark:border-slate-800">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Montant</span>
-                  <span className="text-sm font-bold text-slate-900 dark:text-white">{price.toLocaleString()} Ar</span>
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Type de soutien</span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">{config.title}</span>
                 </div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Crédits attendus</span>
-                  <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">+{amount}</span>
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Montant</span>
+                  <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">{amount.toLocaleString()} Ar</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Référence</span>
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Date</span>
                   <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
-                    {reference}
+                    {new Date().toLocaleDateString()}
                   </span>
                 </div>
               </div>
 
               <button 
                 onClick={onClose}
-                className="w-full py-4 bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-slate-900/20 dark:shadow-amber-500/20 hover:bg-indigo-600 transition-all"
+                className="w-full py-4 bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-slate-900/20 dark:shadow-amber-500/20 hover:bg-indigo-600 dark:hover:bg-amber-400 transition-all"
               >
                 Fermer
               </button>

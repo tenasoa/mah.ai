@@ -32,7 +32,7 @@ export async function getConversations() {
       .from('profiles')
       .select('pseudo, avatar_url, id')
       .eq('id', otherParticipantId)
-      .single();
+      .maybeSingle();
 
     return {
       ...conv,
@@ -88,4 +88,37 @@ export async function getOrCreateConversation(otherUserId: string) {
 
   if (error) return { error: error.message };
   return { conversationId: data as string };
+}
+
+export async function getSuggestedUsers() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { data: [], error: 'Non authentifié' };
+
+  // Fetch users who are NOT the current user and not already in a conversation
+  // For simplicity, let's just fetch some random users for now
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, pseudo, avatar_url, filiere')
+    .neq('id', user.id)
+    .limit(5);
+
+  if (error) return { data: [], error: error.message };
+  return { data };
+}
+
+export async function getAdminUser() {
+  const supabase = await createClient();
+  
+  // Find a user with admin role
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, pseudo, avatar_url, roles')
+    .contains('roles', ['admin'])
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return { data: null, error: error.message };
+  return { data };
 }
