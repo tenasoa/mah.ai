@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Force dark mode via class strategy */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
     --font-outfit: "Outfit", sans-serif;
     --font-inter: "Inter", sans-serif;
@@ -59,6 +62,62 @@
     --border: #1e293b;
     --muted: #1e293b;
     --muted-foreground: #94a3b8;
+
+    --shadow-color: 226 40% 10%;
+}
+
+/* Dark mode specific overrides */
+.dark .bento-card {
+    background-color: #0f172a;
+    border-color: #1e293b;
+}
+
+.dark .bento-card:hover {
+    border-color: #334155;
+}
+
+.dark .mah-card,
+.dark .mah-card-interactive {
+    background-color: #0f172a;
+    border-color: #1e293b;
+}
+
+.dark .mah-card:hover {
+    border-color: #334155;
+}
+
+.dark .mah-card-interactive:hover {
+    border-color: #f59e0b;
+    box-shadow: 0 10px 40px -10px rgba(245, 158, 11, 0.15);
+}
+
+.dark .skeleton {
+    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+    background-size: 200% 100%;
+}
+
+.dark ::selection {
+    background: rgba(245, 158, 11, 0.3);
+}
+
+.dark .glass {
+    background: rgba(15, 23, 42, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark .mah-blob-1 {
+    background: linear-gradient(135deg, #312e81 0%, #4338ca 100%);
+    opacity: 0.15;
+}
+
+.dark .mah-blob-2 {
+    background: linear-gradient(135deg, #78350f 0%, #b45309 100%);
+    opacity: 0.15;
+}
+
+.dark .mah-blob-3 {
+    background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
+    opacity: 0.1;
 }
 
 /* Base Styles */

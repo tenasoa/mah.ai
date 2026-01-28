@@ -54,7 +54,8 @@ export function UnlockModal({
         setError(result.error || "Erreur lors du déblocage.");
       }
     } catch (err) {
-      setError("Une erreur inattendue est survenue.");
+      console.error("Unlock error detail:", err);
+      setError(err instanceof Error ? err.message : "Une erreur inattendue est survenue.");
     } finally {
       setLoading(false);
     }

@@ -103,6 +103,10 @@ export function SubjectReader({
     userRoles.includes("superadmin") ||
     userRoles.includes("validator");
 
+  const canEdit = 
+    canValidate || 
+    userRoles.includes("contributor");
+
   const showToast = (message: string, tone: "success" | "error" = "success") => {
     setToastTone(tone);
     setToastMessage(message);
@@ -461,35 +465,37 @@ export function SubjectReader({
 
           <div className="h-6 w-[1px] bg-slate-200 mx-2" />
 
-          {!isEditing ? (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="px-4 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 flex items-center gap-2 transition-all shadow-sm"
-            >
-              <Edit3 className="w-4 h-4" />
-              Modifier
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
+          {canEdit && (
+            !isEditing ? (
               <button
-                onClick={() => setIsEditing(false)}
-                className="px-4 py-1.5 text-slate-600 hover:text-slate-900 text-sm font-medium"
+                onClick={() => setIsEditing(true)}
+                className="px-4 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 flex items-center gap-2 transition-all shadow-sm"
               >
-                Annuler
+                <Edit3 className="w-4 h-4" />
+                Modifier
               </button>
-              <button
-                onClick={handleSaveMarkdown}
-                disabled={isSaving}
-                className="px-4 py-1.5 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700 flex items-center gap-2 transition-all shadow-md shadow-violet-200 disabled:opacity-50"
-              >
-                {isSaving ? (
-                  <div className="h-4 w-4 border-2 border-white border-t-transparent animate-spin rounded-full" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                Publier
-              </button>
-            </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="px-4 py-1.5 text-slate-600 hover:text-slate-900 text-sm font-medium"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSaveMarkdown}
+                  disabled={isSaving}
+                  className="px-4 py-1.5 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700 flex items-center gap-2 transition-all shadow-md shadow-violet-200 disabled:opacity-50"
+                >
+                  {isSaving ? (
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent animate-spin rounded-full" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  Publier
+                </button>
+              </div>
+            )
           )}
         </div>
       </div>
@@ -604,13 +610,15 @@ export function SubjectReader({
                         Ce sujet n&apos;a pas encore été édité par la communauté
                         mah.ai.
                       </p>
-                      <button
-                        onClick={() => setIsEditing(true)}
-                        className="mt-6 text-violet-600 font-semibold hover:text-violet-700 flex items-center gap-2"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                        Commencer l&apos;édition
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => setIsEditing(true)}
+                          className="mt-6 text-violet-600 font-semibold hover:text-violet-700 flex items-center gap-2"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                          Commencer l&apos;édition
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

@@ -18,19 +18,28 @@ import {
 } from '@/lib/types/subject';
 import { SubjectFilters } from '@/components/subjects/SubjectFilters';
 import { SubjectsSearch } from '@/components/subjects/SubjectsSearch';
+import { EmptyStateWithRequest } from '@/components/subjects/EmptyStateWithRequest';
+import { createClient } from '@/lib/supabase/server';
 
 // Subject Card Component
 function SubjectCard({
   subject,
+  isAuthenticated,
 }: {
   subject: SubjectCardType;
+  isAuthenticated: boolean;
 }) {
   const colors = EXAM_TYPE_COLORS[subject.exam_type] || EXAM_TYPE_COLORS.other;
   const icon = MATIERE_ICONS[subject.matiere] || '📚';
 
+  // Si non authentifié, rediriger vers login avec le retour vers le sujet
+  const href = isAuthenticated 
+    ? `/subjects/${subject.id}`
+    : `/auth?next=/subjects/${subject.id}`;
+
   return (
     <Link
-      href={`/subjects/${subject.id}`}
+      href={href}
       className={`
         group relative mah-card overflow-hidden
         hover:border-amber-200 hover:shadow-lg hover:shadow-amber-500/10
@@ -129,8 +138,10 @@ function SubjectCardSkeleton() {
 // Subjects Grid Component
 async function SubjectsGrid({
   searchParams,
+  isAuthenticated,
 }: {
   searchParams: { [key: string]: string | string[] | undefined };
+  isAuthenticated: boolean;
 }) {
   // Parse filters from URL
   const examType = searchParams.type as ExamType | undefined;
@@ -166,23 +177,7 @@ async function SubjectsGrid({
   }
 
   if (!data || data.subjects.length === 0) {
-    return (
-      <div className="text-center py-16">
-        <div className="h-20 w-20 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-6">
-          <FileText className="w-10 h-10 text-slate-400" />
-        </div>
-        <h3 className="text-xl font-bold text-slate-900 mb-2">Aucun sujet trouvé</h3>
-        <p className="text-slate-500 max-w-md mx-auto mb-6">
-          Essayez de modifier vos filtres ou d'effectuer une nouvelle recherche.
-        </p>
-        <Link
-          href="/subjects"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-colors"
-        >
-          Voir tous les sujets
-        </Link>
-      </div>
-    );
+    return <EmptyStateWithRequest searchQuery={search} />;
   }
 
   // Build load more URL
@@ -220,6 +215,7 @@ async function SubjectsGrid({
           <SubjectCard
             key={subject.id}
             subject={subject}
+            isAuthenticated={isAuthenticated}
           />
         ))}
       </div>
@@ -257,6 +253,11 @@ export default async function SubjectsPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const resolvedSearchParams = await searchParams;
+  const supabase = await createClient();
+
+  // Check auth user
+  const { data: { user } } = await supabase.auth.getUser();
+  const isAuthenticated = !!user;
 
   return (
     <>
@@ -300,7 +301,7 @@ export default async function SubjectsPage({
         fallback={
           <div>
             <div className="flex items-center justify-between mb-6">
-              <div className="h-5 w-32 bg-slate-200 rounded animate-pulse" />
+              <div className="h-5 w-3/4 rounded bg-slate-200" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
               {Array.from({ length: 8 }).map((_, i) => (
@@ -310,7 +311,7 @@ export default async function SubjectsPage({
           </div>
         }
       >
-        <SubjectsGrid searchParams={resolvedSearchParams} />
+        <SubjectsGrid searchParams={resolvedSearchParams} isAuthenticated={isAuthenticated} />
       </Suspense>
     </>
   );

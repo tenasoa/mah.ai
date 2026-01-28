@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { UserProfile, UserRole } from '@/lib/types/user';
 
@@ -91,4 +92,79 @@ export async function updateUserCredits(userId: string, amount: number) {
 
   revalidatePath('/admin/users');
   return { success: true };
+}
+
+export async function adminUpdateUser(userId: string, data: Partial<UserProfile>) {
+  const { isAdmin } = await checkAdmin();
+  if (!isAdmin) return { success: false, error: 'Accès refusé' };
+
+  // Use a special admin client with service_role to bypass RLS
+  const supabaseAdmin = createSupabaseAdmin(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { error } = await supabaseAdmin
+    .from('profiles')
+    .update({
+      ...data,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId);
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath('/admin/users');
+  revalidatePath(`/admin/users/${userId}`);
+  return { success: true };
+}
+
+export async function deleteUser(userId: string) {
+  const { isAdmin } = await checkAdmin();
+  if (!isAdmin) return { success: false, error: 'Accès refusé' };
+
+  const supabaseAdmin = createSupabaseAdmin(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  // 1. Delete from auth.users (via admin API)
+  const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+  if (authError) return { success: false, error: authError.message };
+
+  revalidatePath('/admin/users');
+  return { success: true };
+}
+
+export async function toggleBlockUser(userId: string, shouldBlock: boolean) {
+  const { isAdmin } = await checkAdmin();
+  if (!isAdmin) return { success: false, error: 'Accès refusé' };
+
+  const supabaseAdmin = createSupabaseAdmin(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { error } = await supabaseAdmin
+    .from('profiles')
+    .update({ is_blocked: shouldBlock, updated_at: new Date().toISOString() })
+    .eq('id', userId);
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath('/admin/users');
+  return { success: true };
+}
+
+export async function getUserProfile(userId: string) {
+  const { supabase, isAdmin } = await checkAdmin();
+  if (!isAdmin || !supabase) return { data: null, error: 'Accès refusé' };
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  return { data: (data as UserProfile) || null, error: error?.message || null };
 }

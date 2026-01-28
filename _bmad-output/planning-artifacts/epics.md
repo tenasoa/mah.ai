@@ -39,6 +39,17 @@ FR16: Notifications de rappel et de réponses (Push/In-app).
 Offrir une navigation instantanée via l'interface Bento.
 **Status:** Completed
 
+### Story 2.1: Accès Visiteur Catalogue
+Status: Planned
+As a Visiteur, I want accéder au catalogue depuis la Landing Page sans créer de compte pour explorer les sujets disponibles.
+
+### Story 2.2: Dashboard Bento
+Status: Completed
+
+### Story 2.3: Modernisation UI (Dark Mode & Mobile)
+Status: Planned
+As a Utilisateur, I want une interface sombre, des chargements modernes et une ergonomie mobile native.
+
 ### Epic 3: Zen Reader & Socratic AI (Markdown)
 Interface de lecture HTML et tutorat IA basé sur le texte structuré.
 **Status:** Completed
@@ -62,6 +73,10 @@ As a Développeur, I want initialiser le projet avec Next.js 16+, Tailwind 4 et 
 ### Story 1.4: Paiement "Confiance" (Optimistic UI)
 Status: Completed
 As a Élève, I want saisir mon code Mobile Money et accéder immédiatement au contenu.
+
+### Story 1.5: Redirection Post-Confirmation
+Status: Planned
+As a Utilisateur, I want être redirigé vers le login après avoir cliqué sur le lien email.
 
 ---
 
@@ -95,7 +110,7 @@ As a Administrateur, I want éditer les sujets avec un aperçu scindé et scroll
 
 ### Story 5.2: Gestion Administrative des Sujets
 Status: Completed
-As a Administrateur, I want créer et lister les sujets via une interface dédiée.
+As a Contributeur ou Administrateur, I want créer et lister les sujets via une interface dédiée.
 
 ### Story 5.3: Tableau de Bord Analytics "Trust Gap"
 Status: Completed

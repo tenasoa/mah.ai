@@ -13,6 +13,7 @@ import {
   TrendingUp,
   Lock,
   Unlock,
+  Plus,
 } from 'lucide-react';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import {
@@ -21,6 +22,7 @@ import {
   MATIERE_ICONS,
   type SubjectCard,
 } from '@/lib/types/subject';
+import { SubjectRequestModal } from './SubjectRequestModal';
 
 // Search Result Item
 function SearchResultItem({
@@ -87,6 +89,7 @@ function SubjectsSearchInner() {
   const initialQuery = searchParams.get('q') || '';
 
   const [isOpen, setIsOpen] = useState(false);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SubjectCard[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -236,14 +239,12 @@ function SubjectsSearchInner() {
       {/* Search Modal */}
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Modal Container with Backdrop */}
           <div
-            className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] sm:pt-[15vh] px-4 bg-slate-900/50 backdrop-blur-sm transition-all"
             onClick={closeSearch}
-          />
-
-          {/* Modal */}
-          <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] sm:pt-[15vh] px-4">
+          >
+            {/* Search Card */}
             <div
               className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl shadow-slate-900/20 overflow-hidden animate-scale-in"
               onClick={(e) => e.stopPropagation()}
@@ -318,21 +319,29 @@ function SubjectsSearchInner() {
 
                 {/* No Results */}
                 {!isLoading && query.length >= 2 && results.length === 0 && (
-                  <div className="text-center py-10">
-                    <div className="h-14 w-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                      <FileText className="w-7 h-7 text-slate-400" />
+                  <div className="text-center py-10 px-4">
+                    <div className="h-14 w-14 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-4 border border-amber-100 rotate-3">
+                      <FileText className="w-7 h-7 text-amber-500" />
                     </div>
-                    <p className="text-slate-900 font-medium mb-1">Aucun résultat</p>
-                    <p className="text-sm text-slate-500 mb-4">
-                      Essayez avec d'autres mots-clés
+                    <p className="text-slate-900 font-bold mb-1">Aucun sujet trouvé</p>
+                    <p className="text-sm text-slate-500 mb-6 max-w-[280px] mx-auto">
+                      Nous n'avons pas encore de sujet pour <span className="text-amber-600 font-bold">"{query}"</span>.
                     </p>
-                    <button
-                      onClick={handleFullSearch}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-100 text-amber-700 font-medium hover:bg-amber-200 transition-colors"
-                    >
-                      <Search className="w-4 h-4" />
-                      Rechercher dans le catalogue
-                    </button>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => setIsRequestModalOpen(true)}
+                        className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-slate-900 text-white font-bold uppercase tracking-widest text-[10px] hover:bg-indigo-600 transition-all shadow-lg shadow-slate-900/20"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Demander ce sujet
+                      </button>
+                      <button
+                        onClick={handleFullSearch}
+                        className="w-full py-3 rounded-xl bg-slate-100 text-slate-600 font-bold uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all"
+                      >
+                        Recherche approfondie
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -381,6 +390,12 @@ function SubjectsSearchInner() {
           </div>
         </>
       )}
+
+      <SubjectRequestModal 
+        isOpen={isRequestModalOpen} 
+        onClose={() => setIsRequestModalOpen(false)} 
+        initialMatiere={query}
+      />
     </>
   );
 }

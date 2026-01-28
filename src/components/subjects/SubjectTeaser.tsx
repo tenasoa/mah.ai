@@ -103,11 +103,21 @@ export function SubjectTeaser({
 
     if (creditBalance === null) {
       // User not logged in
-      router.push(`/auth/login?redirect=/subjects/${subject.id}`);
+      router.push(`/auth?next=/subjects/${subject.id}`);
     } else {
-      // Open modal
-      setIsUnlockModalOpen(true);
+      router.push(`/subjects/${subject.id}`);
     }
+  };
+
+  const handleUnlock = () => {
+    // If not authenticated, redirect to login
+    // Note: In a real app check auth state here
+    const isAuthenticated = false; // TODO: Pass auth state
+    if (!isAuthenticated) {
+        router.push(`/auth?next=/subjects/${subject.id}`);
+        return;
+    }
+    setIsUnlockModalOpen(true);
   };
 
   return (
@@ -241,7 +251,7 @@ export function SubjectTeaser({
               href={
                 subject.is_free
                   ? `/subjects/${subject.id}`
-                  : `/auth/login?redirect=/subjects/${subject.id}`
+                  : `/auth?next=/subjects/${subject.id}`
               }
               onClick={handleUnlockClick}
               className="
@@ -265,7 +275,7 @@ export function SubjectTeaser({
               <p className="text-center text-slate-600 text-sm">
                 ou{" "}
                 <Link
-                  href="/auth/login"
+                  href="/auth"
                   className="text-amber-600 hover:underline font-semibold"
                 >
                   connectez-vous

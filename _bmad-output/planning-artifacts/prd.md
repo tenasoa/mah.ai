@@ -113,10 +113,11 @@ Notre priorité absolue est d'être prêt pour le **Rush de Mai 2026**. Nous ado
 ### Gestion Utilisateur & Accès
 - **FR1:** Inscription simplifiée avec numéro de téléphone unique.
 - **FR2:** Connexion par OTP (SMS) ou mot de passe.
+- **FR17:** Redirection automatique vers la page de connexion après confirmation email.
 - **FR3:** Profil basique (Pseudo, Lycée, Classe).
 
 ### Catalogue & Consommation
-- **FR4:** Recherche/Filtrage (Année, Série, Matière).
+- **FR4:** Recherche/Filtrage (Année, Série, Matière) accessible aux Visiteurs (sans compte).
 - **FR5:** "Teaser" Hybride : Aperçu flouté avec 3 premières questions claires (SEO).
 - **FR6:** Déblocage de sujet à l'unité ou activation de Pass Temps.
 - **FR7:** Lecteur Zen HTML : Affichage natif et responsive du contenu Markdown.
@@ -132,7 +133,7 @@ Notre priorité absolue est d'être prêt pour le **Rush de Mai 2026**. Nous ado
 - **FR13:** Validation/Révocation a posteriori par admin/script.
 
 ### Administration & Qualité
-- **FR14:** Édition Markdown : Interface d'édition avec Split View (Aperçu en temps réel).
+- **FR14:** Édition Markdown : Interface d'édition avec Split View réservée aux Contributeurs et Administrateurs.
 - **FR15:** Modération assistée par IA ("Janitor" local) des commentaires.
 - **FR16:** Notifications de rappel et de réponses (Rétention).
 
@@ -150,6 +151,9 @@ Notre priorité absolue est d'être prêt pour le **Rush de Mai 2026**. Nous ado
 
 ### Accessibilité & Contexte
 - **Outdoor Mode:** Contraste élevé (Noir/Blanc) par défaut pour lisibilité au soleil/écrans low-cost.
+- **Dark Mode:** Support natif complet du thème sombre sur toutes les pages.
+- **Native Feel:** Refonte mobile pour une expérience "App-like" (gestes, transitions).
+- **Feedback:** Animation de chargement moderne et contextuelle.
 
 ## 7. Design System + UI Direction (Draft)
 

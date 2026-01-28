@@ -9,15 +9,33 @@ import {
   FileText,
   Settings,
   BarChart3,
+  Ticket,
+  ShieldCheck,
+  Coins,
   type LucideIcon,
 } from 'lucide-react';
 
-// Default admin navigation items
+// Default admin navigation items grouped
 const defaultAdminNavItems: NavItem[] = [
-  { href: '/admin/payments', label: 'Paiements', icon: CreditCard },
-  { href: '/admin/users', label: 'Utilisateurs', icon: Users },
-  { href: '/admin/subjects', label: 'Sujets', icon: FileText },
-  { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+  { 
+    href: '/admin/management', 
+    label: 'Gestion', 
+    icon: ShieldCheck,
+    subItems: [
+      { href: '/admin/subjects', label: 'Sujets', icon: FileText },
+      { href: '/admin/tickets', label: 'Tickets', icon: Ticket },
+      { href: '/admin/users', label: 'Utilisateurs', icon: Users },
+    ]
+  },
+  { 
+    href: '/admin/finance', 
+    label: 'Finance', 
+    icon: Coins,
+    subItems: [
+      { href: '/admin/payments', label: 'Paiements', icon: CreditCard },
+      { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+    ]
+  },
   { href: '/admin/settings', label: 'Paramètres', icon: Settings },
 ];
 

@@ -65,9 +65,14 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
 
   const isAdmin = roles.includes('admin') || roles.includes('superadmin') || roles.includes('validator');
   
+  // Filter nav items: Hide Dashboard if not logged in
+  const visibleNavItems = user 
+    ? baseNavItems 
+    : baseNavItems.filter(item => item.href !== "/dashboard");
+
   const currentNavItems = isAdmin 
-    ? [...baseNavItems, { href: "/admin", label: "Admin", icon: ShieldAlert }]
-    : baseNavItems;
+    ? [...visibleNavItems, { href: "/admin", label: "Admin", icon: ShieldAlert }]
+    : visibleNavItems;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
