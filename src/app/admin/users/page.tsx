@@ -92,7 +92,7 @@ export default async function AdminUsersPage({
                         <div>
                           <p className="font-bold text-slate-900 flex items-center gap-2">
                             {u.pseudo || 'Anonyme'}
-                            {u.is_blocked && <Ban className="w-3 h-3 text-red-500" title="Bloqué" />}
+                            {u.is_blocked && <Ban className="w-3 h-3 text-red-500" aria-label="Bloqué" />}
                           </p>
                           <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
                             <Mail className="w-2.5 h-2.5" />
