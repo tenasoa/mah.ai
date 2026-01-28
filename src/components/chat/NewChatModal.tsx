@@ -16,7 +16,7 @@ export function NewChatModal({ isOpen, onClose, currentUserId }: NewChatModalPro
   const [searchQuery, setSearchQuery] = useState("");
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState<string | null>(null);
   const supabase = createClient();
   const router = useRouter();
   const modalRef = useRef<HTMLDivElement>(null);
@@ -53,7 +53,7 @@ export function NewChatModal({ isOpen, onClose, currentUserId }: NewChatModalPro
     } else {
       console.error(error);
     }
-    setCreating(false);
+    setCreating(null);
   };
 
   if (!isOpen) return null;
