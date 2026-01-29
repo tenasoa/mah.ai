@@ -71,6 +71,7 @@ export function SubjectReader({
   const router = useRouter();
   const supabase = createClient();
   const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [content, setContent] = useState(initialContent || "");
   const [markdownContent, setMarkdownContent] = useState(initialContent || "");
   const [isEditing, setIsEditing] = useState(forceEdit);
@@ -100,8 +101,16 @@ export function SubjectReader({
   // États pour les notifications et messages
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastTone, setToastTone] = useState<"success" | "error">("success");
+  const [isToastClosing, setIsToastClosing] = useState(false);
   const [messages, setMessages] = useState<QuestionMessage[]>([]);
   const [showComments, setShowComments] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    if (title) {
+      document.title = `${title} | Mah.ai`;
+    }
+  }, [title]);
 
   const canValidate =
     userRoles.includes("admin") ||
@@ -115,7 +124,16 @@ export function SubjectReader({
   const showToast = (message: string, tone: "success" | "error" = "success") => {
     setToastTone(tone);
     setToastMessage(message);
-    setTimeout(() => setToastMessage(null), 3000);
+    setIsToastClosing(false);
+    
+    // Animation de sortie après un délai
+    setTimeout(() => {
+      setIsToastClosing(true);
+      setTimeout(() => {
+        setToastMessage(null);
+        setIsToastClosing(false);
+      }, 650); // Temps de l'animation CSS flash-exit
+    }, 3000);
   };
 
   const toggleZen = () => {
@@ -330,25 +348,39 @@ export function SubjectReader({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          subjectContent: markdownContent,
+          subjectContent: formatSubjectContent(markdownContent),
           subjectTitle: title,
         }),
       });
 
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${title.replace(/[^a-z0-9]/gi, "_")}_mah_ai.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        const message = errorBody?.error || `Erreur (${response.status}) lors du téléchargement`;
+        throw new Error(message);
       }
+
+      const responseClone = response.clone();
+      const blob = await response.blob();
+      if (!blob.size) {
+        const contentType = response.headers.get("content-type") || "inconnu";
+        const text = await responseClone.text().catch(() => "");
+        const details = text ? ` Détails: ${text.slice(0, 300)}` : "";
+        throw new Error(`Le document généré est vide (Content-Type: ${contentType}).${details}`);
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${title.replace(/[^a-z0-9]/gi, "_")}_mah_ai.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
       console.error("Erreur lors du téléchargement PDF:", error);
-      alert("Erreur lors du téléchargement du document");
+      const message =
+        error instanceof Error ? error.message : "Erreur lors du téléchargement du document";
+      alert(message);
     }
   };
 
@@ -438,25 +470,25 @@ export function SubjectReader({
       )}
 
       {/* Top Navigation Bar */}
-      <div className="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 flex items-center justify-between z-30 shadow-sm transition-colors">
-        <div className="flex items-center gap-4">
+      <div className="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 flex items-center justify-between z-30 shadow-sm transition-colors overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-3 shrink-0">
           <button
             onClick={handleBack}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-slate-500 dark:text-slate-400"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div>
-            <h1 className="text-sm font-bold text-slate-900 dark:text-white leading-none">
+          <div className="min-w-0 max-w-[120px] sm:max-w-none">
+            <h1 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-none truncate">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{subtitle}</p>
+              <p className="text-[9px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">{subtitle}</p>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-4">
           <button
             onClick={toggleZen}
             className={`p-2 rounded-lg transition-all ${isZen ? 'bg-amber-100 text-amber-600 shadow-sm' : 'hover:bg-slate-100 text-slate-500'}`}
@@ -473,54 +505,52 @@ export function SubjectReader({
             <MessageSquare className="w-5 h-5" />
           </button>
 
-          <div className="h-6 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1" />
+          <div className="h-6 w-[1px] bg-slate-200 dark:bg-slate-800 mx-0.5 sm:mx-1" />
 
           {isEditing && (
             <button
               onClick={() =>
                 setViewMode(viewMode === "split" ? "full" : "split")
               }
-              className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg flex items-center gap-2 transition-colors"
+              className="px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg flex items-center gap-1.5 sm:gap-2 transition-colors whitespace-nowrap"
             >
               {viewMode === "full" ? (
                 <Columns className="w-4 h-4" />
               ) : (
                 <Layout className="w-4 h-4" />
               )}
-              {viewMode === "full" ? "Aperçu scindé" : "Plein écran"}
+              <span className="hidden xs:inline">{viewMode === "full" ? "Aperçu" : "Plein écran"}</span>
             </button>
           )}
-
-          <div className="h-6 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2" />
 
           {canEdit && (
             !isEditing ? (
               <button
                 onClick={() => setIsEditing(true)}
-                className="px-4 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 transition-all shadow-sm"
+                className="px-3 sm:px-4 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs sm:text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-1.5 sm:gap-2 transition-all shadow-sm whitespace-nowrap"
               >
-                <Edit3 className="w-4 h-4" />
-                Modifier
+                <Edit3 className="w-3.5 h-3.5 sm:w-4 h-4" />
+                <span>Modifier</span>
               </button>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="px-4 py-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-sm font-medium"
+                  className="px-2 sm:px-4 py-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs sm:text-sm font-medium whitespace-nowrap"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleSaveMarkdown}
                   disabled={isSaving}
-                  className="px-4 py-1.5 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700 flex items-center gap-2 transition-all shadow-md shadow-violet-200 disabled:opacity-50"
+                  className="px-3 sm:px-4 py-1.5 bg-violet-600 text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-violet-700 flex items-center gap-1.5 sm:gap-2 transition-all shadow-md shadow-violet-200 whitespace-nowrap disabled:opacity-50"
                 >
                   {isSaving ? (
-                    <div className="h-4 w-4 border-2 border-white border-t-transparent animate-spin rounded-full" />
+                    <div className="h-3.5 w-3.5 sm:h-4 sm:w-4 border-2 border-white border-t-transparent animate-spin rounded-full" />
                   ) : (
-                    <Save className="w-4 h-4" />
+                    <Save className="w-3.5 h-3.5 sm:w-4 h-4" />
                   )}
-                  Publier
+                  <span>Publier</span>
                 </button>
               </div>
             )
@@ -624,13 +654,14 @@ export function SubjectReader({
                   {markdownContent ? (
                     <MarkdownRenderer
                       content={markdownContent}
-                      variant={theme === "dark" ? "dark" : "light"}
+                      variant={mounted && theme === "dark" ? "dark" : "light"}
                     />
                   ) : (
                     <div className="h-full flex flex-col items-center justify-center text-center py-20">
                       <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
                         <BookOpen className="w-10 h-10 text-slate-200 dark:text-slate-700" />
                       </div>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{userProfile?.full_name}</p>
                       <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                         Aucun contenu disponible
                       </h3>
@@ -706,7 +737,7 @@ export function SubjectReader({
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-5 duration-300">
+        <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] ${isToastClosing ? "animate-flash-exit" : "animate-in slide-in-from-bottom-5"} duration-300`}>
           <div
             className={`px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 ${toastTone === "success" ? "bg-emerald-600" : "bg-red-600"} text-white`}
           >

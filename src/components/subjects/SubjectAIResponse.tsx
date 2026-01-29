@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   X,
   Bot,
@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { deductCreditsClient } from "@/lib/credits-client";
-import React, { useEffect } from "react";
 import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import "katex/dist/katex.min.css";
 
@@ -42,6 +41,7 @@ export function SubjectAIResponse({
     "direct",
   );
   const [isGenerating, setIsGenerating] = useState(false);
+  const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
   const supabase = createClient();
@@ -50,6 +50,10 @@ export function SubjectAIResponse({
   const cleanAndFormatResponse = (response: string): string => {
     return (
       response
+        // Retirer les numéros de sources [1], [2], [1-3], [1,2]
+        .replace(/\s*\[(\d+(\s*[-,]\s*\d+)*)\]\s*/g, " ")
+        // Retirer une section "Sources:" si présente
+        .replace(/^\s*Sources\s*:\s*[\s\S]*$/im, "")
         // Préserver les formules mathématiques KaTeX
         .replace(/\$\$([^$]+)\$\$/g, (match, formula) => {
           return `$$${formula.trim()}$$`;
@@ -87,6 +91,17 @@ export function SubjectAIResponse({
     );
   };
 
+  useEffect(() => {
+    if (!isGenerating || etaSeconds === null) return;
+    const timer = setInterval(() => {
+      setEtaSeconds((prev) => {
+        if (prev === null) return prev;
+        return Math.max(0, prev - 1);
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isGenerating, etaSeconds]);
+
   if (!isOpen) return null;
 
   const generateResponse = async () => {
@@ -98,6 +113,10 @@ export function SubjectAIResponse({
       return;
     }
 
+    const cost = responseType === "direct" ? 2 : 3;
+
+    const initialEta = responseType === "direct" ? 12 : 20;
+    setEtaSeconds(initialEta);
     setIsGenerating(true);
     try {
       const response = await fetch("/api/generate-ai-response", {
@@ -122,7 +141,7 @@ export function SubjectAIResponse({
 
       // Déduire les crédits si nécessaire
       if (userSubscription !== "premium" && user?.id) {
-        const result = await deductCreditsClient(user.id, 10);
+        const result = await deductCreditsClient(user.id, cost);
         if (!result.success) {
           throw new Error(
             result.error || "Erreur lors de la déduction des crédits",
@@ -134,33 +153,54 @@ export function SubjectAIResponse({
       alert("Une erreur est survenue lors de la génération de la réponse.");
     } finally {
       setIsGenerating(false);
+      setEtaSeconds(null);
     }
   };
 
   const handleDownloadPDF = async () => {
     if (!aiResponse) return;
 
-    const response = await fetch("/api/generate-pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        subjectContent,
-        subjectTitle,
-        aiResponse,
-        includeAIResponse: true,
-      }),
-    });
+    try {
+      const response = await fetch("/api/generate-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subjectContent,
+          subjectTitle,
+          aiResponse,
+          includeAIResponse: true,
+        }),
+      });
 
-    if (response.ok) {
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        const message = errorBody?.error || `Erreur (${response.status}) lors du téléchargement`;
+        throw new Error(message);
+      }
+
+      const responseClone = response.clone();
       const blob = await response.blob();
+      if (!blob.size) {
+        const contentType = response.headers.get("content-type") || "inconnu";
+        const text = await responseClone.text().catch(() => "");
+        const details = text ? ` Détails: ${text.slice(0, 300)}` : "";
+        throw new Error(`Le document généré est vide (Content-Type: ${contentType}).${details}`);
+      }
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${subjectTitle.replace(/[^a-z0-9]/gi, "_")}_reponse_IA.pdf`;
+      const suffix = responseType === "direct" ? "reponse_directe_IA" : "reponse_detaillee_IA";
+      a.download = `${subjectTitle.replace(/[^a-z0-9]/gi, "_")}_${suffix}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+    } catch (error) {
+      console.error("Erreur lors du téléchargement PDF:", error);
+      const message =
+        error instanceof Error ? error.message : "Erreur lors du téléchargement du document";
+      alert(message);
     }
   };
 
@@ -171,20 +211,24 @@ export function SubjectAIResponse({
     }
   };
 
+  const responseParts = aiResponse
+    ? aiResponse.split(/\n{2,}---\n{2,}/).map(part => part.trim()).filter(Boolean)
+    : [];
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[999] flex items-center justify-center pt-24 pb-8 px-4">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full h-[95vh] overflow-hidden animate-scale-in flex flex-col">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-5xl w-full h-[95vh] overflow-hidden animate-scale-in flex flex-col border border-slate-200 dark:border-slate-800">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200">
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Réponse IA</h2>
-            <p className="text-sm text-slate-500 mt-1">{subjectTitle}</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Réponse IA</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{subjectTitle}</p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-slate-500" />
+            <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
           </button>
         </div>
 
@@ -194,7 +238,7 @@ export function SubjectAIResponse({
             <>
               {/* Type de réponse */}
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-slate-700 mb-3">
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
                   Type de réponse souhaitée
                 </label>
                 <div className="grid grid-cols-2 gap-3">
@@ -202,15 +246,15 @@ export function SubjectAIResponse({
                     onClick={() => setResponseType("direct")}
                     className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
                       responseType === "direct"
-                        ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                        : "border-slate-200 hover:border-slate-300 text-slate-600"
+                        ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400"
+                        : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-600 dark:text-slate-400"
                     }`}
                   >
                     <FileText className="w-5 h-5" />
                     <div className="text-left">
                       <div className="font-medium">Réponse directe</div>
                       <div className="text-xs opacity-75">
-                        Solution concise et rapide
+                        Solution concise et rapide (2 crédits)
                       </div>
                     </div>
                   </button>
@@ -218,15 +262,15 @@ export function SubjectAIResponse({
                     onClick={() => setResponseType("detailed")}
                     className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
                       responseType === "detailed"
-                        ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                        : "border-slate-200 hover:border-slate-300 text-slate-600"
+                        ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400"
+                        : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-600 dark:text-slate-400"
                     }`}
                   >
                     <Eye className="w-5 h-5" />
                     <div className="text-left">
                       <div className="font-medium">Réponse détaillée</div>
                       <div className="text-xs opacity-75">
-                        Avec explications complètes
+                        Avec explications complètes (3 crédits)
                       </div>
                     </div>
                   </button>
@@ -235,14 +279,14 @@ export function SubjectAIResponse({
 
               {/* Sujet */}
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-slate-700 mb-3">
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
                   Sujet à traiter
                 </label>
-                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                  <h4 className="font-semibold text-slate-700 mb-2">
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-2">
                     📄 Sujet d'origine :
                   </h4>
-                  <div className="text-sm text-slate-600 leading-relaxed">
+                  <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                     <MarkdownRenderer
                       content={formatSubjectContent(subjectContent)}
                       variant="minimal"
@@ -261,7 +305,12 @@ export function SubjectAIResponse({
                   {isGenerating ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Génération en cours...
+                      <span>Génération en cours</span>
+                      {etaSeconds !== null && (
+                        <span className="ml-1 text-white/90 font-medium">
+                          — ~{etaSeconds}s
+                        </span>
+                      )}
                     </>
                   ) : (
                     <>
@@ -270,13 +319,13 @@ export function SubjectAIResponse({
                     </>
                   )}
                 </button>
-                <div className="mt-3 text-sm text-slate-500">
+                <div className="mt-3 text-sm text-slate-500 dark:text-slate-400">
                   {userSubscription === "premium" ? (
-                    <span className="text-emerald-600 font-medium">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                       Inclus dans votre abonnement Premium
                     </span>
                   ) : (
-                    <span>10 crédits seront déduits de votre solde</span>
+                    <span>{responseType === "direct" ? 2 : 3} crédits seront déduits de votre solde</span>
                   )}
                 </div>
               </div>
@@ -286,13 +335,13 @@ export function SubjectAIResponse({
               {/* Réponse générée */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-semibold text-slate-700">
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                     Réponse générée par l'IA
                   </label>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setShowExplanation(!showExplanation)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-slate-700 dark:text-slate-300"
                     >
                       {showExplanation ? (
                         <EyeOff className="w-3 h-3" />
@@ -303,24 +352,40 @@ export function SubjectAIResponse({
                     </button>
                     <button
                       onClick={copyToClipboard}
-                      className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                      className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                       title="Copier la réponse"
                     >
-                      <Copy className="w-4 h-4 text-slate-500" />
+                      <Copy className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                     </button>
                   </div>
                 </div>
-                <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-200">
-                  <MarkdownRenderer
-                    content={aiResponse || ""}
-                    variant="minimal"
-                  />
+                <div className="space-y-4">
+                  {responseParts.length > 1 ? (
+                    responseParts.map((part, index) => (
+                      <div
+                        key={index}
+                        className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800"
+                      >
+                        <div className="mb-2 text-xs font-black uppercase tracking-widest text-indigo-500 dark:text-indigo-300">
+                          Partie {index + 1}/{responseParts.length}
+                        </div>
+                        <MarkdownRenderer content={part} variant="minimal" />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                      <MarkdownRenderer
+                        content={aiResponse || ""}
+                        variant="minimal"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Actions */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-emerald-600">
+                <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2 className="w-4 h-4" />
                   <span className="font-medium">
                     Réponse générée avec succès
@@ -332,13 +397,13 @@ export function SubjectAIResponse({
                       setAiResponse(null);
                       setShowExplanation(false);
                     }}
-                    className="px-4 py-2.5 text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                    className="px-4 py-2.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium transition-colors"
                   >
                     Nouvelle génération
                   </button>
                   <button
                     onClick={handleDownloadPDF}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors shadow-lg shadow-indigo-600/20"
                   >
                     <Download className="w-4 h-4" />
                     Télécharger PDF
@@ -350,5 +415,6 @@ export function SubjectAIResponse({
         </div>
       </div>
     </div>
+
   );
 }

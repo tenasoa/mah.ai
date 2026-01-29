@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import puppeteer from "puppeteer";
 import { marked } from "marked";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   let browser = null;
   try {
@@ -69,8 +72,51 @@ export async function POST(request: NextRequest) {
     const subjectHtml = await markdownToHtml(subjectContent);
     const userAnswerHtml =
       includeAnswer && userAnswer ? await markdownToHtml(userAnswer) : "";
+    const stripSources = (text: string) =>
+      text
+        .replace(/\s*\[(\d+(\s*[-,]\s*\d+)*)\]\s*/g, " ")
+        .replace(/^\s*Sources\s*:\s*[\s\S]*$/im, "")
+        .trim();
+
+    const cleanedAiResponse =
+      includeAIResponse && aiResponse ? stripSources(aiResponse) : "";
+
     const aiResponseHtml =
-      includeAIResponse && aiResponse ? await markdownToHtml(aiResponse) : "";
+      includeAIResponse && cleanedAiResponse
+        ? await markdownToHtml(cleanedAiResponse)
+        : "";
+    const aiResponseParts =
+      includeAIResponse && cleanedAiResponse
+        ? cleanedAiResponse
+            .split(/\n{2,}---\n{2,}/)
+            .map((part) => part.trim())
+            .filter(Boolean)
+        : [];
+    const aiResponsePartsHtml = await Promise.all(
+      aiResponseParts.map((part) => markdownToHtml(part))
+    );
+    const aiResponseTocHtml = aiResponseParts
+      .map(
+        (_part, index) =>
+          `<li><a class="toc-link" href="#ai-part-${index + 1}">Partie ${index + 1}/${aiResponseParts.length}</a></li>`
+      )
+      .join("");
+    const aiResponseSectionsHtml = aiResponsePartsHtml
+      .map((partHtml, index) => {
+        const sectionNumber = includeAnswer ? index + 4 : index + 3;
+        return `
+  <div class="section page-break" id="ai-part-${index + 1}">
+    <div class="section-title">
+      <div class="section-number">${sectionNumber}</div>
+      🤖 RÉPONSE IA — PARTIE ${index + 1}/${aiResponseParts.length}
+    </div>
+    <div class="section-content">
+      ${partHtml}
+    </div>
+  </div>
+  `;
+      })
+      .join("");
 
     // Créer le document HTML complet
     const htmlContent = `
@@ -279,6 +325,13 @@ export async function POST(request: NextRequest) {
     tr:nth-child(even) {
       background: #ecf0f1;
     }
+
+    /* Sommaire (PDF anchors) */
+    .toc-link {
+      color: #3498db;
+      text-decoration: none;
+      font-weight: 600;
+    }
     
     /* Footer */
     .footer {
@@ -357,8 +410,23 @@ export async function POST(request: NextRequest) {
   
   ${
     includeAIResponse && aiResponse
-      ? `
-  <div class="section page-break">
+      ? aiResponseParts.length > 1
+        ? `
+  <div class="section page-break" id="ai-summary">
+    <div class="section-title">
+      <div class="section-number">${includeAnswer ? 3 : 2}</div>
+      🧭 SOMMAIRE — RÉPONSE IA
+    </div>
+    <div class="section-content">
+      <ul>
+        ${aiResponseTocHtml}
+      </ul>
+    </div>
+  </div>
+  ${aiResponseSectionsHtml}
+  `
+        : `
+  <div class="section page-break" id="ai-part-1">
     <div class="section-title">
       <div class="section-number">${includeAnswer ? 3 : 2}</div>
       🤖 RÉPONSE IA
@@ -424,15 +492,20 @@ export async function POST(request: NextRequest) {
       printBackground: true,
       displayHeaderFooter: false,
     });
+    if (!pdfBuffer || pdfBuffer.length === 0) {
+      throw new Error("PDF vide: génération interrompue ou contenu non rendu");
+    }
 
     await browser.close();
 
     // Retourner le PDF
-    return new NextResponse(Buffer.from(pdfBuffer), {
+    const pdfData = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
+    return new Response(pdfData, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${subjectTitle.replace(/[^a-z0-9]/gi, "_")}_mah_ai.pdf"`,
-        "Content-Length": pdfBuffer.length.toString(),
+        "Content-Length": pdfData.byteLength.toString(),
+        "Cache-Control": "no-store",
       },
     });
   } catch (error) {
