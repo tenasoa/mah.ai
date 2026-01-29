@@ -24,7 +24,9 @@ import {
   Ticket,
   Clock,
   ExternalLink,
-  Award
+  Award,
+  LogOut,
+  Phone
 } from "lucide-react";
 import { getMyProfile, getPurchaseHistory, getTransactionHistory, getMyEarnings } from "@/app/actions/profile";
 import { getMyRequests } from "@/app/actions/tickets";
@@ -43,8 +45,15 @@ export default function ProfilePage() {
   const [purchaseLimit, setPurchaseLimit] = useState(5);
   const [transactionLimit, setTransactionLimit] = useState(10);
   const [isEditing, setIsEditing] = useState(false);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/auth");
+    router.refresh();
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -86,6 +95,10 @@ export default function ProfilePage() {
   }
 
   const roleLabel = userProfile?.roles?.[0] ? ROLE_LABELS[userProfile.roles[0]] : "Élève";
+  const phoneDisplay =
+    userProfile?.phone_number
+      ? `${userProfile.phone_country_code || ""} ${userProfile.phone_number}`.trim()
+      : "Non renseigné";
 
   return (
     <div className="w-full pb-20 pt-4">
@@ -98,6 +111,17 @@ export default function ProfilePage() {
               <img src={userProfile.cover_url} alt="Cover" className="w-full h-full object-cover" />
             )}
             <div className="absolute inset-0 bg-black/10" />
+            
+            {/* Mobile Logout Button - Top Right */}
+            <div className="md:hidden absolute top-4 right-4">
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold uppercase tracking-widest text-xs transition-all shadow-xl border border-white/20 backdrop-blur-sm"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Déconnexion</span>
+              </button>
+            </div>
           </div>
 
           <div className="px-8 pb-8">
@@ -115,6 +139,9 @@ export default function ProfilePage() {
                       {userProfile?.pseudo?.charAt(0).toUpperCase() || "E"}
                     </div>
                   )}
+                  {/* Online Badge */}
+                  <div className="absolute top-0 right-0 w-6 h-6 bg-emerald-500 border-4 border-white dark:border-slate-900 rounded-full shadow-lg" title="En ligne" />
+                  
                   <button 
                     onClick={() => setIsEditing(true)}
                     className="absolute -bottom-2 -right-2 w-10 h-10 bg-white dark:bg-slate-800 rounded-2xl shadow-lg flex items-center justify-center hover:bg-amber-50 dark:hover:bg-slate-700 transition-all border border-slate-100 dark:border-slate-700 group-hover:scale-110 active:scale-95"
@@ -169,72 +196,116 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-10">
                 {/* Left Column: Bio & Identity */}
                 <div className="lg:col-span-2 space-y-8">
-                  <section>
-                    <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                      <User className="w-3 h-3" /> À propos
-                    </h4>
-                    <p className="text-slate-600 dark:text-slate-400 leading-relaxed italic">
-                      {userProfile?.bio || "Aucune biographie renseignée."}
-                    </p>
-                  </section>
-
-                  <section className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50/50 dark:bg-slate-900/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-slate-400 dark:text-slate-500 border dark:border-slate-700"><Mail className="w-4 h-4" /></div>
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Email</p>
-                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{userProfile?.email || "Non renseigné"}</p>
+                  <section className="bg-slate-50 dark:bg-slate-800/30 p-6 rounded-[32px] border border-slate-100 dark:border-slate-800 transition-all overflow-hidden">
+                    <button 
+                      onClick={() => setIsAboutOpen(!isAboutOpen)}
+                      className="w-full flex items-center justify-between group"
+                    >
+                      <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <User className="w-3 h-3" /> À propos
+                      </h4>
+                      <div className={`p-1 rounded-full transition-transform duration-300 ${isAboutOpen ? 'rotate-180 bg-slate-200 dark:bg-slate-700' : 'bg-slate-100 dark:bg-slate-800'}`}>
+                        <Plus className={`w-3 h-3 transition-all ${isAboutOpen ? 'rotate-45' : ''}`} />
                       </div>
-                    </div>
-                    {userProfile?.full_name && (
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-slate-400 dark:text-slate-500 border dark:border-slate-700"><Shield className="w-4 h-4" /></div>
-                        <div>
-                          <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Nom Complet</p>
-                          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{userProfile.full_name}</p>
+                    </button>
+                    
+                    <div className={`transition-all duration-500 ease-in-out ${isAboutOpen ? 'max-h-[1000px] mt-6 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}>
+                      <p className="text-slate-600 dark:text-slate-400 leading-relaxed italic mb-8">
+                        {userProfile?.bio || "Aucune biographie renseignée."}
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-white dark:bg-slate-900/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 mb-6">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl shadow-sm text-slate-400 dark:text-slate-500 border dark:border-slate-700"><Mail className="w-4 h-4" /></div>
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Email</p>
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{userProfile?.email || "Non renseigné"}</p>
+                          </div>
+                        </div>
+                        {userProfile?.full_name && (
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl shadow-sm text-slate-400 dark:text-slate-500 border dark:border-slate-700"><Shield className="w-4 h-4" /></div>
+                            <div>
+                              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Nom Complet</p>
+                              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{userProfile.full_name}</p>
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl shadow-sm text-slate-400 dark:text-slate-500 border dark:border-slate-700"><MapPin className="w-4 h-4" /></div>
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Localisation</p>
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{userProfile?.country ? `${userProfile.address || ""}, ${userProfile.country}` : "Non renseignée"}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl shadow-sm text-slate-400 dark:text-slate-500 border dark:border-slate-700"><Phone className="w-4 h-4" /></div>
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Téléphone</p>
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{phoneDisplay}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl shadow-sm text-slate-400 dark:text-slate-500 border dark:border-slate-700"><Calendar className="w-4 h-4" /></div>
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Naissance</p>
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{userProfile?.birth_date ? new Date(userProfile.birth_date).toLocaleDateString('fr-FR') : "Non renseignée"}</p>
+                          </div>
                         </div>
                       </div>
-                    )}
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-slate-400 dark:text-slate-500 border dark:border-slate-700"><MapPin className="w-4 h-4" /></div>
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Localisation</p>
-                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{userProfile?.country ? `${userProfile.address || ""}, ${userProfile.country}` : "Non renseignée"}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-slate-400 dark:text-slate-500 border dark:border-slate-700"><Calendar className="w-4 h-4" /></div>
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Naissance</p>
-                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{userProfile?.birth_date ? new Date(userProfile.birth_date).toLocaleDateString('fr-FR') : "Non renseignée"}</p>
-                      </div>
-                    </div>
-                  </section>
 
-                  <section>
-                    <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                       <Target className="w-3 h-3" /> Objectifs d'apprentissage
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {userProfile?.learning_goals?.length ? userProfile.learning_goals.map(goal => (
-                        <span key={goal} className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-xl text-xs font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-800/50">{goal}</span>
-                      )) : <p className="text-xs text-slate-400 italic">Aucun objectif défini.</p>}
-                    </div>
-                  </section>
+                      {/* Informations Académiques */}
+                      <div className="bg-white dark:bg-slate-900/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 mb-6">
+                        <h5 className="text-sm font-black text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                          <GraduationCap className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                          Informations Académiques
+                        </h5>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Niveau & Classe</p>
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{userProfile?.education_level} {userProfile?.classe ? `• ${userProfile.classe}` : ""}</p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Filière</p>
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{userProfile?.filiere || "N/A"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Établissement</p>
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{userProfile?.etablissement || "N/A"}</p>
+                          </div>
+                        </div>
+                      </div>
 
-                  <section>
-                    <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                      <Heart className="w-3 h-3" /> Centres d'intérêt
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {userProfile?.interests?.length ? userProfile.interests.map(tag => (
-                        <span key={tag} className="px-4 py-2 bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 rounded-xl text-xs font-black uppercase tracking-wider border border-rose-100 dark:border-rose-800/50">{tag}</span>
-                      )) : <p className="text-xs text-slate-400 italic">Aucun intérêt renseigné.</p>}
+                      {/* Objectifs d'apprentissage */}
+                      <div className="bg-white dark:bg-slate-900/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 mb-6">
+                        <h5 className="text-sm font-black text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                          <Target className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          Objectifs d'apprentissage
+                        </h5>
+                        <div className="flex flex-wrap gap-2">
+                          {userProfile?.learning_goals?.length ? userProfile.learning_goals.map(goal => (
+                            <span key={goal} className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-lg text-xs font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-800/50">{goal}</span>
+                          )) : <p className="text-xs text-slate-400 italic">Aucun objectif défini.</p>}
+                        </div>
+                      </div>
+
+                      {/* Centres d'intérêt */}
+                      <div className="bg-white dark:bg-slate-900/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 mb-6">
+                        <h5 className="text-sm font-black text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                          <Heart className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                          Centres d'intérêt
+                        </h5>
+                        <div className="flex flex-wrap gap-2">
+                          {userProfile?.interests?.length ? userProfile.interests.map(tag => (
+                            <span key={tag} className="px-3 py-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 rounded-lg text-xs font-black uppercase tracking-wider border border-rose-100 dark:border-rose-800/50">{tag}</span>
+                          )) : <p className="text-xs text-slate-400 italic">Aucun intérêt renseigné.</p>}
+                        </div>
+                      </div>
                     </div>
                   </section>
                 </div>
 
-                {/* Right Column: Academics & Subscription */}
+                {/* Right Column: Subscription */}
                 <div className="space-y-8">
                   <section className="bg-indigo-900 dark:bg-slate-900 border dark:border-slate-800 text-white p-6 rounded-3xl shadow-xl shadow-indigo-200 dark:shadow-none">
                     <div className="flex items-center justify-between mb-6">
@@ -261,22 +332,11 @@ export default function ProfilePage() {
                   </section>
 
                   <section className="space-y-4">
-                    <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                      <GraduationCap className="w-3 h-3" /> Académique
+                    <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <GraduationCap className="w-3 h-3" /> Établissement
                     </h4>
-                    <div className="space-y-3">
-                      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                        <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Niveau & Classe</p>
-                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{userProfile?.education_level} {userProfile?.classe ? `• ${userProfile.classe}` : ""}</p>
-                      </div>
-                      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                        <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Filière</p>
-                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{userProfile?.filiere || "N/A"}</p>
-                      </div>
-                      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                        <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Établissement</p>
-                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{userProfile?.etablissement || "N/A"}</p>
-                      </div>
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{userProfile?.etablissement || "N/A"}</p>
                     </div>
                   </section>
                 </div>

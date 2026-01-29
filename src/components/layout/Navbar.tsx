@@ -19,6 +19,10 @@ import { ProfileDropdown } from "@/components/ui/profile-dropdown";
 import { CreditBalance } from "@/components/credits/CreditBalance";
 import { NotificationBell } from "@/components/dashboard/NotificationBell";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { MessageBadge } from "@/components/chat/MessageBadge";
+import { messageStore } from "@/lib/messageStore";
+import { createClient } from "@/lib/supabase/client";
+import { getUnreadMessagesCount } from "@/app/actions/chat";
 
 // Navigation Items
 export interface NavItem {
@@ -106,11 +110,33 @@ export function Navbar({
 }: NavbarProps) {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Fix hydration mismatch by only rendering dynamic parts after mount
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Subscribe to message store for real-time updates
+  useEffect(() => {
+    const unsubscribe = messageStore.subscribe(setUnreadCount);
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    // Load initial unread count
+    async function fetchUnread() {
+      const { count } = await getUnreadMessagesCount();
+      setUnreadCount(count || 0);
+      messageStore.setCount(count || 0);
+    }
+
+    if (user) {
+      fetchUnread();
+    }
+  }, [user]);
+
+  const isAdmin = navItems.some((item: NavItem) => item.href === "/admin");
 
   return (
     <>
@@ -144,12 +170,14 @@ export function Navbar({
               }
 
               const Icon = item.icon;
+              const isMessageItem = item.href === "/chat";
+              
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={clsx(
-                    "group flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
+                    "group relative flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200",
                     isParentActive
                       ? "bg-slate-900 text-white shadow-md shadow-slate-900/10 dark:bg-slate-50 dark:text-slate-900"
                       : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
@@ -158,7 +186,14 @@ export function Navbar({
                   <Icon className={clsx("w-4 h-4", !isParentActive && "text-slate-400 group-hover:text-slate-600")} />
                   <span className="hidden lg:inline">{item.label}</span>
                   {isParentActive && <span className="lg:hidden">{item.label}</span>}
-                  {item.badge && (
+                  
+                  {(isMessageItem && unreadCount > 0) && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-900">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+
+                  {item.badge && !isMessageItem && (
                     <span className={clsx(
                       "ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold",
                       isParentActive ? "bg-white/20 text-white" : "bg-amber-100 text-amber-700"
@@ -184,7 +219,7 @@ export function Navbar({
                   <CreditBalance />
                   <NotificationBell />
                   <div className="ml-1">
-                    <ProfileDropdown user={user} isExpanded={true} />
+                    <ProfileDropdown user={user} isExpanded={true} isAdmin={isAdmin} />
                   </div>
                 </>
               ) : (

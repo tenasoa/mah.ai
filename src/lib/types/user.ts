@@ -26,6 +26,8 @@ export interface UserProfile {
   birth_date: string | null;
   address: string | null;
   country: string | null;
+  phone_country_code: string | null;
+  phone_number: string | null;
   learning_goals: string[];
   interests: string[];
   credits_balance: number;

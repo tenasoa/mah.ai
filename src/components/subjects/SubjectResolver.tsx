@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { deductCreditsClient } from "@/lib/credits-client";
-import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
+import { MilkdownEditor } from "@/components/ui/MilkdownEditor";
 import "katex/dist/katex.min.css";
 
 interface SubjectResolverProps {
@@ -40,6 +40,7 @@ export function SubjectResolver({
   const [correctionType, setCorrectionType] = useState<"human" | "ai">("ai");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const supabase = createClient();
 
   // Fonction pour formater le sujet
@@ -109,6 +110,7 @@ export function SubjectResolver({
     }
 
     try {
+      setIsDownloading(true);
       const response = await fetch("/api/generate-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -148,6 +150,8 @@ export function SubjectResolver({
       const message =
         error instanceof Error ? error.message : "Erreur lors du téléchargement du document";
       alert(message);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -170,13 +174,23 @@ export function SubjectResolver({
               .
             </p>
             <div className="flex gap-3">
-              <button
-                onClick={handleDownloadWithAnswer}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-medium transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                Télécharger avec réponse
-              </button>
+                <button
+                  onClick={handleDownloadWithAnswer}
+                  disabled={isDownloading}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isDownloading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Téléchargement...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Télécharger avec réponse
+                    </>
+                  )}
+                </button>
               <button
                 onClick={onClose}
                 className="flex-1 px-4 py-2.5 bg-slate-900 dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-white font-medium transition-colors rounded-xl"
@@ -257,9 +271,11 @@ export function SubjectResolver({
             </label>
             <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
               <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                <MarkdownRenderer
-                  content={formatSubjectContent(subjectContent)}
-                  variant="minimal"
+                <MilkdownEditor
+                  value={formatSubjectContent(subjectContent)}
+                  onChange={() => {}}
+                  readOnly
+                  className="min-h-full px-2 py-2"
                 />
               </div>
             </div>

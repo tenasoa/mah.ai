@@ -84,6 +84,7 @@ export default async function AdminSubjectsPage({
       case 'pending': return <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold text-[10px] uppercase bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-md border border-amber-100 dark:border-amber-800/50"><Clock className="w-3 h-3" /> En attente</span>;
       case 'revision': return <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-bold text-[10px] uppercase bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-md border border-blue-100 dark:border-blue-800/50"><RotateCcw className="w-3 h-3" /> Révision</span>;
       case 'rejected': return <span className="flex items-center gap-1.5 text-red-600 dark:text-red-400 font-bold text-[10px] uppercase bg-red-50 dark:bg-red-900/30 px-2 py-1 rounded-md border border-red-100 dark:border-red-800/50"><XCircle className="w-3 h-3" /> Refusé</span>;
+      case 'deleted': return <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 font-bold text-[10px] uppercase bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700"><Trash2 className="w-3 h-3" /> Supprimé</span>;
       default: return <span className="text-slate-400 dark:text-slate-500 font-bold text-[10px] uppercase">{status}</span>;
     }
   };
@@ -254,6 +255,10 @@ export default async function AdminSubjectsPage({
                 <Link href="/admin/subjects?status=rejected" className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${currentStatus === 'rejected' ? "bg-red-500 text-white shadow-lg shadow-red-500/20" : "text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50"}`}>
                   <XCircle className="w-3 h-3" />
                   Refusés
+                </Link>
+                <Link href="/admin/subjects?status=deleted" className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${currentStatus === 'deleted' ? "bg-slate-900 dark:bg-slate-700 text-white shadow-lg shadow-slate-900/20" : "text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50"}`}>
+                  <Trash2 className="w-3 h-3" />
+                  Supprimés
                 </Link>
               </div>
             </div>

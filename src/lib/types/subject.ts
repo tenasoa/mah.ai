@@ -16,7 +16,7 @@ export type ExamType =
   | 'concours'
   | 'other';
 
-export type SubjectStatus = 'draft' | 'pending' | 'published' | 'revision' | 'rejected';
+export type SubjectStatus = 'draft' | 'pending' | 'published' | 'revision' | 'rejected' | 'deleted';
 
 export type AccessType = 'purchase' | 'subscription' | 'free' | 'admin';
 

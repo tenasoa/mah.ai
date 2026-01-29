@@ -1,14 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { User } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface ChatListProps {
   conversations: any[];
   activeId?: string;
+  currentUserId: string;
 }
 
-export function ChatList({ conversations, activeId }: ChatListProps) {
+export function ChatList({ conversations, activeId, currentUserId }: ChatListProps) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const formatLastSeen = (lastSeen?: string | null) => {
+    if (!lastSeen) return "Hors ligne";
+    const diffMs = Math.max(0, now - new Date(lastSeen).getTime());
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return "A l'instant";
+    if (diffMin < 60) return `Il y a ${diffMin} min`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return `Il y a ${diffHours} h`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `Il y a ${diffDays} j`;
+    return new Date(lastSeen).toLocaleDateString("fr-FR");
+  };
+
   if (conversations.length === 0) {
     return (
       <div className="p-8 text-center">
@@ -19,8 +40,18 @@ export function ChatList({ conversations, activeId }: ChatListProps) {
 
   return (
     <div className="divide-y divide-slate-50 dark:divide-slate-800 transition-colors">
-      {conversations.map((conv) => (
-        <Link
+      {conversations.map((conv) => {
+        const hasUnread = (conv.messages || []).some((msg: any) =>
+          msg && msg.is_read === false && msg.sender_id !== currentUserId
+        );
+        const other = conv.other_participant;
+        const isOnline = Boolean(other?.is_online) && (
+          !other?.last_seen ||
+          (Date.now() - new Date(other.last_seen).getTime() <= 2 * 60 * 1000)
+        );
+
+        return (
+          <Link
           key={conv.id}
           href={`/chat?id=${conv.id}`}
           className={`flex items-center gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all group ${
@@ -39,8 +70,9 @@ export function ChatList({ conversations, activeId }: ChatListProps) {
                 {conv.other_participant?.pseudo?.charAt(0).toUpperCase() || "U"}
               </div>
             )}
-            {/* Online indicator (static for now) */}
-            <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full" />
+            {isOnline && (
+              <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full" />
+            )}
           </div>
 
           <div className="flex-1 min-w-0">
@@ -56,13 +88,17 @@ export function ChatList({ conversations, activeId }: ChatListProps) {
               {conv.last_message?.sender_id === conv.participants.find((p: any) => p !== conv.other_participant?.id) && "Moi: "}
               {conv.last_message?.content || "Démarrer la discussion"}
             </p>
+            <p className="text-[9px] text-slate-300 dark:text-slate-500 mt-0.5 italic">
+              {isOnline ? "En ligne" : formatLastSeen(other?.last_seen)}
+            </p>
           </div>
 
-          {conv.last_message?.is_read === false && conv.last_message?.sender_id !== conv.participants.find((p: any) => p !== conv.other_participant?.id) && (
+          {hasUnread && (
             <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full shadow-lg shadow-indigo-500/20 animate-pulse" />
           )}
-        </Link>
-      ))}
+          </Link>
+        );
+      })}
     </div>
   );
 }

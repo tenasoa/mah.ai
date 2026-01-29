@@ -8,6 +8,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { ReactNode } from "react";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { useToast } from "@/components/ui/Toast";
+import { ContactModal } from "@/components/ui/ContactModal";
 
 const baseNavItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
@@ -23,6 +24,7 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isContactOpen, setIsContactOpen] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -31,6 +33,12 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
 
   const { toast } = useToast();
   const [hasNotifiedProfile, setHasNotifiedProfile] = useState(false);
+
+  useEffect(() => {
+    const handleOpenContact = () => setIsContactOpen(true);
+    window.addEventListener('open-contact', handleOpenContact);
+    return () => window.removeEventListener('open-contact', handleOpenContact);
+  }, []);
 
   useEffect(() => {
     async function loadUserProfile() {
@@ -109,7 +117,7 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col transition-colors duration-300">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col transition-colors duration-300">
       {/* Ambient Background */}
       <div className="mah-ambient">
         <div className="mah-blob mah-blob-1" />
@@ -137,6 +145,11 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
       </main>
 
       {!isZenMode && <MobileNav />}
+
+      <ContactModal 
+        isOpen={isContactOpen} 
+        onClose={() => setIsContactOpen(false)} 
+      />
     </div>
   );
 }

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+@import "@milkdown/crepe/theme/common/style.css";
+@import "@milkdown/crepe/theme/frame.css";
 
 /* Force dark mode via class strategy */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -650,6 +652,135 @@ h6.font-outfit {
 /* Utilities */
 .custom-scrollbar::-webkit-scrollbar {
     width: 10px;
+}
+
+/* Milkdown - paper premium */
+.milkdown-paper .milkdown {
+    --crepe-color-background: #fdfbf7;
+    --crepe-color-on-background: #1f1b16;
+    --crepe-color-surface: #f7f1e8;
+    --crepe-color-surface-low: #efe7db;
+    --crepe-color-on-surface: #2a231d;
+    --crepe-color-on-surface-variant: #5c4f43;
+    --crepe-color-outline: #cdbfae;
+    --crepe-color-primary: #9b6b2f;
+    --crepe-color-secondary: #eadcc9;
+    --crepe-color-on-secondary: #2b1d0f;
+    --crepe-color-inverse: #2b241e;
+    --crepe-color-on-inverse: #f6efe6;
+    --crepe-color-inline-code: #9c2f2f;
+    --crepe-color-error: #9c2f2f;
+    --crepe-color-hover: #f3eadf;
+    --crepe-color-selected: #e6dbcc;
+    --crepe-color-inline-area: #e8dccd;
+    --crepe-font-title: Georgia, "Times New Roman", Times, serif;
+    --crepe-font-default: Georgia, "Times New Roman", Times, serif;
+    --crepe-font-code: var(--font-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --crepe-shadow-1: 0 8px 30px rgba(45, 31, 18, 0.08);
+    --crepe-shadow-2: 0 18px 60px rgba(45, 31, 18, 0.12);
+}
+
+.milkdown-paper .milkdown {
+    background:
+        radial-gradient(1200px 500px at 20% 0%, rgba(255, 255, 255, 0.9), transparent 60%),
+        linear-gradient(180deg, #fdfbf7 0%, #f8f1e7 100%);
+    border-radius: 24px;
+    border: 1px solid #eadfce;
+    box-shadow: var(--crepe-shadow-1);
+    padding: 14px 10px;
+}
+
+.milkdown-paper .milkdown-toolbar {
+    background: #f7efe5;
+    border: 1px solid #eadfce;
+    border-radius: 999px;
+    margin: 12px auto 8px;
+    max-width: 820px;
+}
+
+.milkdown-paper .milkdown-toolbar .toolbar-item:hover {
+    background: rgba(155, 107, 47, 0.12);
+}
+
+.milkdown-paper .milkdown-toolbar .toolbar-item.active svg {
+    color: #9b6b2f;
+    fill: #9b6b2f;
+}
+
+.milkdown-paper .ProseMirror {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 28px 36px 48px;
+    font-size: 16.5px;
+    line-height: 1.85;
+    color: #2a231d;
+}
+
+.milkdown-paper .ProseMirror h1,
+.milkdown-paper .ProseMirror h2,
+.milkdown-paper .ProseMirror h3 {
+    font-family: Georgia, "Times New Roman", Times, serif;
+    color: #2b2016;
+    letter-spacing: 0.2px;
+}
+
+.milkdown-paper .ProseMirror h1 {
+    font-size: 30px;
+    margin-top: 24px;
+}
+
+.milkdown-paper .ProseMirror h2 {
+    font-size: 24px;
+    margin-top: 22px;
+}
+
+.milkdown-paper .ProseMirror h3 {
+    font-size: 20px;
+    margin-top: 18px;
+}
+
+.milkdown-paper .ProseMirror blockquote {
+    border-left: 3px solid #d1c1ae;
+    background: #fbf6ee;
+    padding: 10px 16px;
+    border-radius: 10px;
+    color: #4b3f34;
+}
+
+.milkdown-paper .ProseMirror code {
+    background: #f3eadf;
+    padding: 2px 6px;
+    border-radius: 6px;
+}
+
+.milkdown-paper .ProseMirror pre {
+    background: #1f1b16;
+    color: #f7efe5;
+    border-radius: 14px;
+    padding: 16px;
+}
+
+.milkdown-paper .milkdown-placeholder::before {
+    color: rgba(60, 44, 30, 0.5);
+}
+
+/* Markdown code highlight adjustments for dark mode */
+.dark .hljs {
+    background: #0f172a;
+    color: #e2e8f0;
+}
+
+/* Milkdown readonly view */
+.milkdown-readonly .milkdown-toolbar {
+    display: none;
+}
+
+.milkdown-readonly .milkdown {
+    padding-top: 20px;
+}
+
+.milkdown-readonly .ProseMirror {
+    cursor: default;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {

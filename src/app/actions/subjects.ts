@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import type {
   Subject,
@@ -693,14 +694,38 @@ export async function deleteSubject(id: string): Promise<{ success: boolean; err
   const supabase = await createClient();
 
   try {
-    const { error } = await supabase
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return { success: false, error: 'Authentification requise' };
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('roles')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const roles = (profile?.roles as string[]) || [];
+    const isAdmin = roles.includes('admin') || roles.includes('superadmin');
+
+    if (!isAdmin) return { success: false, error: 'Permission refusée' };
+
+    const supabaseAdmin = createSupabaseAdmin(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    // Soft delete : on change le statut au lieu de supprimer la ligne
+    const { error } = await supabaseAdmin
       .from('subjects')
-      .delete()
+      .update({ status: 'deleted', updated_at: new Date().toISOString() })
       .eq('id', id);
 
     if (error) return { success: false, error: error.message };
 
     revalidatePath('/admin/subjects');
+    revalidatePath('/subjects');
     return { success: true, error: null };
   } catch (err) {
     return { success: false, error: 'Erreur lors de la suppression' };

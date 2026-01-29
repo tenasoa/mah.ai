@@ -77,14 +77,18 @@ export async function generatePerplexityResponse(
   subjectContent: string,
   responseType: 'direct' | 'detailed'
 ): Promise<string> {
-  const systemPrompt = responseType === "direct"
-    ? `Tu es un professeur expert qui fournit des réponses directes et concises aux sujets d'examen. 
+  const normalizeLines = (text: string) =>
+    text.replace(/\r\n/g, "\n").split("\n").map(line => line.trim()).filter(Boolean);
+
+  const buildMessages = (content: string, chunkIndex?: number, totalChunks?: number) => {
+    const systemPrompt = responseType === "direct"
+      ? `Tu es un professeur expert qui fournit des réponses directes et concises aux sujets d'examen. 
     Fournis une réponse claire, structurée et précise sans explications détaillées. 
     La réponse doit être complète mais va droit au but.
     Format : 
     1. Réponse directe
     2. Points clés si nécessaire`
-    : `Tu es un professeur expert qui fournit des réponses détaillées avec explications complètes.
+      : `Tu es un professeur expert qui fournit des réponses détaillées avec explications complètes.
     Fournis une réponse structurée avec :
     1. Réponse complète
     2. Explications détaillées de chaque étape
@@ -92,33 +96,89 @@ export async function generatePerplexityResponse(
     4. Points importants à retenir
     Sois pédagogique et clair dans tes explications.`;
 
-  const userPrompt = `Voici un sujet d'examen. Fournis une réponse ${responseType === "direct" ? "directe et concise" : "détaillée avec explications"} :
+    const chunkPrefix = totalChunks && chunkIndex !== undefined
+      ? `Partie ${chunkIndex + 1}/${totalChunks}. `
+      : "";
+
+    const userPrompt = `${chunkPrefix}Voici un sujet d'examen. Fournis une réponse ${responseType === "direct" ? "directe et concise" : "détaillée avec explications"} :
 
 Sujet :
-${subjectContent}
+${content}
 
 Réponds en français de manière claire et structurée.`;
 
-  try {
-    const response = await callPerplexityAPI({
-      model: PERPLEXITY_CONFIG.model,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: userPrompt
-        }
-      ],
-      max_tokens: responseType === "direct" ? 1000 : 2000,
-      temperature: 0.7,
-    });
+    return [
+      { role: 'system' as const, content: systemPrompt },
+      { role: 'user' as const, content: userPrompt },
+    ];
+  };
 
-    return response.choices[0]?.message?.content || 'Pas de réponse générée';
-  } catch (error) {
-    console.error('Erreur Perplexity:', error);
-    throw error;
+  const completeWithContinuation = async (messages: PerplexityRequest["messages"], maxTokens: number) => {
+    let combined = "";
+    let currentMessages = [...messages];
+    let attempts = 0;
+
+    while (attempts < 3) {
+      const response = await callPerplexityAPI({
+        model: PERPLEXITY_CONFIG.model,
+        messages: currentMessages,
+        max_tokens: maxTokens,
+        temperature: 0.7,
+      });
+
+      const part = response.choices[0]?.message?.content || "";
+      const finishReason = response.choices[0]?.finish_reason;
+      combined += (combined ? "\n" : "") + part;
+
+      if (finishReason !== "length") {
+        break;
+      }
+
+      currentMessages = [
+        ...currentMessages,
+        { role: "assistant", content: part },
+        {
+          role: "user",
+          content:
+            "Continue exactement la réponse, sans répéter, en gardant la même structure.",
+        },
+      ];
+
+      attempts += 1;
+    }
+
+    return combined.trim() || "Pas de réponse générée";
+  };
+
+  const rawLines = normalizeLines(subjectContent);
+  const questionLines = rawLines.filter(line =>
+    line.endsWith("?") || /^\d+[\).]/.test(line)
+  );
+  const isMultiQuestion = questionLines.length >= 4;
+  const isLong = subjectContent.length > 1800;
+
+  if (isMultiQuestion || isLong) {
+    const items = questionLines.length ? questionLines : rawLines;
+    const chunkSize = responseType === "direct" ? 4 : 3;
+    const chunks: string[] = [];
+
+    for (let i = 0; i < items.length; i += chunkSize) {
+      const chunk = items.slice(i, i + chunkSize).join("\n");
+      chunks.push(chunk);
+    }
+
+    const results: string[] = [];
+    for (let i = 0; i < chunks.length; i += 1) {
+      const messages = buildMessages(chunks[i], i, chunks.length);
+      const maxTokens = responseType === "direct" ? 1400 : 2600;
+      const part = await completeWithContinuation(messages, maxTokens);
+      results.push(part);
+    }
+
+    return results.join("\n\n---\n\n");
   }
+
+  const messages = buildMessages(subjectContent);
+  const maxTokens = responseType === "direct" ? 1400 : 2600;
+  return completeWithContinuation(messages, maxTokens);
 }

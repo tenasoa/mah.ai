@@ -15,6 +15,8 @@ interface UpdateProfileParams {
   birth_date?: string;
   address?: string;
   country?: string;
+  phone_country_code?: string;
+  phone_number?: string;
   learning_goals?: string[];
   interests?: string[];
   avatar_url?: string;
