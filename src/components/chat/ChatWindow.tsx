@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getMessages, sendMessage } from "@/app/actions/chat";
+import { messageStore } from "@/lib/messageStore";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { 
     Send, 
     Loader2, 
@@ -10,6 +12,7 @@ import {
     Phone, 
     Video, 
     ChevronLeft,
+    ArrowLeft,
     Paperclip,
     Smile
 } from "lucide-react";
@@ -18,15 +21,70 @@ import Link from "next/link";
 interface ChatWindowProps {
   conversationId: string;
   currentUserId: string;
+  onBack?: () => void;
 }
 
-export function ChatWindow({ conversationId, currentUserId }: ChatWindowProps) {
+export function ChatWindow({ conversationId, currentUserId, onBack }: ChatWindowProps) {
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [content, setContent] = useState("");
   const [sending, setSending] = useState(false);
   const [otherParticipant, setOtherParticipant] = useState<any>(null);
+  const markingRef = useRef(false);
+  const { subscribeToUserStatus } = useOnlineStatus();
+  const [now, setNow] = useState(() => Date.now());
   
+  // Function to mark all unread messages as read
+  const markAllMessagesAsRead = async () => {
+    if (markingRef.current) return;
+    console.log('markAllMessagesAsRead called!');
+    const unreadMessages = messages.filter(msg => !msg.is_read && msg.sender_id !== currentUserId);
+    console.log('Unread messages found:', unreadMessages.length, 'messages');
+    console.log('All messages:', messages.map(m => ({ id: m.id, is_read: m.is_read, sender_id: m.sender_id, currentUserId })));
+    
+    if (unreadMessages.length === 0) {
+      console.log('No unread messages to mark as read');
+      return;
+    }
+    
+    const supabase = createClient();
+    
+    try {
+      markingRef.current = true;
+      // Update all unread messages at once via RPC (bypasses RLS safely)
+      const { data: updatedCount, error } = await supabase
+        .rpc("mark_conversation_messages_read", { p_conversation_id: conversationId });
+      
+      console.log('Database update result:', { error, updatedCount });
+      
+      if (error) {
+        console.error('Error marking all messages as read:', error);
+        return;
+      }
+      
+      const appliedCount = typeof updatedCount === "number" ? updatedCount : unreadMessages.length;
+      console.log('All messages marked as read successfully, decrementing counter by:', appliedCount);
+      
+      // Update local state to reflect read status
+      const unreadIds = new Set(unreadMessages.map(msg => msg.id));
+      setMessages(prev => prev.map(msg => unreadIds.has(msg.id) ? { ...msg, is_read: true } : msg));
+
+      // Decrement counter by the number of messages marked as read
+      const currentCount = messageStore.getCount();
+      const newCount = Math.max(0, currentCount - appliedCount);
+      console.log('Setting message count from', currentCount, 'to', newCount);
+      messageStore.setCount(newCount);
+
+      window.dispatchEvent(new CustomEvent('conversation-read', {
+        detail: { conversationId, messageIds: Array.from(unreadIds) }
+      }));
+    } catch (err) {
+      console.error('Promise rejected:', err);
+    } finally {
+      markingRef.current = false;
+    }
+  };
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
@@ -47,7 +105,7 @@ export function ChatWindow({ conversationId, currentUserId }: ChatWindowProps) {
         const otherId = conv.participants.find((p: string) => p !== currentUserId);
         const { data: profile } = await supabase
           .from('profiles')
-          .select('pseudo, avatar_url')
+          .select('pseudo, avatar_url, is_online, last_seen')
           .eq('id', otherId)
           .single();
         setOtherParticipant(profile);
@@ -85,9 +143,59 @@ export function ChatWindow({ conversationId, currentUserId }: ChatWindowProps) {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    if (loading) return;
+    markAllMessagesAsRead();
+  }, [loading, messages, currentUserId]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  useEffect(() => {
+    if (!otherParticipant?.id) return;
+    const unsubscribe = subscribeToUserStatus(otherParticipant.id, (status, lastSeen) => {
+      setOtherParticipant((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          is_online: status,
+          last_seen: lastSeen ? lastSeen.toISOString() : prev.last_seen
+        };
+      });
+    });
+
+    return () => {
+      unsubscribe?.();
+    };
+  }, [otherParticipant?.id, subscribeToUserStatus]);
+
+  const isOtherOnline = useMemo(() => {
+    if (!otherParticipant) return false;
+    if (!otherParticipant.is_online) return false;
+    if (!otherParticipant.last_seen) return otherParticipant.is_online;
+    const lastSeen = new Date(otherParticipant.last_seen).getTime();
+    return Date.now() - lastSeen <= 2 * 60 * 1000;
+  }, [otherParticipant]);
+
+  useEffect(() => {
+    if (isOtherOnline) return;
+    const id = setInterval(() => setNow(Date.now()), 60 * 1000);
+    return () => clearInterval(id);
+  }, [isOtherOnline]);
+
+  const lastSeenText = useMemo(() => {
+    if (!otherParticipant?.last_seen) return "Hors ligne";
+    const diffMs = Math.max(0, now - new Date(otherParticipant.last_seen).getTime());
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return "A l'instant";
+    if (diffMin < 60) return `Il y a ${diffMin} min`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return `Il y a ${diffHours} h`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `Il y a ${diffDays} j`;
+    return new Date(otherParticipant.last_seen).toLocaleDateString("fr-FR");
+  }, [otherParticipant?.last_seen, now]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,29 +223,47 @@ export function ChatWindow({ conversationId, currentUserId }: ChatWindowProps) {
 
   return (
     <div className="flex-1 flex flex-col h-full relative bg-slate-50 dark:bg-slate-950 transition-colors">
-      {/* Chat Header */}
-      <header className="px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between z-10 shadow-sm transition-colors">
-        <div className="flex items-center gap-4">
-          <Link href="/chat" className="lg:hidden p-2 -ml-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-            <ChevronLeft className="w-5 h-5 text-slate-400" />
-          </Link>
+      <header className="px-4 sm:px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between z-10 shadow-sm transition-colors">
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <button 
+              onClick={onBack}
+              className="lg:hidden p-2 -ml-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-400"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
           <div className="relative">
-            {otherParticipant?.avatar_url ? (
-              <img
-                src={otherParticipant.avatar_url}
-                alt={otherParticipant.pseudo}
-                className="w-10 h-10 rounded-xl object-cover"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center text-white font-bold">
-                {otherParticipant?.pseudo?.charAt(0).toUpperCase() || "U"}
-              </div>
-            )}
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full" />
+            <button
+              className="relative"
+            >
+              {otherParticipant?.avatar_url ? (
+                <img
+                  src={otherParticipant.avatar_url}
+                  alt={otherParticipant.pseudo}
+                  className="w-10 h-10 rounded-xl object-cover hover:opacity-80 transition-opacity"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center text-white font-bold hover:opacity-80 transition-opacity">
+                  {otherParticipant?.pseudo?.charAt(0).toUpperCase() || "U"}
+                </div>
+              )}
+              {isOtherOnline && (
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full" />
+              )}
+            </button>
           </div>
           <div>
-            <h3 className="font-bold text-slate-900 dark:text-white leading-tight">{otherParticipant?.pseudo || "Chargement..."}</h3>
-            <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">En ligne</p>
+            <button
+              className="text-left"
+            >
+              <h3 className="font-bold text-slate-900 dark:text-white leading-tight hover:text-indigo-600 transition-colors">
+                {otherParticipant?.pseudo || "Chargement..."}
+              </h3>
+              <p className={`text-[10px] font-bold uppercase tracking-widest ${isOtherOnline ? "text-emerald-500" : "text-slate-400"}`}>
+                {isOtherOnline ? "En ligne" : lastSeenText}
+              </p>
+            </button>
           </div>
         </div>
 
@@ -188,6 +314,9 @@ export function ChatWindow({ conversationId, currentUserId }: ChatWindowProps) {
                   }`}
                 >
                   <p className="leading-relaxed">{msg.content}</p>
+                  {!isMe && !msg.is_read && (
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-1 animate-pulse" title="Non lu" />
+                  )}
                 </div>
                 <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500 block px-1">
                   {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}

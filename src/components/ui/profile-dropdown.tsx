@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { LogOut, User } from "lucide-react";
+import { clsx } from "clsx";
 import { Portal } from "./portal";
 
 interface ProfileDropdownProps {
@@ -14,9 +15,10 @@ interface ProfileDropdownProps {
     avatarUrl?: string;
   };
   isExpanded?: boolean; // Kept for compatibility but unused
+  isAdmin?: boolean;
 }
 
-export function ProfileDropdown({ user, isExpanded = false }: ProfileDropdownProps) {
+export function ProfileDropdown({ user, isExpanded = false, isAdmin = false }: ProfileDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -88,18 +90,29 @@ export function ProfileDropdown({ user, isExpanded = false }: ProfileDropdownPro
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300 group cursor-pointer"
-        title="Menu profil"
+        className={clsx(
+          "flex items-center p-1 rounded-full transition-all duration-300 group cursor-pointer",
+          isAdmin ? "ring-2 ring-amber-500/20 hover:ring-amber-500/50 bg-amber-50/10" : "hover:bg-slate-100 dark:hover:bg-slate-800"
+        )}
+        title={isAdmin ? "Menu Admin" : "Menu profil"}
       >
         {/* Avatar */}
         {user.avatarUrl ? (
           <img
             src={user.avatarUrl}
             alt={user.name}
-            className="h-9 w-9 rounded-full border-2 border-slate-200 object-cover transition-all duration-300 group-hover:border-amber-400"
+            className={clsx(
+              "h-9 w-9 rounded-full border-2 object-cover transition-all duration-300",
+              isAdmin ? "border-amber-500 shadow-lg shadow-amber-500/20" : "border-slate-200 group-hover:border-amber-400"
+            )}
           />
         ) : (
-          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-sm transition-all duration-300 group-hover:shadow-lg group-hover:shadow-amber-500/40">
+          <div className={clsx(
+            "h-9 w-9 rounded-full flex items-center justify-center text-white font-bold text-sm transition-all duration-300",
+            isAdmin 
+              ? "bg-gradient-to-br from-indigo-600 to-purple-600 shadow-lg shadow-indigo-500/30" 
+              : "bg-gradient-to-br from-amber-400 to-orange-500 group-hover:shadow-lg group-hover:shadow-amber-500/40"
+          )}>
             {user.name.charAt(0).toUpperCase()}
           </div>
         )}

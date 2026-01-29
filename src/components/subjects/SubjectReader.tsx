@@ -7,13 +7,11 @@ import {
   Sparkles,
   Edit3,
   Save,
-  FileText,
   BookOpen,
   Layout,
   Columns,
   Maximize2,
   Minimize2,
-  Underline as UnderlineIcon,
   CheckCircle2,
   XCircle,
   RotateCcw,
@@ -34,7 +32,7 @@ import { SocraticModal } from "./SocraticModal";
 import { FloatingSubjectActions } from "./FloatingSubjectActions";
 import { SubjectResolver } from "./SubjectResolver";
 import { SubjectAIResponse } from "./SubjectAIResponse";
-import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
+import { MilkdownEditor } from "@/components/ui/MilkdownEditor";
 import { getUserCreditsAndSubscriptionClient } from "@/lib/credits-client";
 import { createClient } from "@/lib/supabase/client";
 import { SubjectStatus } from "@/lib/types/subject";
@@ -76,6 +74,7 @@ export function SubjectReader({
   const [markdownContent, setMarkdownContent] = useState(initialContent || "");
   const [isEditing, setIsEditing] = useState(forceEdit);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [status, setStatus] = useState<SubjectStatus>(
     initialStatus as SubjectStatus,
@@ -258,45 +257,21 @@ export function SubjectReader({
   }, [supabase]);
 
   // Refs pour le scroll synchronisé
-  const editorRef = useRef<HTMLTextAreaElement>(null);
+  const editorScrollRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
   // Synchronisation du scroll
   const handleEditorScroll = () => {
-    if (viewMode !== "split" || !editorRef.current || !previewRef.current)
+    if (viewMode !== "split" || !editorScrollRef.current || !previewRef.current)
       return;
-    const editor = editorRef.current;
+    const editor = editorScrollRef.current;
     const preview = previewRef.current;
 
-    const scrollPercentage =
-      editor.scrollTop / (editor.scrollHeight - editor.clientHeight);
+    const scrollRange = editor.scrollHeight - editor.clientHeight;
+    if (scrollRange <= 0) return;
+    const scrollPercentage = editor.scrollTop / scrollRange;
     preview.scrollTop =
       scrollPercentage * (preview.scrollHeight - preview.clientHeight);
-  };
-
-  // Barre d'outils Markdown
-  const insertText = (before: string, after: string = "") => {
-    const textarea = editorRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
-    const selectedText = text.substring(start, end);
-    const newText =
-      text.substring(0, start) +
-      before +
-      selectedText +
-      after +
-      text.substring(end);
-
-    setMarkdownContent(newText);
-
-    // Reposer le focus et la sélection
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + before.length, end + before.length);
-    }, 0);
   };
 
   useEffect(() => {
@@ -344,6 +319,7 @@ export function SubjectReader({
   // Handlers pour les nouvelles fonctionnalités
   const handleDownloadPDF = async () => {
     try {
+      setIsDownloading(true);
       const response = await fetch("/api/generate-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -381,6 +357,8 @@ export function SubjectReader({
       const message =
         error instanceof Error ? error.message : "Erreur lors du téléchargement du document";
       alert(message);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -393,7 +371,7 @@ export function SubjectReader({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+    <div className={`flex flex-col ${isZen ? "h-screen" : "h-[calc(100vh-4rem)]"} bg-slate-50 dark:bg-slate-950 transition-colors duration-300`}>
       {/* Admin Validation Bar - Only visible if not published */}
       {canValidate && currentStatus !== "published" && (
         <div className="bg-slate-900 dark:bg-slate-900 border-b border-white/10 text-white px-6 py-3 flex items-center justify-between z-[40] animate-in slide-in-from-top duration-300">
@@ -558,87 +536,26 @@ export function SubjectReader({
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden flex relative bg-slate-100 dark:bg-slate-950">
+      <div className={`flex-1 overflow-hidden flex relative ${isZen ? "bg-white dark:bg-slate-900" : "bg-slate-100 dark:bg-slate-950"}`}>
         {/* Main Workspace */}
-        <div className="flex-1 flex overflow-hidden gap-4 p-4">
+        <div className={`flex-1 flex overflow-hidden ${isZen ? "gap-0 p-0" : "gap-4 p-4"}`}>
           {/* Editor Panel */}
           {isEditing && (
             <div
               className={`${viewMode === "split" ? "w-1/2" : "w-full"} h-full flex flex-col bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800 overflow-hidden`}
             >
-              <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 flex items-center gap-1 overflow-x-auto no-scrollbar">
-                <button
-                  onClick={() => insertText("# ", "")}
-                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs font-bold text-slate-600 dark:text-slate-400"
-                >
-                  H1
-                </button>
-                <button
-                  onClick={() => insertText("## ", "")}
-                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs font-bold text-slate-600 dark:text-slate-400"
-                >
-                  H2
-                </button>
-                <button
-                  onClick={() => insertText("**", "**")}
-                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs font-bold text-slate-600 dark:text-slate-400"
-                >
-                  B
-                </button>
-                <button
-                  onClick={() => insertText("*", "*")}
-                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs italic text-slate-600 dark:text-slate-400"
-                >
-                  I
-                </button>
-                <button
-                  onClick={() => insertText("<u>", "</u>")}
-                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs text-slate-600 dark:text-slate-400"
-                >
-                  <UnderlineIcon className="w-3 h-3" />
-                </button>
-                <div className="w-[1px] h-4 bg-slate-300 dark:bg-slate-700 mx-1" />
-                <button
-                  onClick={() => insertText("- ", "")}
-                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs text-slate-600 dark:text-slate-400"
-                >
-                  Liste
-                </button>
-                <button
-                  onClick={() => insertText("1. ", "")}
-                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs text-slate-600 dark:text-slate-400"
-                >
-                  Num
-                </button>
-                <button
-                  onClick={() => insertText("> ", "")}
-                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs text-slate-600 dark:text-slate-400"
-                >
-                  Citation
-                </button>
-                <div className="w-[1px] h-4 bg-slate-300 dark:bg-slate-700 mx-1" />
-                <button
-                  onClick={() => insertText("$$", "$$")}
-                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs text-slate-600 dark:text-slate-400"
-                >
-                  Math
-                </button>
-                <button
-                  onClick={() => insertText("```\n", "\n```")}
-                  className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded text-xs text-slate-600 dark:text-slate-400"
-                >
-                  Code
-                </button>
-              </div>
-              <textarea
-                ref={editorRef}
+              <div
+                ref={editorScrollRef}
                 onScroll={handleEditorScroll}
-                value={markdownContent}
-                onChange={(e) => setMarkdownContent(e.target.value)}
-                className="flex-1 w-full p-8 outline-none resize-none font-mono text-sm leading-relaxed text-slate-800 dark:text-slate-200 bg-transparent custom-scrollbar"
-                placeholder="# Titre du sujet\n\n## Exercice 1\nÉcrivez ici le contenu de l'examen..."
-                autoFocus
-              />
+                className="flex-1 overflow-y-auto custom-scrollbar"
+              >
+                <MilkdownEditor
+                  value={markdownContent}
+                  onChange={setMarkdownContent}
+                  placeholder="# Titre du sujet\n\n## Exercice 1\nÉcrivez ici le contenu de l'examen..."
+                  className="min-h-full px-6 py-6"
+                />
+              </div>
             </div>
           )}
 
@@ -646,22 +563,24 @@ export function SubjectReader({
           {(!isEditing || viewMode === "split") && (
             <div
               ref={previewRef}
-              className="flex-1 h-full bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800 overflow-y-auto overflow-x-hidden transition-colors custom-scrollbar"
+              className={`flex-1 h-full bg-white dark:bg-slate-900 overflow-y-auto overflow-x-hidden transition-colors custom-scrollbar ${isZen ? "rounded-none border-0 shadow-none" : "rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800"}`}
             >
               <div className="min-h-full flex flex-col">
                 <div className="h-1.5 bg-gradient-to-r from-violet-500 to-purple-500 w-full" />
-                <div className="p-10 md:p-16 flex-1">
+                <div className={`${isZen ? "p-6 md:p-10" : "p-10 md:p-16"} flex-1`}>
                   {markdownContent ? (
-                    <MarkdownRenderer
-                      content={markdownContent}
-                      variant={mounted && theme === "dark" ? "dark" : "light"}
+                    <MilkdownEditor
+                      value={markdownContent}
+                      onChange={() => {}}
+                      readOnly
+                      className="min-h-full px-6 py-6"
                     />
                   ) : (
                     <div className="h-full flex flex-col items-center justify-center text-center py-20">
                       <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
                         <BookOpen className="w-10 h-10 text-slate-200 dark:text-slate-700" />
                       </div>
-                      <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{userProfile?.full_name}</p>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Utilisateur</p>
                       <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                         Aucun contenu disponible
                       </h3>
@@ -731,6 +650,7 @@ export function SubjectReader({
           onOpenResolver={handleOpenResolver}
           onOpenAIResponse={handleOpenAIResponse}
           onOpenSocratic={() => setShowSocraticModal(true)}
+          isLoading={isDownloading}
           onFlashMessage={showToast}
         />
       )}

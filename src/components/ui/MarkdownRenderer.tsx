@@ -6,7 +6,9 @@ import remarkMath from "remark-math";
 import remarkBreaks from "remark-breaks";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
+import rehypeHighlight from "rehype-highlight";
 import "katex/dist/katex.min.css";
+import "highlight.js/styles/github.css";
 
 interface MarkdownRendererProps {
   content: string;
@@ -42,10 +44,10 @@ export function MarkdownRenderer({
   // Styles personnalisés selon le variant
   const baseStyles = {
     light:
-      "prose prose-slate prose-lg [&_*]:text-slate-900 [&_strong]:text-slate-900 [&_p]:text-slate-900 [&_li]:text-slate-900 [&_h1]:text-slate-900 [&_h2]:text-slate-900 [&_h3]:text-slate-900 [&_h4]:text-slate-900",
+      "prose prose-slate prose-lg [&_*]:text-slate-900 dark:[&_*]:text-slate-100",
     dark: "prose-invert prose-slate prose-lg dark:[&_*]:text-slate-100",
     minimal:
-      "prose prose-slate prose-sm [&_*]:text-slate-900 [&_p]:text-slate-900 [&_li]:text-slate-900",
+      "prose prose-slate prose-sm [&_*]:text-slate-900 dark:[&_*]:text-slate-100",
   };
 
   return (
@@ -54,7 +56,11 @@ export function MarkdownRenderer({
       ${baseStyles[variant]}
       max-w-none
       font-sans
-      leading-relaxed
+      leading-tight
+      prose-p:my-1
+      prose-li:my-0.5
+      prose-ul:my-1
+      prose-ol:my-1
       selection:bg-violet-100
       selection:text-violet-900
       dark:selection:bg-violet-900
@@ -75,6 +81,7 @@ export function MarkdownRenderer({
               strict: "warn",
             },
           ],
+          [rehypeHighlight, { detect: true, ignoreMissing: true }],
           rehypeRaw,
         ]}
         components={{
@@ -86,20 +93,20 @@ export function MarkdownRenderer({
                   {match[1]}
                 </div>
                 <pre className="m-0!">
-                  <code className={className} {...props}>
+                  <code className={`hljs ${className || ""}`} {...props}>
                     {children}
                   </code>
                 </pre>
               </div>
             ) : (
-              <code className={className} {...props}>
+              <code className={`hljs ${className || ""}`} {...props}>
                 {children}
               </code>
             );
           },
           p({ children }) {
             return (
-              <p className="my-3 leading-relaxed text-slate-900 dark:text-slate-100">
+              <p className="my-1 leading-tight text-slate-900 dark:text-slate-100">
                 {children}
               </p>
             );
@@ -148,14 +155,14 @@ export function MarkdownRenderer({
           },
           ul({ children }) {
             return (
-              <ul className="list-disc list-inside my-3 space-y-1">
+              <ul className="list-disc list-inside my-3 space-y-1 text-slate-900 dark:text-slate-100">
                 {children}
               </ul>
             );
           },
           ol({ children }) {
             return (
-              <ol className="list-decimal list-inside my-3 space-y-1">
+              <ol className="list-decimal list-inside my-3 space-y-1 text-slate-900 dark:text-slate-100">
                 {children}
               </ol>
             );
@@ -186,7 +193,9 @@ export function MarkdownRenderer({
           table({ children }) {
             return (
               <div className="my-4 overflow-x-auto rounded-lg border border-slate-300 dark:border-slate-700">
-                <table className="w-full">{children}</table>
+                <table className="w-full table-auto border-collapse text-sm">
+                  {children}
+                </table>
               </div>
             );
           },
@@ -199,14 +208,14 @@ export function MarkdownRenderer({
           },
           th({ children }) {
             return (
-              <th className="border border-slate-300 dark:border-slate-700 px-4 py-2 text-left font-bold text-slate-900 dark:text-slate-100">
+              <th className="border border-slate-300 dark:border-slate-700 px-4 py-2 text-left font-bold text-slate-900 dark:text-slate-100 align-top">
                 {children}
               </th>
             );
           },
           td({ children }) {
             return (
-              <td className="border border-slate-300 dark:border-slate-700 px-4 py-2 text-slate-900 dark:text-slate-100">
+              <td className="border border-slate-300 dark:border-slate-700 px-4 py-2 text-slate-900 dark:text-slate-100 align-top break-words whitespace-pre-wrap">
                 {children}
               </td>
             );

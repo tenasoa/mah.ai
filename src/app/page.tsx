@@ -512,12 +512,12 @@ function LandingPageContent() {
       {/* ─── GAMIFICATION SECTION ─── */}
       <section className="py-24 lg:py-32 z-10 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-[40px] lg:rounded-[48px] p-8 lg:p-16 text-white flex flex-col lg:flex-row items-center gap-12 lg:gap-16 relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-full blur-[150px]" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-br from-red-500/10 to-rose-500/10 rounded-full blur-[100px]" />
+          <div className="bg-white dark:bg-slate-900 rounded-[40px] lg:rounded-[48px] p-8 lg:p-16 text-slate-900 dark:text-white flex flex-col lg:flex-row items-center gap-12 lg:gap-16 relative overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-full blur-[150px]" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-br from-red-500/5 to-rose-500/5 rounded-full blur-[100px]" />
 
-            <div className="lg:w-1/2 space-y-6 relative z-10">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-amber-400 text-xs font-semibold">
+            <div className="lg:w-1/2 space-y-6 relative z-10 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 dark:bg-white/10 border border-amber-200 dark:border-white/10 text-amber-700 dark:text-amber-400 text-xs font-semibold">
                 <Trophy className="w-4 h-4" /> Système de mérite
               </div>
               <h2 className="text-3xl lg:text-5xl xl:text-6xl font-extrabold font-outfit tracking-tight leading-tight">
@@ -526,28 +526,28 @@ function LandingPageContent() {
                   Grit Score.
                 </span>
               </h2>
-              <p className="text-slate-400 text-base lg:text-lg leading-relaxed">
+              <p className="text-slate-600 dark:text-slate-400 text-base lg:text-lg leading-relaxed">
                 Gagne des points pour chaque exercice résolu. Monte dans le classement, débloque
                 des badges exclusifs et transforme tes révisions en un véritable jeu.
               </p>
-              <div className="flex gap-6 pt-4">
+              <div className="flex justify-center lg:justify-start gap-6 pt-4">
                 <div className="text-center">
-                  <div className="text-3xl font-extrabold text-white">#1</div>
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <div className="text-3xl font-extrabold text-slate-900 dark:text-white">#1</div>
+                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                     Classement
                   </div>
                 </div>
-                <div className="w-[1px] h-12 bg-white/10" />
+                <div className="w-[1px] h-12 bg-slate-200 dark:bg-white/10" />
                 <div className="text-center">
                   <div className="text-3xl font-extrabold text-gradient-grit">+500</div>
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                     Grit Points
                   </div>
                 </div>
-                <div className="w-[1px] h-12 bg-white/10" />
+                <div className="w-[1px] h-12 bg-slate-200 dark:bg-white/10" />
                 <div className="text-center">
-                  <div className="text-3xl font-extrabold text-emerald-400">12</div>
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">12</div>
+                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                     Badges
                   </div>
                 </div>
@@ -555,33 +555,33 @@ function LandingPageContent() {
             </div>
 
             <div className="lg:w-1/2 grid grid-cols-2 gap-4 relative z-10">
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-5 lg:p-6 rounded-[24px] lg:rounded-[32px] rotate-3 hover:rotate-0 transition-transform">
+              <div className="bg-white dark:bg-white/5 backdrop-blur-md border border-slate-200 dark:border-white/10 p-5 lg:p-6 rounded-[24px] lg:rounded-[32px] rotate-3 hover:rotate-0 transition-transform shadow-xl shadow-slate-200/50 dark:shadow-none">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mb-4 shadow-lg shadow-orange-500/20">
                   <Zap className="w-5 h-5 text-white" />
                 </div>
-                <div className="text-sm font-bold mb-1">Streak 7 Jours</div>
-                <div className="text-[10px] text-slate-400 font-bold uppercase">Motivation</div>
+                <div className="text-sm font-bold mb-1 text-slate-900 dark:text-white">Streak 7 Jours</div>
+                <div className="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase">Motivation</div>
               </div>
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-5 lg:p-6 rounded-[24px] lg:rounded-[32px] -rotate-3 hover:rotate-0 transition-transform translate-y-8">
+              <div className="bg-white dark:bg-white/5 backdrop-blur-md border border-slate-200 dark:border-white/10 p-5 lg:p-6 rounded-[24px] lg:rounded-[32px] -rotate-3 hover:rotate-0 transition-transform translate-y-8 shadow-xl shadow-slate-200/50 dark:shadow-none">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center mb-4 shadow-lg shadow-red-500/20">
                   <Award className="w-5 h-5 text-white" />
                 </div>
-                <div className="text-sm font-bold mb-1">Badge Major</div>
-                <div className="text-[10px] text-slate-400 font-bold uppercase">Honneur</div>
+                <div className="text-sm font-bold mb-1 text-slate-900 dark:text-white">Badge Major</div>
+                <div className="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase">Honneur</div>
               </div>
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-5 lg:p-6 rounded-[24px] lg:rounded-[32px] -rotate-2 hover:rotate-0 transition-transform">
+              <div className="bg-white dark:bg-white/5 backdrop-blur-md border border-slate-200 dark:border-white/10 p-5 lg:p-6 rounded-[24px] lg:rounded-[32px] -rotate-2 hover:rotate-0 transition-transform shadow-xl shadow-slate-200/50 dark:shadow-none">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20">
                   <TrendingUp className="w-5 h-5 text-white" />
                 </div>
-                <div className="text-sm font-bold mb-1">Top 10%</div>
-                <div className="text-[10px] text-slate-400 font-bold uppercase">Excellence</div>
+                <div className="text-sm font-bold mb-1 text-slate-900 dark:text-white">Top 10%</div>
+                <div className="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase">Excellence</div>
               </div>
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-5 lg:p-6 rounded-[24px] lg:rounded-[32px] rotate-2 hover:rotate-0 transition-transform translate-y-4">
+              <div className="bg-white dark:bg-white/5 backdrop-blur-md border border-slate-200 dark:border-white/10 p-5 lg:p-6 rounded-[24px] lg:rounded-[32px] rotate-2 hover:rotate-0 transition-transform translate-y-4 shadow-xl shadow-slate-200/50 dark:shadow-none">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center mb-4 shadow-lg shadow-rose-500/20">
                   <Star className="w-5 h-5 text-white" />
                 </div>
-                <div className="text-sm font-bold mb-1">5 étoiles</div>
-                <div className="text-[10px] text-slate-400 font-bold uppercase">Perfectionniste</div>
+                <div className="text-sm font-bold mb-1 text-slate-900 dark:text-white">5 étoiles</div>
+                <div className="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase">Perfectionniste</div>
               </div>
             </div>
           </div>
@@ -690,18 +690,21 @@ function LandingPageContent() {
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-6 lg:gap-8 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              <a href="#" className="hover:text-amber-600 transition-colors">
+              <Link href="/confidentialite" className="hover:text-amber-600 transition-colors">
                 Confidentialité
-              </a>
-              <a href="#" className="hover:text-amber-600 transition-colors">
+              </Link>
+              <Link href="/cgu" className="hover:text-amber-600 transition-colors">
                 Conditions
-              </a>
-              <a href="#" className="hover:text-amber-600 transition-colors">
+              </Link>
+              <button 
+                onClick={() => window.dispatchEvent(new CustomEvent('open-contact'))}
+                className="hover:text-amber-600 transition-colors"
+              >
                 Contact
-              </a>
-              <a href="#" className="hover:text-amber-600 transition-colors">
+              </button>
+              <Link href="/faq" className="hover:text-amber-600 transition-colors">
                 FAQ
-              </a>
+              </Link>
             </div>
           </div>
           <div className="mt-10 lg:mt-12 pt-8 border-t border-slate-100 dark:border-slate-800 text-center">

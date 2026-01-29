@@ -68,72 +68,70 @@ export default async function AdminPaymentsPage({
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-        <article className="mah-card">
-          <p className="text-xs text-slate-500">Paiements en attente</p>
-          <p className="text-3xl font-bold mt-2">{pendingCount}</p>
+        <article className="mah-card bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">Paiements en attente</p>
+          <p className="text-3xl font-black mt-2 text-slate-900 dark:text-white">{pendingCount}</p>
         </article>
-        <article className="mah-card">
-          <p className="text-xs text-slate-500">Alertes IA</p>
-          <p className="text-3xl font-bold mt-2 text-red-500">12</p>
+        <article className="mah-card bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">Alertes IA</p>
+          <p className="text-3xl font-black mt-2 text-red-500">12</p>
         </article>
-        <article className="mah-card">
-          <p className="text-xs text-slate-500">Score moyen Grit</p>
-          <p className="text-3xl font-bold mt-2 text-amber-600">72/100</p>
+        <article className="mah-card bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">Score moyen Grit</p>
+          <p className="text-3xl font-black mt-2 text-amber-600">72/100</p>
         </article>
-        <article className="mah-card">
-          <p className="text-xs text-slate-500">Étudiants actifs</p>
-          <p className="text-3xl font-bold mt-2">1,240</p>
+        <article className="mah-card bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">Étudiants actifs</p>
+          <p className="text-3xl font-black mt-2 text-slate-900 dark:text-white">1,240</p>
         </article>
       </div>
 
-      <article className="mah-card">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Paiements en attente</h2>
-          <span className="text-xs text-slate-500">{pendingCount} en attente</span>
+      <article className="mah-card bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-0 overflow-hidden">
+        <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
+          <h2 className="text-lg font-black text-slate-900 dark:text-white">Paiements en attente</h2>
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{pendingCount} en attente</span>
         </div>
 
         {pendingCount === 0 ? (
-          <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-6 text-center text-slate-500">
+          <div className="m-6 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-12 text-center text-slate-500 dark:text-slate-400 italic">
             Aucun paiement en attente.
           </div>
         ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-slate-500 text-xs uppercase tracking-wider">
-                <tr className="text-left border-b border-slate-200">
-                  <th className="py-3 pr-4">Élève</th>
-                  <th className="py-3 pr-4">Filière</th>
-                  <th className="py-3 pr-4">Opérateur</th>
-                  <th className="py-3 pr-4">Crédits</th>
-                  <th className="py-3 pr-4">Montant</th>
-                  <th className="py-3 pr-4">Code</th>
-                  <th className="py-3 pr-4">Date</th>
-                  <th className="py-3 pr-4">Statut</th>
-                  <th className="py-3 text-right">Actions</th>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
+                <tr>
+                  <th className="px-6 py-4">Élève</th>
+                  <th className="px-6 py-4">Filière</th>
+                  <th className="px-6 py-4">Opérateur</th>
+                  <th className="px-6 py-4">Crédits</th>
+                  <th className="px-6 py-4">Montant</th>
+                  <th className="px-6 py-4">Code</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                 {payments.map((payment) => (
-                  <tr key={payment.id} className="border-b border-slate-200">
-                    <td className="py-4 pr-4">{payment.profile?.pseudo || 'Utilisateur inconnu'}</td>
-                    <td className="py-4 pr-4 text-slate-500">{payment.profile?.filiere || 'N/A'}</td>
-                    <td className="py-4 pr-4 text-slate-600 uppercase text-xs font-bold tracking-wide">{payment.payment_method}</td>
-                    <td className="py-4 pr-4 font-bold text-slate-900">{payment.amount}</td>
-                    <td className="py-4 pr-4 text-slate-700">{payment.cost_mga.toLocaleString('fr-MG')} Ar</td>
-                    <td className="py-4 pr-4 font-mono">{payment.payment_reference || 'Non fournie'}</td>
-                    <td className="py-4 pr-4 text-slate-500">
-                      {new Date(payment.created_at).toLocaleString('fr-MG')}
+                  <tr key={payment.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+                    <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{payment.profile?.pseudo || 'Utilisateur inconnu'}</td>
+                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{payment.profile?.filiere || 'N/A'}</td>
+                    <td className="px-6 py-4">
+                      <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300">
+                        {payment.payment_method}
+                      </span>
                     </td>
-                    <td className="py-4 pr-4 text-amber-600">En attente</td>
-                    <td className="py-4 text-right">
+                    <td className="px-6 py-4 font-black text-indigo-600 dark:text-indigo-400">+{payment.amount}</td>
+                    <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300">{payment.cost_mga.toLocaleString('fr-MG')} Ar</td>
+                    <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-slate-100">{payment.payment_reference || 'Non fournie'}</td>
+                    <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <form action={async () => { 'use server'; await rejectPayment(payment.id); }}>
-                          <button className="px-3 py-2 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors">
+                          <button className="px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 text-[10px] font-black uppercase tracking-widest transition-all border border-red-100 dark:border-red-800/50">
                             Rejeter
                           </button>
                         </form>
                         <form action={async () => { 'use server'; await validatePayment(payment.id); }}>
-                          <button className="px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
+                          <button className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-[10px] font-black uppercase tracking-widest transition-all border border-emerald-100 dark:border-emerald-800/50">
                             Valider
                           </button>
                         </form>

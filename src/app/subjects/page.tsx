@@ -163,6 +163,7 @@ async function SubjectsGrid({
       serie,
       search,
       is_free: isFree || undefined,
+      status: "published",
     },
     sort: { field: 'year', direction: 'desc' },
     page: 1,

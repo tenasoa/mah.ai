@@ -8,12 +8,23 @@ import {
   MessageCircle, 
   User,
   Search,
-  PlusCircle
+  PlusCircle,
+  LogOut
 } from "lucide-react";
 import { clsx } from "clsx";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 export function MobileNav() {
   const pathname = usePathname();
+  const supabase = createClient();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/auth");
+    router.refresh();
+  };
 
   const navItems = [
     { href: "/dashboard", label: "Home", icon: LayoutGrid },

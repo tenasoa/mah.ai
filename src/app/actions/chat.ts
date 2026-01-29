@@ -14,6 +14,7 @@ export async function getConversations() {
     .select(`
       *,
       messages (
+        id,
         content,
         created_at,
         sender_id,
@@ -30,7 +31,7 @@ export async function getConversations() {
     
     const { data: profile } = await supabase
       .from('profiles')
-      .select('pseudo, avatar_url, id')
+      .select('pseudo, avatar_url, id, is_online, last_seen')
       .eq('id', otherParticipantId)
       .maybeSingle();
 
@@ -121,4 +122,20 @@ export async function getAdminUser() {
 
   if (error) return { data: null, error: error.message };
   return { data };
+}
+
+export async function getUnreadMessagesCount() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { count: 0 };
+
+  const { count, error } = await supabase
+    .from('messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('is_read', false)
+    .neq('sender_id', user.id);
+
+  if (error) return { count: 0, error: error.message };
+  return { count: count || 0 };
 }

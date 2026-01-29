@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import puppeteer from "puppeteer";
-import { marked } from "marked";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,61 +16,6 @@ export async function POST(request: NextRequest) {
       includeAIResponse,
     } = await request.json();
 
-    // Fonction pour convertir Markdown en HTML avec support KaTeX
-    async function markdownToHtml(markdown: string): Promise<string> {
-      // Extraire les équations avant marked pour éviter l'échappement
-      const mathBlocks: { token: string; html: string }[] = [];
-      let tokenIndex = 0;
-
-      const stashMath = (html: string) => {
-        const token = `@@MATH_${tokenIndex}@@`;
-        tokenIndex += 1;
-        mathBlocks.push({ token, html });
-        return token;
-      };
-
-      let text = markdown;
-
-      // Équations display $$...$$
-      text = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, equation) => {
-        return stashMath(`<div class="math-display">$$${equation}$$</div>`);
-      });
-
-      // LaTeX format \[...\]
-      text = text.replace(/\\\[([\s\S]*?)\\\]/g, (match, equation) => {
-        return stashMath(`<div class="math-display">$$${equation}$$</div>`);
-      });
-
-      // LaTeX format \(...\)
-      text = text.replace(/\\\(([\s\S]*?)\\\)/g, (match, equation) => {
-        return stashMath(`<span class="math-inline">$${equation}$</span>`);
-      });
-
-      // Équations inline $...$ (après avoir retiré $$...$$)
-      text = text.replace(/\$(?!\$)([^\n$]+?)\$/g, (match, equation) => {
-        return stashMath(`<span class="math-inline">$${equation}$</span>`);
-      });
-
-      // Configuration de marked pour support du markdown enrichi
-      marked.setOptions({
-        breaks: true,
-        gfm: true,
-      });
-
-      let html = await marked.parse(text);
-
-      // Réinjecter les équations dans le HTML généré
-      for (const block of mathBlocks) {
-        html = html.replace(block.token, block.html);
-      }
-
-      return html;
-    }
-
-    // Convertir le contenu markdown en HTML
-    const subjectHtml = await markdownToHtml(subjectContent);
-    const userAnswerHtml =
-      includeAnswer && userAnswer ? await markdownToHtml(userAnswer) : "";
     const stripSources = (text: string) =>
       text
         .replace(/\s*\[(\d+(\s*[-,]\s*\d+)*)\]\s*/g, " ")
@@ -81,10 +25,6 @@ export async function POST(request: NextRequest) {
     const cleanedAiResponse =
       includeAIResponse && aiResponse ? stripSources(aiResponse) : "";
 
-    const aiResponseHtml =
-      includeAIResponse && cleanedAiResponse
-        ? await markdownToHtml(cleanedAiResponse)
-        : "";
     const aiResponseParts =
       includeAIResponse && cleanedAiResponse
         ? cleanedAiResponse
@@ -92,30 +32,48 @@ export async function POST(request: NextRequest) {
             .map((part) => part.trim())
             .filter(Boolean)
         : [];
-    const aiResponsePartsHtml = await Promise.all(
-      aiResponseParts.map((part) => markdownToHtml(part))
-    );
+    const sections: { id: string; title: string; number: number; markdown: string }[] = [];
+    sections.push({
+      id: "subject",
+      title: "📋 SUJET D'EXAMEN",
+      number: 1,
+      markdown: subjectContent || "",
+    });
+    if (includeAnswer && userAnswer) {
+      sections.push({
+        id: "user-answer",
+        title: "✍️ VOTRE RÉPONSE",
+        number: 2,
+        markdown: userAnswer,
+      });
+    }
+    const hasMultipleAiParts = includeAIResponse && aiResponseParts.length > 1;
+    const aiStartIndex = includeAnswer ? 4 : 3;
+    if (includeAIResponse && cleanedAiResponse) {
+      if (hasMultipleAiParts) {
+        aiResponseParts.forEach((part, index) => {
+          sections.push({
+            id: `ai-part-${index + 1}`,
+            title: `🤖 RÉPONSE IA — PARTIE ${index + 1}/${aiResponseParts.length}`,
+            number: aiStartIndex + index,
+            markdown: part,
+          });
+        });
+      } else {
+        sections.push({
+          id: "ai-part-1",
+          title: "🤖 RÉPONSE IA",
+          number: includeAnswer ? 3 : 2,
+          markdown: cleanedAiResponse,
+        });
+      }
+    }
+    const milkdownSections = sections.map((section) => section.markdown);
     const aiResponseTocHtml = aiResponseParts
       .map(
         (_part, index) =>
           `<li><a class="toc-link" href="#ai-part-${index + 1}">Partie ${index + 1}/${aiResponseParts.length}</a></li>`
       )
-      .join("");
-    const aiResponseSectionsHtml = aiResponsePartsHtml
-      .map((partHtml, index) => {
-        const sectionNumber = includeAnswer ? index + 4 : index + 3;
-        return `
-  <div class="section page-break" id="ai-part-${index + 1}">
-    <div class="section-title">
-      <div class="section-number">${sectionNumber}</div>
-      🤖 RÉPONSE IA — PARTIE ${index + 1}/${aiResponseParts.length}
-    </div>
-    <div class="section-content">
-      ${partHtml}
-    </div>
-  </div>
-  `;
-      })
       .join("");
 
     // Créer le document HTML complet
@@ -127,11 +85,11 @@ export async function POST(request: NextRequest) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(subjectTitle)}</title>
   
-  <!-- KaTeX CSS pour les équations mathématiques -->
+  <!-- KaTeX + Milkdown (Crepe) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-  <!-- KaTeX JavaScript -->
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@milkdown/crepe@7.18.0/theme/common/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/@milkdown/crepe@7.18.0/theme/frame.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
   
   <style>
     * {
@@ -280,28 +238,6 @@ export async function POST(request: NextRequest) {
       color: #ecf0f1;
     }
     
-    /* Équations mathématiques */
-    .math-display {
-      text-align: center;
-      margin: 15px 0;
-      padding: 10px;
-      background: #f5f5f5;
-      border-radius: 4px;
-      overflow-x: auto;
-    }
-    
-    .math-inline {
-      margin: 0 2px;
-    }
-    
-    .katex {
-      font-size: 1em;
-    }
-    
-    .katex-display {
-      margin: 0;
-    }
-    
     /* Tables */
     table {
       border-collapse: collapse;
@@ -367,6 +303,57 @@ export async function POST(request: NextRequest) {
         page-break-inside: avoid;
       }
     }
+
+    /* Milkdown readonly */
+    .milkdown-readonly .milkdown-toolbar {
+      display: none;
+    }
+    .milkdown-paper .milkdown {
+      --crepe-color-background: #fdfbf7;
+      --crepe-color-on-background: #1f1b16;
+      --crepe-color-surface: #f7f1e8;
+      --crepe-color-surface-low: #efe7db;
+      --crepe-color-on-surface: #2a231d;
+      --crepe-color-on-surface-variant: #5c4f43;
+      --crepe-color-outline: #cdbfae;
+      --crepe-color-primary: #9b6b2f;
+      --crepe-color-secondary: #eadcc9;
+      --crepe-color-on-secondary: #2b1d0f;
+      --crepe-color-inverse: #2b241e;
+      --crepe-color-on-inverse: #f6efe6;
+      --crepe-color-inline-code: #9c2f2f;
+      --crepe-color-error: #9c2f2f;
+      --crepe-color-hover: #f3eadf;
+      --crepe-color-selected: #e6dbcc;
+      --crepe-color-inline-area: #e8dccd;
+      --crepe-font-title: Georgia, "Times New Roman", Times, serif;
+      --crepe-font-default: Georgia, "Times New Roman", Times, serif;
+      --crepe-font-code: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --crepe-shadow-1: 0 8px 30px rgba(45, 31, 18, 0.08);
+      --crepe-shadow-2: 0 18px 60px rgba(45, 31, 18, 0.12);
+    }
+    .milkdown-paper .milkdown {
+      background:
+        radial-gradient(1200px 500px at 20% 0%, rgba(255, 255, 255, 0.9), transparent 60%),
+        linear-gradient(180deg, #fdfbf7 0%, #f8f1e7 100%);
+      border-radius: 16px;
+      border: 1px solid #eadfce;
+      box-shadow: var(--crepe-shadow-1);
+      padding: 10px 8px;
+    }
+    .milkdown-paper .ProseMirror {
+      max-width: 100%;
+      padding: 18px 22px 26px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #2a231d;
+    }
+    .milkdown-paper .ProseMirror h1,
+    .milkdown-paper .ProseMirror h2,
+    .milkdown-paper .ProseMirror h3 {
+      font-family: Georgia, "Times New Roman", Times, serif;
+      color: #2b2016;
+    }
   </style>
 </head>
 <body>
@@ -388,7 +375,9 @@ export async function POST(request: NextRequest) {
       📋 SUJET D'EXAMEN
     </div>
     <div class="section-content">
-      ${subjectHtml}
+      <div class="milkdown-paper milkdown-readonly">
+        <div id="md-0"></div>
+      </div>
     </div>
   </div>
   
@@ -401,7 +390,9 @@ export async function POST(request: NextRequest) {
       ✍️ VOTRE RÉPONSE
     </div>
     <div class="section-content">
-      ${userAnswerHtml}
+      <div class="milkdown-paper milkdown-readonly">
+        <div id="md-1"></div>
+      </div>
     </div>
   </div>
   `
@@ -409,7 +400,7 @@ export async function POST(request: NextRequest) {
   }
   
   ${
-    includeAIResponse && aiResponse
+    includeAIResponse && cleanedAiResponse
       ? aiResponseParts.length > 1
         ? `
   <div class="section page-break" id="ai-summary">
@@ -423,7 +414,26 @@ export async function POST(request: NextRequest) {
       </ul>
     </div>
   </div>
-  ${aiResponseSectionsHtml}
+  ${sections
+    .filter((section) => section.id.startsWith("ai-part-"))
+    .map((section, index) => {
+      const offset = (includeAnswer ? 1 : 0) + 1;
+      const mdIndex = index + offset;
+      return `
+  <div class="section page-break" id="${section.id}">
+    <div class="section-title">
+      <div class="section-number">${section.number}</div>
+      ${section.title}
+    </div>
+    <div class="section-content">
+      <div class="milkdown-paper milkdown-readonly">
+        <div id="md-${mdIndex}"></div>
+      </div>
+    </div>
+  </div>
+  `;
+    })
+    .join("")}
   `
         : `
   <div class="section page-break" id="ai-part-1">
@@ -432,7 +442,9 @@ export async function POST(request: NextRequest) {
       🤖 RÉPONSE IA
     </div>
     <div class="section-content">
-      ${aiResponseHtml}
+      <div class="milkdown-paper milkdown-readonly">
+        <div id="md-${includeAnswer ? 2 : 1}"></div>
+      </div>
     </div>
   </div>
   `
@@ -451,16 +463,31 @@ export async function POST(request: NextRequest) {
     </p>
   </div>
   
-  <script>
-    // Rendre les équations mathématiques avec KaTeX au chargement
-    document.addEventListener('DOMContentLoaded', function() {
-      renderMathInElement(document.body, {
-        delimiters: [
-          {left: '$$', right: '$$', display: true},
-          {left: '$', right: '$', display: false}
-        ]
+  <script type="module">
+    import { Crepe } from "https://esm.sh/@milkdown/crepe@7.18.0?bundle";
+
+    const sections = ${JSON.stringify(milkdownSections)};
+    const rootIds = sections.map((_, index) => "md-" + index);
+
+    const editors = rootIds.map((id, index) => {
+      const root = document.getElementById(id);
+      if (!root) return null;
+      const crepe = new Crepe({
+        root,
+        defaultValue: sections[index] || "",
       });
-    });
+      crepe.setReadonly(true);
+      return crepe;
+    }).filter(Boolean);
+
+    Promise.all(editors.map((editor) => editor.create()))
+      .then(() => {
+        document.documentElement.setAttribute("data-rendered", "true");
+      })
+      .catch((error) => {
+        console.error("Milkdown render error:", error);
+        document.documentElement.setAttribute("data-rendered", "true");
+      });
   </script>
 </body>
 </html>
@@ -475,10 +502,11 @@ export async function POST(request: NextRequest) {
     const page = await browser.newPage();
     await page.setContent(htmlContent, { waitUntil: "networkidle0" });
 
-    // Attendre le rendu de KaTeX
-    await page.evaluate(() => {
-      return new Promise((resolve) => setTimeout(resolve, 2000));
-    });
+    // Attendre le rendu Milkdown côté navigateur
+    await page.waitForFunction(
+      () => document.documentElement.getAttribute("data-rendered") === "true",
+      { timeout: 30000 }
+    );
 
     // Générer le PDF
     const pdfBuffer = await page.pdf({
@@ -500,7 +528,8 @@ export async function POST(request: NextRequest) {
 
     // Retourner le PDF
     const pdfData = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
-    return new Response(pdfData, {
+    const pdfBody = new Uint8Array(pdfData);
+    return new Response(pdfBody, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${subjectTitle.replace(/[^a-z0-9]/gi, "_")}_mah_ai.pdf"`,

@@ -15,8 +15,8 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { deductCreditsClient } from "@/lib/credits-client";
-import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import "katex/dist/katex.min.css";
+import { MilkdownEditor } from "@/components/ui/MilkdownEditor";
 
 interface SubjectAIResponseProps {
   isOpen: boolean;
@@ -42,6 +42,7 @@ export function SubjectAIResponse({
   );
   const [isGenerating, setIsGenerating] = useState(false);
   const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
   const supabase = createClient();
@@ -161,6 +162,7 @@ export function SubjectAIResponse({
     if (!aiResponse) return;
 
     try {
+      setIsDownloading(true);
       const response = await fetch("/api/generate-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -201,6 +203,8 @@ export function SubjectAIResponse({
       const message =
         error instanceof Error ? error.message : "Erreur lors du téléchargement du document";
       alert(message);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -287,9 +291,11 @@ export function SubjectAIResponse({
                     📄 Sujet d'origine :
                   </h4>
                   <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                    <MarkdownRenderer
-                      content={formatSubjectContent(subjectContent)}
-                      variant="minimal"
+                    <MilkdownEditor
+                      value={formatSubjectContent(subjectContent)}
+                      onChange={() => {}}
+                      readOnly
+                      className="min-h-full px-2 py-2"
                     />
                   </div>
                 </div>
@@ -361,27 +367,34 @@ export function SubjectAIResponse({
                 </div>
                 <div className="space-y-4">
                   {responseParts.length > 1 ? (
-                    responseParts.map((part, index) => (
-                      <div
-                        key={index}
-                        className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800"
-                      >
-                        <div className="mb-2 text-xs font-black uppercase tracking-widest text-indigo-500 dark:text-indigo-300">
-                          Partie {index + 1}/{responseParts.length}
+                      responseParts.map((part, index) => (
+                        <div
+                          key={index}
+                          className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800"
+                        >
+                          <div className="mb-2 text-xs font-black uppercase tracking-widest text-indigo-500 dark:text-indigo-300">
+                            Partie {index + 1}/{responseParts.length}
+                          </div>
+                          <MilkdownEditor
+                            value={part}
+                            onChange={() => {}}
+                            readOnly
+                            className="min-h-full px-2 py-2"
+                          />
                         </div>
-                        <MarkdownRenderer content={part} variant="minimal" />
+                      ))
+                    ) : (
+                      <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                        <MilkdownEditor
+                          value={aiResponse || ""}
+                          onChange={() => {}}
+                          readOnly
+                          className="min-h-full px-2 py-2"
+                        />
                       </div>
-                    ))
-                  ) : (
-                    <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
-                      <MarkdownRenderer
-                        content={aiResponse || ""}
-                        variant="minimal"
-                      />
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
 
               {/* Actions */}
               <div className="flex items-center justify-between">
@@ -403,10 +416,20 @@ export function SubjectAIResponse({
                   </button>
                   <button
                     onClick={handleDownloadPDF}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors shadow-lg shadow-indigo-600/20"
+                    disabled={isDownloading}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors shadow-lg shadow-indigo-600/20 disabled:opacity-70 disabled:cursor-not-allowed"
                   >
-                    <Download className="w-4 h-4" />
-                    Télécharger PDF
+                    {isDownloading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Téléchargement...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4" />
+                        Télécharger PDF
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
