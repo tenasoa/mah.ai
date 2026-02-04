@@ -2,6 +2,7 @@
 @plugin "@tailwindcss/typography";
 @import "@milkdown/crepe/theme/common/style.css";
 @import "@milkdown/crepe/theme/frame.css";
+@import "https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css";
 
 /* Force dark mode via class strategy */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -856,4 +857,50 @@ h6.font-outfit {
     .no-print {
         display: none !important;
     }
+}
+
+/* Milkdown Styles */
+.milkdown .katex {
+  font-size: 1.1em;
+}
+
+.milkdown table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.5em 0;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  border: 1px solid theme('colors.slate.200');
+}
+
+.dark .milkdown table {
+  border-color: theme('colors.slate.700');
+}
+
+.milkdown th {
+  background-color: theme('colors.slate.50');
+  font-weight: 600;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid theme('colors.slate.200');
+}
+
+.dark .milkdown th {
+  background-color: theme('colors.slate.800');
+  border-bottom-color: theme('colors.slate.700');
+  color: theme('colors.slate.200');
+}
+
+.milkdown td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid theme('colors.slate.100');
+}
+
+.dark .milkdown td {
+  border-bottom-color: theme('colors.slate.800');
+  color: theme('colors.slate.300');
+}
+
+.milkdown tr:last-child td {
+  border-bottom: none;
 }

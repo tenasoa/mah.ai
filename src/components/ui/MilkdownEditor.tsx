@@ -4,6 +4,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { Crepe } from "@milkdown/crepe";
 import { diagram } from "@milkdown/plugin-diagram";
+import { math } from "@milkdown/plugin-math";
 import type { Editor } from "@milkdown/kit/core";
 import { editorViewCtx } from "@milkdown/kit/core";
 import { insert, getMarkdown, replaceAll } from "@milkdown/utils";
@@ -36,7 +37,7 @@ const MilkdownEditorInner = forwardRef<MilkdownEditorHandle, MilkdownEditorProps
         defaultValue: initialValueRef.current,
       });
       crepe.setReadonly(readOnly);
-      crepe.editor.use(diagram);
+      crepe.editor.use(diagram).use(math);
 
       crepe.on((editorListener) => {
         editorListener.markdownUpdated((_ctx, markdown) => {
