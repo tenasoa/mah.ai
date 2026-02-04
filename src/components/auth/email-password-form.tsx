@@ -44,7 +44,7 @@ export function EmailPasswordForm() {
           }
         });
         if (signUpError) throw signUpError;
-        setMessage('🎉 Vérifiez votre email pour confirmer votre inscription.');
+        setMessage('🎉 Inscription réussie ! Tu as reçu 100 crédits gratuits pour explorer mah.ai. Vérifie ton email pour confirmer ton compte.');
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,

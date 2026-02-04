@@ -69,6 +69,7 @@ const pricingPlans = [
     unit: "Ar",
     description: "Achète uniquement ce dont tu as besoin.",
     features: [
+      "🎁 100 crédits offerts à l'inscription",
       "Déblocage de sujets à l'unité",
       "Corrigés IA inclus",
       "Accès à vie aux achats",
@@ -133,6 +134,15 @@ function LandingPageContent() {
 
   useEffect(() => {
     setMounted(true);
+    
+    // Ouvrir la modal si paramètre auth=open (redirection depuis /auth)
+    if (searchParams.get("auth") === "open") {
+      setIsAuthModalOpen(true);
+      // Nettoyer l'URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
+    
     if (searchParams.get("logout") === "true") {
       toast("Déconnexion réussie. À bientôt !", "success");
       // Nettoyer l'URL

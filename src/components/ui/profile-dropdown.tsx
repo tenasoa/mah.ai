@@ -91,7 +91,7 @@ export function ProfileDropdown({ user, isExpanded = false, isAdmin = false }: P
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className={clsx(
-          "flex items-center p-1 rounded-full transition-all duration-300 group cursor-pointer",
+          "flex items-center p-1.5 rounded-full transition-all duration-300 group cursor-pointer",
           isAdmin ? "ring-2 ring-amber-500/20 hover:ring-amber-500/50 bg-amber-50/10" : "hover:bg-slate-100 dark:hover:bg-slate-800"
         )}
         title={isAdmin ? "Menu Admin" : "Menu profil"}
