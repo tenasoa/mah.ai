@@ -36,7 +36,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <div style={{ visibility: mounted ? "visible" : "hidden" }}>
+      <div style={{ visibility: "visible" }}>
         {children}
       </div>
     </ThemeContext.Provider>
@@ -45,8 +45,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
+  // Retourner un contexte par défaut si non trouvé pour éviter l'erreur SSR
   if (context === undefined) {
-    throw new Error("useTheme must be used within a ThemeProvider");
+    // Warning en dev uniquement pour debug
+    if (process.env.NODE_ENV === 'development') {
+      console.warn("useTheme used outside of ThemeProvider, falling back to light theme");
+    }
+    return { 
+      theme: "light" as Theme, 
+      toggleTheme: () => {} 
+    };
   }
   return context;
 };

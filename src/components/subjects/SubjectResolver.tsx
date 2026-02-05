@@ -43,26 +43,6 @@ export function SubjectResolver({
   const [isDownloading, setIsDownloading] = useState(false);
   const supabase = createClient();
 
-  // Fonction pour formater le sujet
-  const formatSubjectContent = (content: string): string => {
-    return (
-      content
-        // Préserver les formules mathématiques KaTeX
-        .replace(/\$\$([^$]+)\$\$/g, (match, formula) => {
-          return `$$${formula.trim()}$$`;
-        })
-        .replace(/\$([^$]+)\$/g, (match, formula) => {
-          return `$${formula.trim()}$`;
-        })
-        // Nettoyer les sauts de ligne
-        .replace(/\n{3,}/g, "\n\n")
-        .split("\n")
-        .map((line) => line.trim())
-        .join("\n")
-        .trim()
-    );
-  };
-
   if (!isOpen) return null;
 
   const handleSubmit = async () => {
@@ -124,7 +104,9 @@ export function SubjectResolver({
 
       if (!response.ok) {
         const errorBody = await response.json().catch(() => null);
-        const message = errorBody?.error || `Erreur (${response.status}) lors du téléchargement`;
+        const message =
+          errorBody?.error ||
+          `Erreur (${response.status}) lors du téléchargement`;
         throw new Error(message);
       }
 
@@ -134,7 +116,9 @@ export function SubjectResolver({
         const contentType = response.headers.get("content-type") || "inconnu";
         const text = await responseClone.text().catch(() => "");
         const details = text ? ` Détails: ${text.slice(0, 300)}` : "";
-        throw new Error(`Le document généré est vide (Content-Type: ${contentType}).${details}`);
+        throw new Error(
+          `Le document généré est vide (Content-Type: ${contentType}).${details}`,
+        );
       }
 
       const url = window.URL.createObjectURL(blob);
@@ -148,7 +132,9 @@ export function SubjectResolver({
     } catch (error) {
       console.error("Erreur lors du téléchargement PDF:", error);
       const message =
-        error instanceof Error ? error.message : "Erreur lors du téléchargement du document";
+        error instanceof Error
+          ? error.message
+          : "Erreur lors du téléchargement du document";
       alert(message);
     } finally {
       setIsDownloading(false);
@@ -174,23 +160,23 @@ export function SubjectResolver({
               .
             </p>
             <div className="flex gap-3">
-                <button
-                  onClick={handleDownloadWithAnswer}
-                  disabled={isDownloading}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {isDownloading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Téléchargement...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4" />
-                      Télécharger avec réponse
-                    </>
-                  )}
-                </button>
+              <button
+                onClick={handleDownloadWithAnswer}
+                disabled={isDownloading}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isDownloading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Téléchargement...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Télécharger avec réponse
+                  </>
+                )}
+              </button>
               <button
                 onClick={onClose}
                 className="flex-1 px-4 py-2.5 bg-slate-900 dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-white font-medium transition-colors rounded-xl"
@@ -206,21 +192,55 @@ export function SubjectResolver({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[999] flex items-center justify-center pt-24 pb-8 px-4">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-4xl w-full h-[95vh] overflow-hidden animate-scale-in flex flex-col border border-slate-200 dark:border-slate-800">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-5xl w-full h-[95vh] overflow-hidden animate-scale-in flex flex-col border border-slate-200 dark:border-slate-800">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
           <div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
               Résoudre le sujet
             </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{subjectTitle}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              {subjectTitle}
+            </p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-          </button>
+
+          {/* Actions dans le header */}
+          <div className="flex items-center gap-2">
+            <div className="mr-4 text-sm text-slate-500 dark:text-slate-400 hidden sm:block">
+              {userSubscription === "premium" ? (
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                  Inclus Premium
+                </span>
+              ) : (
+                <span>5 crédits</span>
+              )}
+            </div>
+
+            <button
+              onClick={handleSubmit}
+              disabled={!answer.trim() || isSubmitting}
+              className="inline-flex items-center gap-3 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Soumission...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-5 h-5" />
+                  Soumettre
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -257,7 +277,7 @@ export function SubjectResolver({
                 <div className="text-left">
                   <div className="font-medium">Correction humaine</div>
                   <div className="text-xs opacity-75">
-                    Detailée et personnalisée
+                    Détaillée et personnalisée
                   </div>
                 </div>
               </button>
@@ -270,14 +290,12 @@ export function SubjectResolver({
               📄 Sujet à résoudre
             </label>
             <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
-              <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                <MilkdownEditor
-                  value={formatSubjectContent(subjectContent)}
-                  onChange={() => {}}
-                  readOnly
-                  className="min-h-full px-2 py-2"
-                />
-              </div>
+              <MilkdownEditor
+                value={subjectContent}
+                onChange={() => {}}
+                readOnly
+                className="min-h-full px-6 py-6"
+              />
             </div>
           </div>
 
@@ -286,56 +304,17 @@ export function SubjectResolver({
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
               Votre réponse
             </label>
-            <textarea
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              placeholder="Rédigez votre réponse ici..."
-              className="w-full h-64 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-900 dark:text-white"
-              disabled={isSubmitting}
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-slate-500 dark:text-slate-400">
-              {userSubscription === "premium" ? (
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                  Inclus dans votre abonnement Premium
-                </span>
-              ) : (
-                <span>5 crédits seront déduits de votre solde</span>
-              )}
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                className="px-4 py-2.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium transition-colors"
-                disabled={isSubmitting}
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={!answer.trim() || isSubmitting}
-                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-600/20"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Soumission...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    Soumettre la réponse
-                  </>
-                )}
-              </button>
+            <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden min-h-[300px]">
+              <MilkdownEditor
+                value={answer}
+                onChange={setAnswer}
+                placeholder="Rédigez votre réponse ici... (Markdown et LaTeX supportés)"
+                className="min-h-[300px]"
+              />
             </div>
           </div>
         </div>
       </div>
     </div>
-
   );
 }

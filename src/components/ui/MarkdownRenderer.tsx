@@ -9,6 +9,7 @@ import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
 import "katex/dist/katex.min.css";
 import "highlight.js/styles/github.css";
+import { processContent } from "@/lib/content-processor";
 
 interface MarkdownRendererProps {
   content: string;
@@ -25,21 +26,9 @@ export function MarkdownRenderer({
   variant = "light",
   className = "",
 }: MarkdownRendererProps) {
-  // Prétraiter le contenu pour normaliser les formats mathématiques
-  const processedContent = content
-    // Convertir les formats LaTeX courants en format $ ... $
-    .replace(/\\\((.*?)\\\)/g, "$$$1$$") // \( ... \) → $ ... $
-    .replace(/\\\[([\s\S]*?)\\\]/g, "$$\n$1\n$$") // \[ ... \] → $$ ... $$
-    // Normaliser les blocs $$...$$ pour forcer un rendu display
-    .replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => {
-      const trimmed = String(formula).trim();
-      return `\n\n$$\n${trimmed}\n$$\n\n`;
-    })
-    // Nettoyer les espaces autour des formules inline seulement
-    .replace(/\$(?!\$)\s*([^$\n]+?)\s*\$(?!\$)/g, (match, formula) => {
-      return `$${String(formula).trim()}$`;
-    })
-    .replace(/\n{3,}/g, "\n\n");
+  // Prétraiter le contenu via l'utilitaire partagé pour normaliser les formats mathématiques
+  // et corriger les erreurs KaTeX (#, etc.)
+  const processedContent = processContent(content, false);
 
   // Styles personnalisés selon le variant
   const baseStyles = {

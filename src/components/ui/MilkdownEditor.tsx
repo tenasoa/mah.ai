@@ -4,7 +4,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { Crepe } from "@milkdown/crepe";
 import { diagram } from "@milkdown/plugin-diagram";
-import { math } from "@milkdown/plugin-math";
+import { katexOptionsCtx, math } from "@milkdown/plugin-math";
 import type { Editor } from "@milkdown/kit/core";
 import { editorViewCtx } from "@milkdown/kit/core";
 import { insert, getMarkdown, replaceAll } from "@milkdown/utils";
@@ -37,7 +37,18 @@ const MilkdownEditorInner = forwardRef<MilkdownEditorHandle, MilkdownEditorProps
         defaultValue: initialValueRef.current,
       });
       crepe.setReadonly(readOnly);
-      crepe.editor.use(diagram).use(math);
+      
+      // Configuration pour les mathématiques
+      crepe.editor
+        .config((ctx) => {
+          // Prevent KaTeX parse errors from crashing Milkdown rendering.
+          ctx.set(katexOptionsCtx.key, {
+            throwOnError: false,
+            strict: "ignore",
+          });
+        })
+        .use(diagram)
+        .use(math);
 
       crepe.on((editorListener) => {
         editorListener.markdownUpdated((_ctx, markdown) => {
@@ -68,12 +79,16 @@ const MilkdownEditorInner = forwardRef<MilkdownEditorHandle, MilkdownEditorProps
     
     // Ajouter un délai pour éviter les conflits avec l'initialisation
     setTimeout(() => {
-      editor.action((ctx) => {
-        const current = getMarkdown()(ctx);
-        if (current === value) return;
-        replaceAll(value, true)(ctx);
-        lastAppliedRef.current = value;
-      });
+      try {
+        editor.action((ctx) => {
+          const current = getMarkdown()(ctx);
+          if (current === value) return;
+          replaceAll(value, true)(ctx);
+          lastAppliedRef.current = value;
+        });
+      } catch (e) {
+        console.warn("Failed to update editor content:", e);
+      }
     }, readOnly ? 100 : 0);
   }, [value, readOnly]);
 
@@ -81,20 +96,29 @@ const MilkdownEditorInner = forwardRef<MilkdownEditorHandle, MilkdownEditorProps
     insertMarkdown: (markdown: string, inline = false) => {
       const editor = editorRef.current;
       if (!editor) return;
-      editor.action((ctx) => {
-        insert(markdown, inline)(ctx);
-      });
+      try {
+        editor.action((ctx) => {
+          insert(markdown, inline)(ctx);
+        });
+      } catch (e) {
+        console.warn("Failed to insert markdown:", e);
+      }
     },
     wrapSelection: (before: string, after: string = "") => {
       const editor = editorRef.current;
       if (!editor) return;
-      editor.action((ctx) => {
-        const view = ctx.get(editorViewCtx);
-        const { from, to } = view.state.selection;
-        const selected = from === to ? "" : getMarkdown({ from, to })(ctx);
-        insert(`${before}${selected}${after}`, true)(ctx);
-        view.focus();
-      });
+      try {
+        editor.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          if (!view) return;
+          const { from, to } = view.state.selection;
+          const selected = from === to ? "" : getMarkdown({ from, to })(ctx);
+          insert(`${before}${selected}${after}`, true)(ctx);
+          view.focus();
+        });
+      } catch (e) {
+        console.warn("Failed to wrap selection:", e);
+      }
     },
   }));
 
@@ -107,7 +131,7 @@ const MilkdownEditorInner = forwardRef<MilkdownEditorHandle, MilkdownEditorProps
       <Milkdown />
     </div>
   );
-  }
+}
 );
 MilkdownEditorInner.displayName = "MilkdownEditorInner";
 
@@ -118,6 +142,6 @@ export const MilkdownEditor = forwardRef<MilkdownEditorHandle, MilkdownEditorPro
       <MilkdownEditorInner {...props} ref={ref} />
     </MilkdownProvider>
   );
-  }
+}
 );
 MilkdownEditor.displayName = "MilkdownEditor";

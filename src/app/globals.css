@@ -649,6 +649,45 @@ h6.font-outfit {
     animation: flash-exit 0.65s cubic-bezier(0.2, 0, 0, 1) forwards;
 }
 
+/* Milkdown Math Support */
+.milkdown-paper .katex {
+  font-size: 1em !important;
+}
+
+.milkdown-paper .katex-display {
+  margin: 1em 0 !important;
+}
+
+.milkdown-paper .ProseMirror .math-inline {
+  display: inline-block !important;
+  margin: 0 2px !important;
+}
+
+.milkdown-paper .ProseMirror .math-block {
+  display: block !important;
+  margin: 1em 0 !important;
+  text-align: center !important;
+}
+
+/* Forcer le rendu des équations dans Milkdown */
+.milkdown-readonly .ProseMirror [data-milkdown="math"] {
+  display: inline-block !important;
+  background: rgba(99, 102, 241, 0.1) !important;
+  padding: 2px 4px !important;
+  border-radius: 4px !important;
+  font-family: 'KaTeX_Main', 'Times New Roman', serif !important;
+}
+
+.milkdown-readonly .ProseMirror [data-milkdown="math-block"] {
+  display: block !important;
+  background: rgba(99, 102, 241, 0.05) !important;
+  padding: 8px !important;
+  border-radius: 8px !important;
+  margin: 1em 0 !important;
+  text-align: center !important;
+  font-family: 'KaTeX_Main', 'Times New Roman', serif !important;
+}
+
 /* Stagger animations for lists */
 .stagger-1 { animation-delay: 0.05s; }
 .stagger-2 { animation-delay: 0.1s; }
@@ -656,6 +695,22 @@ h6.font-outfit {
 .stagger-4 { animation-delay: 0.2s; }
 .stagger-5 { animation-delay: 0.25s; }
 .stagger-6 { animation-delay: 0.3s; }
+
+/* Fade in animation for flash messages */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
 
 /* Skeleton Loading */
 .skeleton {

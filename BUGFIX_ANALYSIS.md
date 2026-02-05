@@ -13,7 +13,7 @@ Ce document recense tous les bugs identifiés et les fonctionnalités à ajouter
 ### Bugs Identifiés (6)
 1. ✅ Incohérences de couleurs en dark mode (admin)
 2. ✅ Light mode trop éclatant
-3. ✅ Problèmes d'affichage Milkdown (tableaux + formules LaTeX)
+3. ⚠️ Problèmes d'affichage Milkdown (tableaux OK, LaTeX Réponse IA KO)
 4. ✅ Route `/auth` accessible alors que modal existe
 5. ✅ Pas de redirection automatique quand connecté
 6. ✅ Avatar admin mal dimensionné dans navbar

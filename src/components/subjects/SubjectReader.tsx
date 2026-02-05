@@ -38,6 +38,7 @@ import { createClient } from "@/lib/supabase/client";
 import { SubjectStatus } from "@/lib/types/subject";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { SubjectComments } from "./SubjectComments";
+import { processContent } from "@/lib/content-processor";
 
 interface SubjectReaderProps {
   subjectId: string;
@@ -215,24 +216,9 @@ export function SubjectReader({
     };
   }, [subjectId, isEditing]);
 
-  // Fonction pour formater le sujet
+  // Fonction pour formater le sujet via l'utilitaire partagé
   const formatSubjectContent = (content: string): string => {
-    return (
-      content
-        // Préserver les formules mathématiques KaTeX
-        .replace(/\$\$([^$]+)\$\$/g, (match, formula) => {
-          return `$$${formula.trim()}$$`;
-        })
-        .replace(/\$([^$]+)\$/g, (match, formula) => {
-          return `$${formula.trim()}$`;
-        })
-        // Nettoyer les sauts de ligne
-        .replace(/\n{3,}/g, "\n\n")
-        .split("\n")
-        .map((line) => line.trim())
-        .join("\n")
-        .trim()
-    );
+    return processContent(content, false);
   };
 
   // Charger les crédits et abonnement de l'utilisateur
