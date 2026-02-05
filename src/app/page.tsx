@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { SupportWorkflow } from "@/components/support/SupportWorkflow";
+import { createClient } from "@/lib/supabase/client";
 
 // ─── DONNÉES ───
 
@@ -69,6 +70,7 @@ const pricingPlans = [
     unit: "Ar",
     description: "Achète uniquement ce dont tu as besoin.",
     features: [
+      "🎁 100 crédits offerts à l'inscription",
       "Déblocage de sujets à l'unité",
       "Corrigés IA inclus",
       "Accès à vie aux achats",
@@ -130,16 +132,38 @@ function LandingPageContent() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
     setMounted(true);
-    if (searchParams.get("logout") === "true") {
-      toast("Déconnexion réussie. À bientôt !", "success");
-      // Nettoyer l'URL
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, "", newUrl);
-    }
-  }, [searchParams, toast]);
+    
+    // Vérifier si l'utilisateur est connecté et rediriger
+    const checkAuthAndRedirect = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Utilisateur connecté, rediriger vers /subjects
+        router.replace('/subjects');
+        return;
+      }
+      
+      // Ouvrir la modal si paramètre auth=open (redirection depuis /auth)
+      if (searchParams.get("auth") === "open") {
+        setIsAuthModalOpen(true);
+        // Nettoyer l'URL
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, "", newUrl);
+      }
+      
+      if (searchParams.get("logout") === "true") {
+        toast("Déconnexion réussie. À bientôt !", "success");
+        // Nettoyer l'URL
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, "", newUrl);
+      }
+    };
+    
+    checkAuthAndRedirect();
+  }, [searchParams, toast, router]);
 
   // Typewriter effect
   useEffect(() => {

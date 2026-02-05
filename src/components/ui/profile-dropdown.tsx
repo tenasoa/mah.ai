@@ -91,7 +91,7 @@ export function ProfileDropdown({ user, isExpanded = false, isAdmin = false }: P
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className={clsx(
-          "flex items-center p-1 rounded-full transition-all duration-300 group cursor-pointer",
+          "flex items-center justify-center p-1.5 rounded-full transition-all duration-300 group cursor-pointer shrink-0 min-w-[3rem] min-h-[3rem] aspect-square",
           isAdmin ? "ring-2 ring-amber-500/20 hover:ring-amber-500/50 bg-amber-50/10" : "hover:bg-slate-100 dark:hover:bg-slate-800"
         )}
         title={isAdmin ? "Menu Admin" : "Menu profil"}
@@ -102,13 +102,13 @@ export function ProfileDropdown({ user, isExpanded = false, isAdmin = false }: P
             src={user.avatarUrl}
             alt={user.name}
             className={clsx(
-              "h-9 w-9 rounded-full border-2 object-cover transition-all duration-300",
+              "h-9 w-9 shrink-0 aspect-square rounded-full border-2 object-cover block min-w-[2.25rem] min-h-[2.25rem]",
               isAdmin ? "border-amber-500 shadow-lg shadow-amber-500/20" : "border-slate-200 group-hover:border-amber-400"
             )}
           />
         ) : (
           <div className={clsx(
-            "h-9 w-9 rounded-full flex items-center justify-center text-white font-bold text-sm transition-all duration-300",
+            "h-9 w-9 shrink-0 aspect-square rounded-full flex items-center justify-center text-white font-bold text-sm transition-all duration-300 min-w-[2.25rem] min-h-[2.25rem]",
             isAdmin 
               ? "bg-gradient-to-br from-indigo-600 to-purple-600 shadow-lg shadow-indigo-500/30" 
               : "bg-gradient-to-br from-amber-400 to-orange-500 group-hover:shadow-lg group-hover:shadow-amber-500/40"

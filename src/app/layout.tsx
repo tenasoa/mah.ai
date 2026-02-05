@@ -34,6 +34,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className={`${calSans.variable} ${inter.variable}`} suppressHydrationWarning>
+      <head>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" crossOrigin="anonymous" />
+      </head>
       <body className={inter.className} suppressHydrationWarning>
         <ThemeProvider>
           <ToastProvider>

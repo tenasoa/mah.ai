@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const DASHBOARD_PATH = "/dashboard";
+const DASHBOARD_PATH = "/subjects"; // Redirection vers la page des sujets
 const AUTH_PATH = "/auth";
 
 function getSafeRedirect(value: string | null) {
@@ -59,6 +59,7 @@ export default async function proxy(request: NextRequest) {
     return redirectResponse;
   };
 
+  // Redirection de la racine si connecté
   if (user && isRoot) {
     const url = request.nextUrl.clone();
     url.pathname = DASHBOARD_PATH;
@@ -66,12 +67,8 @@ export default async function proxy(request: NextRequest) {
     return redirectWithCookies(url);
   }
 
-  if (user && isAuthRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = getSafeRedirect(request.nextUrl.searchParams.get("redirect")) || DASHBOARD_PATH;
-    url.search = "";
-    return redirectWithCookies(url);
-  }
+  // /auth redirige maintenant automatiquement vers / avec modal (voir src/app/auth/page.tsx)
+  // Pas besoin de redirection ici, la page gère elle-même
 
   if (!user && (isProtectedRoute || isAdminRoute)) {
     const url = request.nextUrl.clone();
