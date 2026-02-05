@@ -65,12 +65,16 @@ const MilkdownEditorInner = forwardRef<MilkdownEditorHandle, MilkdownEditorProps
     if (!editor) return;
     if (!readOnly && value === lastEmittedRef.current) return;
     if (value === lastAppliedRef.current) return;
-    editor.action((ctx) => {
-      const current = getMarkdown()(ctx);
-      if (current === value) return;
-      replaceAll(value, true)(ctx);
-      lastAppliedRef.current = value;
-    });
+    
+    // Ajouter un délai pour éviter les conflits avec l'initialisation
+    setTimeout(() => {
+      editor.action((ctx) => {
+        const current = getMarkdown()(ctx);
+        if (current === value) return;
+        replaceAll(value, true)(ctx);
+        lastAppliedRef.current = value;
+      });
+    }, readOnly ? 100 : 0);
   }, [value, readOnly]);
 
   useImperativeHandle(ref, () => ({

@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase/client";
 import { deductCreditsClient } from "@/lib/credits-client";
 import "katex/dist/katex.min.css";
 import { MilkdownEditor } from "@/components/ui/MilkdownEditor";
+import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 
 interface SubjectAIResponseProps {
   isOpen: boolean;
@@ -49,40 +50,60 @@ export function SubjectAIResponse({
 
   // Fonction pour nettoyer et formater la réponse IA
   const cleanAndFormatResponse = (response: string): string => {
-    return (
-      response
-        // Retirer les numéros de sources [1], [2], [1-3], [1,2]
-        .replace(/\s*\[(\d+(\s*[-,]\s*\d+)*)\]\s*/g, " ")
-        // Retirer une section "Sources:" si présente
-        .replace(/^\s*Sources\s*:\s*[\s\S]*$/im, "")
-        // Préserver les formules mathématiques KaTeX
-        .replace(/\$\$([^$]+)\$\$/g, (match, formula) => {
-          return `$$${formula.trim()}$$`;
-        })
-        .replace(/\$([^$]+)\$/g, (match, formula) => {
-          return `$${formula.trim()}$`;
-        })
-        // Nettoyer les sauts de ligne multiples
-        .replace(/\n{3,}/g, "\n\n")
-        // Nettoyer les espaces en début/fin de ligne
-        .split("\n")
-        .map((line) => line.trim())
-        .join("\n")
-        .trim()
-    );
+    let cleaned = response;
+
+    // 1. Retirer l'indentation de 4 espaces qui crée des blocs de code implicites
+    cleaned = cleaned.replace(/^(?: {4,}|\t+)/gm, "");
+
+    // 2. Préserver les blocs de code existants (```...```) sans modification
+    cleaned = cleaned.replace(/```(\w+)?\s*([\s\S]*?)\s*```/gi, (match, lang, content) => {
+      return `\n\`\`\`${lang || ''}\n${content.trim()}\n\`\`\`\n`;
+    });
+
+    // 3. Convertir les blocs mathématiques Markdown ($$ ... $$) en formules display
+    cleaned = cleaned.replace(/\$\$([\s\S]+?)\$\$/g, (match, content) => {
+      // Nettoyer les caractères problématiques pour KaTeX
+      const cleanContent = content.trim()
+        .replace(/#/g, '\\#') // Échapper les #
+        .replace(/&/g, '\\&') // Échapper les &
+        .replace(/%/g, '\\%'); // Échapper les %
+      return `\n\n$$${cleanContent}$$\n\n`;
+    });
+
+    // 4. Convertir les blocs LaTeX legacy (\[ ... \]) en formules display
+    cleaned = cleaned.replace(/\\\[([\s\S]+?)\\\]/g, (match, content) => {
+      const cleanContent = content.trim()
+        .replace(/#/g, '\\#')
+        .replace(/&/g, '\\&')
+        .replace(/%/g, '\\%');
+      return `\n\n$$${cleanContent}$$\n\n`;
+    });
+
+    // 5. Convertir les formules inline style \( ... \) en formules inline $...$
+    cleaned = cleaned.replace(/\\\(([\s\S]+?)\\\)/g, (match, content) => {
+      const cleanContent = content.trim()
+        .replace(/#/g, '\\#')
+        .replace(/&/g, '\\&')
+        .replace(/%/g, '\\%');
+      return `$${cleanContent}$`;
+    });
+
+    // 6. Nettoyer les sauts de ligne
+    return cleaned
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
   };
 
   // Fonction pour formater le sujet
   const formatSubjectContent = (content: string): string => {
     return (
       content
-        // Préserver les formules mathématiques KaTeX
-        .replace(/\$\$([^$]+)\$\$/g, (match, formula) => {
-          return `$$${formula.trim()}$$`;
-        })
-        .replace(/\$([^$]+)\$/g, (match, formula) => {
-          return `$${formula.trim()}$`;
-        })
+        // Nettoyer simplement les dollars multiples
+        .replace(/\$\$(\s*\$\$+)/g, '$$')
+        .replace(/\$(\s*\$+)/g, '$')
+        // Corriger seulement les erreurs OCR évidentes
+        .replace(/\$\$\$(\w+\s*=\s*[^$\n]*?)\$/g, '$$$$1$$')
+        .replace(/\$(\w+\s*=\s*[^$\n]*?\$[^$\n]*?)\$/g, '$$$$1$$')
         // Nettoyer les sauts de ligne
         .replace(/\n{3,}/g, "\n\n")
         .split("\n")
@@ -291,10 +312,9 @@ export function SubjectAIResponse({
                     📄 Sujet d'origine :
                   </h4>
                   <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                    <MilkdownEditor
-                      value={formatSubjectContent(subjectContent)}
-                      onChange={() => {}}
-                      readOnly
+                    <MarkdownRenderer
+                      content={formatSubjectContent(subjectContent)}
+                      variant="light"
                       className="min-h-full px-2 py-2"
                     />
                   </div>
@@ -370,7 +390,7 @@ export function SubjectAIResponse({
                       responseParts.map((part, index) => (
                         <div
                           key={index}
-                          className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800"
+                          className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800 ai-response"
                         >
                           <div className="mb-2 text-xs font-black uppercase tracking-widest text-indigo-500 dark:text-indigo-300">
                             Partie {index + 1}/{responseParts.length}
@@ -384,7 +404,7 @@ export function SubjectAIResponse({
                         </div>
                       ))
                     ) : (
-                      <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                      <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800 ai-response">
                         <MilkdownEditor
                           value={aiResponse || ""}
                           onChange={() => {}}

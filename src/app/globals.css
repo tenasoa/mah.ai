@@ -2,7 +2,7 @@
 @plugin "@tailwindcss/typography";
 @import "@milkdown/crepe/theme/common/style.css";
 @import "@milkdown/crepe/theme/frame.css";
-@import "https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css";
+
 
 /* Force dark mode via class strategy */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -21,20 +21,41 @@
 }
 
 :root {
-    --background: #f4f7fa;
-    --foreground: #1e293b;
+    /* Softer Light Mode Palette */
+    --background: #f8f9fc; /* Was #ffffff - now slight cool grey tint */
+    --foreground: #0f172a; /* Slate 900 */
+    
     --card: #ffffff;
-    --card-foreground: #1e293b;
-    --border: #e2e8f0;
-    --muted: #f8fafc;
-    --muted-foreground: #64748b;
-    --accent: #f59e0b;
-    --accent-foreground: #ffffff;
+    --card-foreground: #0f172a;
+    
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    
+    --primary: #0f172a;
+    --primary-foreground: #f8fafc;
+    
+    --secondary: #f1f5f9; /* Slate 100 - softer secondary */
+    --secondary-foreground: #0f172a;
+    
+    --muted: #f8fafc; /* Slate 50 - very subtle muted */
+    --muted-foreground: #64748b; /* Slate 500 */
+    
+    --accent: #f1f5f9; /* Slate 100 */
+    --accent-foreground: #0f172a;
+    
+    --destructive: #ef4444;
+    --destructive-foreground: #f8fafc;
 
+    --border: #e2e8f0; /* Slate 200 - softer borders */
+    --input: #e2e8f0;
+    --ring: #0f172a;
+    
+    --radius: 0.75rem;
+    
     --grit-gradient: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
     --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
     --ai-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-    --subtle-gradient: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    --subtle-gradient: linear-gradient(135deg, #f8f9fc 0%, #f1f5f9 100%);
 
     --shadow-color: 226 32% 17%;
     --shadow-elevation-low:
@@ -784,6 +805,69 @@ h6.font-outfit {
     cursor: default;
 }
 
+/* Dark mode styles for Milkdown */
+.dark .milkdown-paper .milkdown {
+    --crepe-color-background: #1e293b;
+    --crepe-color-on-background: #f1f5f9;
+    --crepe-color-surface: #334155;
+    --crepe-color-surface-low: #475569;
+    --crepe-color-on-surface: #e2e8f0;
+    --crepe-color-on-surface-variant: #cbd5e1;
+    --crepe-color-outline: #64748b;
+    --crepe-color-primary: #60a5fa;
+    --crepe-color-secondary: #64748b;
+    --crepe-color-on-secondary: #f8fafc;
+    --crepe-color-inverse: #f8fafc;
+    --crepe-color-on-inverse: #1e293b;
+    --crepe-color-inline-code: #f87171;
+    --crepe-color-error: #f87171;
+    --crepe-color-hover: #475569;
+    --crepe-color-selected: #64748b;
+    --crepe-color-inline-area: #475569;
+    background:
+        radial-gradient(1200px 500px at 20% 0%, rgba(30, 41, 59, 0.9), transparent 60%),
+        linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid #334155;
+}
+
+.dark .milkdown-paper .ProseMirror {
+    color: #e2e8f0;
+}
+
+.dark .milkdown-paper .ProseMirror h1,
+.dark .milkdown-paper .ProseMirror h2,
+.dark .milkdown-paper .ProseMirror h3 {
+    color: #f1f5f9;
+}
+
+.dark .milkdown-paper .ProseMirror p {
+    color: #e2e8f0;
+}
+
+.dark .milkdown-paper .ProseMirror li {
+    color: #e2e8f0;
+}
+
+.dark .milkdown-paper .ProseMirror blockquote {
+    color: #cbd5e1;
+    border-left-color: #64748b;
+}
+
+.dark .milkdown-paper .ProseMirror code {
+    background-color: #334155;
+    color: #f87171;
+}
+
+.dark .milkdown-paper .ProseMirror pre {
+    background-color: #1e293b;
+    border-color: #334155;
+}
+
+.dark .milkdown-paper .ProseMirror pre code {
+    background-color: transparent;
+    color: #e2e8f0;
+}
+
 .custom-scrollbar::-webkit-scrollbar-track {
     background: rgba(0, 0, 0, 0.02);
     border-radius: 10px;
@@ -864,20 +948,22 @@ h6.font-outfit {
   font-size: 1.1em;
 }
 
-.milkdown table {
-  border-collapse: collapse;
+/* Table Styles - Enhanced selectors */
+.milkdown table, .milkdown-paper table {
   width: 100%;
   margin: 1.5em 0;
   overflow: hidden;
   border-radius: 0.5rem;
   border: 1px solid theme('colors.slate.200');
+  border-collapse: separate; 
+  border-spacing: 0;
 }
 
-.dark .milkdown table {
+.dark .milkdown table, .dark .milkdown-paper table {
   border-color: theme('colors.slate.700');
 }
 
-.milkdown th {
+.milkdown th, .milkdown-paper th {
   background-color: theme('colors.slate.50');
   font-weight: 600;
   text-align: left;
@@ -885,22 +971,82 @@ h6.font-outfit {
   border-bottom: 1px solid theme('colors.slate.200');
 }
 
-.dark .milkdown th {
+.dark .milkdown th, .dark .milkdown-paper th {
   background-color: theme('colors.slate.800');
   border-bottom-color: theme('colors.slate.700');
   color: theme('colors.slate.200');
 }
 
-.milkdown td {
+.milkdown td, .milkdown-paper td {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid theme('colors.slate.100');
+  color: theme('colors.slate.700'); /* Better contrast */
 }
 
-.dark .milkdown td {
+.dark .milkdown td, .dark .milkdown-paper td {
   border-bottom-color: theme('colors.slate.800');
   color: theme('colors.slate.300');
 }
 
-.milkdown tr:last-child td {
+.milkdown tr:last-child td, .milkdown-paper tr:last-child td {
   border-bottom: none;
+}
+
+/* Table styles for AI responses - Better contrast on gradient backgrounds */
+.ai-response .milkdown .ProseMirror table,
+.ai-response .milkdown-paper .ProseMirror table,
+.ai-response .milkdown table,
+.ai-response .milkdown-paper table {
+  border-color: theme('colors.indigo.300') !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(8px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.dark .ai-response .milkdown .ProseMirror table,
+.dark .ai-response .milkdown-paper .ProseMirror table,
+.dark .ai-response .milkdown table,
+.dark .ai-response .milkdown-paper table {
+  border-color: theme('colors.indigo.600') !important;
+  background-color: rgba(30, 41, 59, 0.95) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.ai-response .milkdown .ProseMirror th,
+.ai-response .milkdown-paper .ProseMirror th,
+.ai-response .milkdown th,
+.ai-response .milkdown-paper th {
+  background-color: theme('colors.indigo.600') !important;
+  color: theme('colors.white') !important;
+  border-bottom-color: theme('colors.indigo.400') !important;
+  font-weight: 700 !important;
+}
+
+.dark .ai-response .milkdown .ProseMirror th,
+.dark .ai-response .milkdown-paper .ProseMirror th,
+.dark .ai-response .milkdown th,
+.dark .ai-response .milkdown-paper th {
+  background-color: theme('colors.indigo.800') !important;
+  color: theme('colors.white') !important;
+  border-bottom-color: theme('colors.indigo.600') !important;
+}
+
+.ai-response .milkdown .ProseMirror td,
+.ai-response .milkdown-paper .ProseMirror td,
+.ai-response .milkdown td,
+.ai-response .milkdown-paper td {
+  color: theme('colors.slate.900') !important;
+  border-bottom-color: theme('colors.indigo.200') !important;
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  font-weight: 500 !important;
+}
+
+.dark .ai-response .milkdown .ProseMirror td,
+.dark .ai-response .milkdown-paper .ProseMirror td,
+.dark .ai-response .milkdown td,
+.dark .ai-response .milkdown-paper td {
+  color: theme('colors.slate.100') !important;
+  border-bottom-color: theme('colors.indigo.700') !important;
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  font-weight: 500 !important;
 }

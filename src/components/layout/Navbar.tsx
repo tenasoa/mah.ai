@@ -218,7 +218,7 @@ export function Navbar({
                 <>
                   <CreditBalance />
                   <NotificationBell />
-                  <div className="ml-2">
+                  <div className="ml-1">
                     <ProfileDropdown user={user} isExpanded={true} isAdmin={isAdmin} />
                   </div>
                 </>

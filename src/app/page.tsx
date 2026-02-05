@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { SupportWorkflow } from "@/components/support/SupportWorkflow";
+import { createClient } from "@/lib/supabase/client";
 
 // ─── DONNÉES ───
 
@@ -131,25 +132,38 @@ function LandingPageContent() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
     setMounted(true);
     
-    // Ouvrir la modal si paramètre auth=open (redirection depuis /auth)
-    if (searchParams.get("auth") === "open") {
-      setIsAuthModalOpen(true);
-      // Nettoyer l'URL
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, "", newUrl);
-    }
+    // Vérifier si l'utilisateur est connecté et rediriger
+    const checkAuthAndRedirect = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Utilisateur connecté, rediriger vers /subjects
+        router.replace('/subjects');
+        return;
+      }
+      
+      // Ouvrir la modal si paramètre auth=open (redirection depuis /auth)
+      if (searchParams.get("auth") === "open") {
+        setIsAuthModalOpen(true);
+        // Nettoyer l'URL
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, "", newUrl);
+      }
+      
+      if (searchParams.get("logout") === "true") {
+        toast("Déconnexion réussie. À bientôt !", "success");
+        // Nettoyer l'URL
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, "", newUrl);
+      }
+    };
     
-    if (searchParams.get("logout") === "true") {
-      toast("Déconnexion réussie. À bientôt !", "success");
-      // Nettoyer l'URL
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, "", newUrl);
-    }
-  }, [searchParams, toast]);
+    checkAuthAndRedirect();
+  }, [searchParams, toast, router]);
 
   // Typewriter effect
   useEffect(() => {
