@@ -117,6 +117,7 @@ export interface SubjectCard {
   view_count: number;
   has_access?: boolean;
   status?: SubjectStatus;
+  uploaded_by?: string | null;
 }
 
 // =====================================================
@@ -132,6 +133,7 @@ export interface SubjectFilters {
   is_free?: boolean;
   search?: string;
   status?: SubjectStatus | SubjectStatus[];
+  uploaded_by?: string;
 }
 
 export interface SubjectSortOptions {

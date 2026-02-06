@@ -129,6 +129,7 @@ export const processContent = (
   // 5) Nettoyage final léger.
   cleaned = cleaned
     .replace(/\*\*\s*(\$\$[\s\S]*?\$\$|\$(?:\\.|[^$\n\\])+\$)\s*\*\*/g, "$1")
+    .replace(/([^\n])\s*(\|[^\n]+\|\n\s*\|\s*[-:| ]+\|(?:\n\s*\|[^\n]+\|)*)/g, "$1\n\n$2\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 

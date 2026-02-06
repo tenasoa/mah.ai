@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
-  Sparkles,
   Edit3,
   Save,
+  Copy,
   BookOpen,
   Layout,
   Columns,
@@ -19,13 +19,12 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import {
-  createSubjectQuestion,
   listSubjectQuestions,
 } from "@/app/actions/reader";
-import { askSocraticTutor } from "@/app/actions/perplexity";
 import {
   saveSubjectMarkdown,
   updateSubjectStatus,
+  duplicateSubject,
 } from "@/app/actions/subjects";
 import { addGritPoints } from "@/app/actions/grit";
 import { SocraticModal } from "./SocraticModal";
@@ -36,9 +35,10 @@ import { MilkdownEditor } from "@/components/ui/MilkdownEditor";
 import { getUserCreditsAndSubscriptionClient } from "@/lib/credits-client";
 import { createClient } from "@/lib/supabase/client";
 import { SubjectStatus } from "@/lib/types/subject";
-import { useTheme } from "@/components/providers/ThemeProvider";
 import { SubjectComments } from "./SubjectComments";
 import { processContent } from "@/lib/content-processor";
+import { EXAM_TYPE_LABELS, type ExamType } from "@/lib/types/subject";
+import { SubjectMetadataEditor } from "./SubjectMetadataEditor";
 
 interface SubjectReaderProps {
   subjectId: string;
@@ -48,14 +48,20 @@ interface SubjectReaderProps {
   forceEdit?: boolean;
   userRoles?: string[];
   initialStatus?: string;
+  metadata?: {
+    exam_type: ExamType;
+    year: number;
+    matiere_display: string;
+    serie?: string | null;
+    niveau?: string | null;
+    is_free?: boolean;
+    concours_type?: string;
+  };
 }
 
 type QuestionMessage = {
   id: string;
-  role: "user" | "assistant";
-  content: string;
   text?: string; // Ajout pour compatibilité
-  timestamp: Date;
 };
 
 export function SubjectReader({
@@ -66,21 +72,14 @@ export function SubjectReader({
   forceEdit = false,
   userRoles = [],
   initialStatus = "published",
+  metadata,
 }: SubjectReaderProps) {
   const router = useRouter();
   const supabase = createClient();
-  const { theme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  const [content, setContent] = useState(initialContent || "");
   const [markdownContent, setMarkdownContent] = useState(initialContent || "");
   const [isEditing, setIsEditing] = useState(forceEdit);
   const [isSaving, setIsSaving] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [status, setStatus] = useState<SubjectStatus>(
-    initialStatus as SubjectStatus,
-  );
-  const [questions, setQuestions] = useState<QuestionMessage[]>([]);
   const [showSocraticModal, setShowSocraticModal] = useState(false);
   const [viewMode, setViewMode] = useState<"single" | "split" | "full">(
     "single",
@@ -97,6 +96,8 @@ export function SubjectReader({
   const [showValidationBox, setShowValidationBox] = useState(false);
   const [validationComment, setValidationComment] = useState("");
   const [isValidating, setIsValidating] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
+  const [showMetadataEditor, setShowMetadataEditor] = useState(false);
 
   // États pour les notifications et messages
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -106,9 +107,8 @@ export function SubjectReader({
   const [showComments, setShowComments] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     if (title) {
-      document.title = `${title} | Mah.ai`;
+      document.title = `${title} | mah.ai`;
     }
   }, [title]);
 
@@ -159,6 +159,10 @@ export function SubjectReader({
         setToastTone("success");
         setToastMessage(`Statut mis à jour : ${status}`);
         setShowValidationBox(false);
+        if (status === "published") {
+          router.push("/admin/subjects?status=pending&mine=1");
+          return;
+        }
       } else {
         setToastTone("error");
         setToastMessage(result.error || "Erreur de mise à jour");
@@ -290,6 +294,8 @@ export function SubjectReader({
       if (result.success) {
         showToast("Sujet mis à jour avec succès");
         setIsEditing(false);
+        router.push("/admin/subjects?status=pending&mine=1");
+        return;
       } else {
         showToast(result.error || "Erreur lors de la sauvegarde", "error");
       }
@@ -301,6 +307,22 @@ export function SubjectReader({
   };
 
   const handleBack = () => router.push("/subjects");
+
+  const handleDuplicate = async () => {
+    try {
+      setIsDuplicating(true);
+      const result = await duplicateSubject(subjectId);
+      if (result.data) {
+        router.push(`/subjects/${result.data.id}?edit=true`);
+        return;
+      }
+      showToast(result.error || "Impossible de dupliquer ce sujet", "error");
+    } catch {
+      showToast("Erreur lors de la duplication", "error");
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
 
   // Handlers pour les nouvelles fonctionnalités
   const handleDownloadPDF = async () => {
@@ -489,13 +511,29 @@ export function SubjectReader({
 
           {canEdit && (
             !isEditing ? (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="px-3 sm:px-4 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs sm:text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-1.5 sm:gap-2 transition-all shadow-sm whitespace-nowrap"
-              >
-                <Edit3 className="w-3.5 h-3.5 sm:w-4 h-4" />
-                <span>Modifier</span>
-              </button>
+              <>
+                <button
+                  onClick={handleDuplicate}
+                  disabled={isDuplicating}
+                  className="px-3 sm:px-4 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs sm:text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-1.5 sm:gap-2 transition-all shadow-sm whitespace-nowrap disabled:opacity-50"
+                >
+                  <Copy className="w-3.5 h-3.5 sm:w-4 h-4" />
+                  <span>{isDuplicating ? "Duplication..." : "Dupliquer"}</span>
+                </button>
+                <button
+                  onClick={() => setShowMetadataEditor((value) => !value)}
+                  className="px-3 sm:px-4 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs sm:text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-1.5 sm:gap-2 transition-all shadow-sm whitespace-nowrap"
+                >
+                  <span>Métadonnées</span>
+                </button>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="px-3 sm:px-4 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs sm:text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-1.5 sm:gap-2 transition-all shadow-sm whitespace-nowrap"
+                >
+                  <Edit3 className="w-3.5 h-3.5 sm:w-4 h-4" />
+                  <span>Modifier</span>
+                </button>
+              </>
             ) : (
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <button
@@ -525,6 +563,26 @@ export function SubjectReader({
       <div className={`flex-1 overflow-hidden flex relative ${isZen ? "bg-white dark:bg-slate-900" : "bg-slate-100 dark:bg-slate-950"}`}>
         {/* Main Workspace */}
         <div className={`flex-1 flex overflow-hidden ${isZen ? "gap-0 p-0" : "gap-4 p-4"}`}>
+          {!isEditing && showMetadataEditor && metadata && (
+            <div className="absolute top-4 left-4 right-4 z-20 max-h-[40vh] overflow-y-auto">
+              <SubjectMetadataEditor
+                subjectId={subjectId}
+                initialTitle={title}
+                initialExamType={metadata.exam_type}
+                initialYear={metadata.year}
+                initialMatiereDisplay={metadata.matiere_display}
+                initialSerie={metadata.serie}
+                initialNiveau={metadata.niveau}
+                initialIsFree={metadata.is_free}
+                initialConcoursType={metadata.concours_type}
+                examTypeEntries={Object.entries(EXAM_TYPE_LABELS).map(([value, label]) => ({
+                  value: value as ExamType,
+                  label,
+                }))}
+              />
+            </div>
+          )}
+
           {/* Editor Panel */}
           {isEditing && (
             <div
