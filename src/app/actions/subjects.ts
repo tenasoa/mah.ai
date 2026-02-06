@@ -74,7 +74,8 @@ export async function getSubjects(params: GetSubjectsParams = {}): Promise<{
         is_free,
         credit_cost,
         view_count,
-        status
+        status,
+        uploaded_by
       `,
         { count: 'exact' }
       );
@@ -154,6 +155,10 @@ export async function getSubjects(params: GetSubjectsParams = {}): Promise<{
           type: 'websearch',
           config: 'french',
         });
+      }
+
+      if (filters.uploaded_by) {
+        query = query.eq('uploaded_by', filters.uploaded_by);
       }
     }
 
@@ -401,11 +406,16 @@ export async function getSubjectById(id: string): Promise<{
       // 1. Check if user is admin (Automatic access)
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('roles')
         .eq('id', user.id)
         .single();
-      
-      if (profile?.role === 'admin') {
+
+      const roles = (profile?.roles as string[]) || [];
+      if (
+        roles.includes('admin') ||
+        roles.includes('superadmin') ||
+        roles.includes('validator')
+      ) {
         hasAccess = true;
       } 
       // 2. Check regular access if not admin and not free
@@ -501,7 +511,10 @@ export async function saveSubjectMarkdown(
       .maybeSingle();
 
     const roles = (profile?.roles as string[]) || [];
-    const isAdmin = roles.includes('admin') || roles.includes('superadmin');
+    const isAdmin =
+      roles.includes('admin') ||
+      roles.includes('superadmin') ||
+      roles.includes('validator');
     const isContributor = roles.includes('contributor');
 
     if (isAdmin) {
@@ -530,7 +543,7 @@ export async function saveSubjectMarkdown(
 
       const { error } = await supabase
         .from('subjects')
-        .update({ content_markdown: content, updated_at: new Date().toISOString(), status: 'draft' })
+        .update({ content_markdown: content, updated_at: new Date().toISOString(), status: 'pending' })
         .eq('id', id);
 
       if (error) return { success: false, error: error.message };
@@ -538,10 +551,220 @@ export async function saveSubjectMarkdown(
       return { success: false, error: 'Permission refusée' };
     }
 
+    revalidatePath('/admin/subjects');
+    revalidatePath(`/subjects/${id}`);
     return { success: true, error: null };
   } catch (err) {
     console.error('Error saving markdown:', err);
     return { success: false, error: 'Erreur lors de la sauvegarde' };
+  }
+}
+
+const slugifyMatiere = (label: string): string =>
+  label
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+export async function updateSubjectMetadata(
+  id: string,
+  params: {
+    title: string;
+    exam_type: ExamType;
+    year: number;
+    matiere_display: string;
+    level?: string;
+    concours_type?: string;
+    serie_departement?: string;
+    is_free?: boolean;
+  },
+): Promise<{ success: boolean; error: string | null }> {
+  const supabase = await createClient();
+
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Authentification requise' };
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('roles')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const roles = (profile?.roles as string[]) || [];
+    const isAdminLike =
+      roles.includes('admin') ||
+      roles.includes('superadmin') ||
+      roles.includes('validator');
+    const isContributor = roles.includes('contributor');
+
+    if (!isAdminLike && !isContributor) {
+      return { success: false, error: 'Permission refusée' };
+    }
+
+    const { data: subject } = await supabase
+      .from('subjects')
+      .select('uploaded_by, status, exam_metadata')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!subject) {
+      return { success: false, error: 'Sujet introuvable' };
+    }
+
+    if (isContributor && !isAdminLike) {
+      if (subject.uploaded_by !== user.id) {
+        return { success: false, error: 'Permission refusée' };
+      }
+
+      if (subject.status === 'published') {
+        return {
+          success: false,
+          error: 'Impossible de modifier les métadonnées d’un sujet publié',
+        };
+      }
+    }
+
+    const level = params.level?.trim() || '';
+    const concoursType = params.concours_type?.trim() || '';
+    const serieDepartement = params.serie_departement?.trim() || '';
+
+    const nextExamMetadata: Record<string, any> = {
+      ...(subject.exam_metadata || {}),
+    };
+
+    if (level) {
+      nextExamMetadata.level = level;
+    } else {
+      delete nextExamMetadata.level;
+    }
+
+    if (concoursType) {
+      nextExamMetadata.concours_type = concoursType;
+    } else {
+      delete nextExamMetadata.concours_type;
+    }
+
+    if (serieDepartement) {
+      nextExamMetadata.serie_departement = serieDepartement;
+    } else {
+      delete nextExamMetadata.serie_departement;
+    }
+
+    const nextStatus = isAdminLike ? subject.status : 'pending';
+
+    const { error } = await supabase
+      .from('subjects')
+      .update({
+        title: params.title,
+        exam_type: params.exam_type,
+        year: params.year,
+        matiere_display: params.matiere_display,
+        matiere: slugifyMatiere(params.matiere_display),
+        serie: serieDepartement || null,
+        niveau: level || null,
+        is_free: Boolean(params.is_free),
+        exam_metadata: nextExamMetadata,
+        status: nextStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/admin/subjects');
+    revalidatePath(`/subjects/${id}`);
+    return { success: true, error: null };
+  } catch (err) {
+    console.error('Error updating metadata:', err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Erreur lors de la mise à jour',
+    };
+  }
+}
+
+export async function duplicateSubject(
+  sourceId: string,
+): Promise<{ data: Subject | null; error: string | null }> {
+  const supabase = await createClient();
+
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { data: null, error: 'Authentification requise' };
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('roles')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const roles = (profile?.roles as string[]) || [];
+    const canDuplicate =
+      roles.includes('admin') ||
+      roles.includes('superadmin') ||
+      roles.includes('validator') ||
+      roles.includes('contributor');
+
+    if (!canDuplicate) {
+      return { data: null, error: 'Permission refusée' };
+    }
+
+    const { data: source, error: sourceError } = await supabase
+      .from('subjects')
+      .select(
+        'title, description, exam_type, year, session, matiere, matiere_display, serie, niveau, exam_metadata, content_markdown, content_html, thumbnail_url, preview_text, is_free, credit_cost, tags'
+      )
+      .eq('id', sourceId)
+      .maybeSingle();
+
+    if (sourceError) {
+      return { data: null, error: sourceError.message };
+    }
+
+    if (!source) {
+      return { data: null, error: 'Sujet source introuvable' };
+    }
+
+    const { data, error } = await supabase
+      .from('subjects')
+      .insert({
+        ...source,
+        title: `${source.title} (copie)`,
+        status: 'draft',
+        uploaded_by: user.id,
+        view_count: 0,
+      })
+      .select('*')
+      .maybeSingle();
+
+    if (error) {
+      return { data: null, error: error.message };
+    }
+
+    revalidatePath('/admin/subjects');
+    return { data, error: null };
+  } catch (err) {
+    console.error('Error duplicating subject:', err);
+    return {
+      data: null,
+      error: err instanceof Error ? err.message : 'Erreur lors de la duplication',
+    };
   }
 }
 
@@ -583,7 +806,10 @@ export async function createSubject(params: {
 
     const roles = (profile?.roles as string[]) || [];
     const isContributor = roles.includes('contributor');
-    const isAdmin = roles.includes('admin') || roles.includes('superadmin');
+    const isAdmin =
+      roles.includes('admin') ||
+      roles.includes('superadmin') ||
+      roles.includes('validator');
 
     if (!isContributor && !isAdmin) {
       return { data: null, error: 'Permission refusée' };
@@ -707,7 +933,10 @@ export async function deleteSubject(id: string): Promise<{ success: boolean; err
       .maybeSingle();
 
     const roles = (profile?.roles as string[]) || [];
-    const isAdmin = roles.includes('admin') || roles.includes('superadmin');
+    const isAdmin =
+      roles.includes('admin') ||
+      roles.includes('superadmin') ||
+      roles.includes('validator');
 
     if (!isAdmin) return { success: false, error: 'Permission refusée' };
 
@@ -719,7 +948,11 @@ export async function deleteSubject(id: string): Promise<{ success: boolean; err
     // Soft delete : on change le statut au lieu de supprimer la ligne
     const { error } = await supabaseAdmin
       .from('subjects')
-      .update({ status: 'deleted', updated_at: new Date().toISOString() })
+      .update({
+        status: 'rejected',
+        revision_comment: 'Sujet supprimé depuis le catalogue maître',
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', id);
 
     if (error) return { success: false, error: error.message };

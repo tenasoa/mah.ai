@@ -112,6 +112,31 @@ export function PersistentLayout({ children }: PersistentLayoutProps) {
 
   const isReaderRoute = pathname?.startsWith("/subjects/") && pathname !== "/subjects";
 
+  useEffect(() => {
+    if (!pathname || isReaderRoute) return;
+
+    const titles: Record<string, string> = {
+      "/dashboard": "Dashboard",
+      "/subjects": "Catalogue des sujets",
+      "/chat": "Messages",
+      "/credits": "Crédits",
+      "/profile": "Profil",
+      "/admin": "Administration",
+      "/admin/users": "Admin · Utilisateurs",
+      "/admin/subjects": "Admin · Catalogue maître",
+      "/admin/tickets": "Admin · Demandes",
+      "/admin/settings": "Admin · Paramètres",
+      "/faq": "FAQ",
+    };
+
+    const matchingPrefix = Object.keys(titles)
+      .filter((route) => pathname.startsWith(route))
+      .sort((a, b) => b.length - a.length)[0];
+
+    const pageTitle = matchingPrefix ? titles[matchingPrefix] : "mah.ai";
+    document.title = `${pageTitle} | mah.ai`;
+  }, [pathname, isReaderRoute]);
+
   if (isExcluded) {
     return <>{children}</>;
   }

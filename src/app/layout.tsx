@@ -23,7 +23,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "mah.ai - Votre Tuteur IA Socratique",
+  title: {
+    default: "mah.ai - Votre Tuteur IA Socratique",
+    template: "%s | mah.ai",
+  },
   description: "Préparez vos examens avec l'excellence de l'IA communautaire.",
 };
 

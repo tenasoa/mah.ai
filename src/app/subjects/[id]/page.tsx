@@ -45,7 +45,7 @@ export async function generateMetadata({
   }
 
   const examLabel = EXAM_TYPE_LABELS[data.exam_type] || "Examen";
-  const fullTitle = `${data.matiere_display} - ${examLabel} ${data.year} | Mah.ai`;
+  const fullTitle = `${data.matiere_display} - ${examLabel} ${data.year}`;
   const description =
     data.description ||
     `Révise le sujet ${data.matiere_display} ${examLabel} ${data.year} sur Mah.ai. ${data.is_free ? "Gratuit. " : ""}Questions et corrections avec IA Socratique.`;
@@ -171,6 +171,15 @@ export default async function SubjectDetailPage({ params, searchParams }: PagePr
           forceEdit={resolvedSearchParams.edit === 'true'}
           userRoles={(userProfile?.roles as string[]) || []}
           initialStatus={data.status}
+          metadata={{
+            exam_type: data.exam_type,
+            year: data.year,
+            matiere_display: data.matiere_display,
+            serie: data.serie,
+            niveau: data.niveau,
+            is_free: data.is_free,
+            concours_type: data.exam_metadata?.concours_type,
+          }}
         />
       </div>
     );
