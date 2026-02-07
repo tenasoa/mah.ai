@@ -14,6 +14,7 @@ export function EmailPasswordForm() {
   const [classe, setClasse] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isReset, setIsReset] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +32,13 @@ export function EmailPasswordForm() {
     setMessage(null);
 
     try {
-      if (isSignUp) {
+      if (isReset) {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard/profile/settings`,
+        });
+        if (error) throw error;
+        setMessage('Un email de réinitialisation vous a été envoyé.');
+      } else if (isSignUp) {
         const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -52,7 +59,7 @@ export function EmailPasswordForm() {
         });
         if (signInError) throw signInError;
         startTransition(() => {
-          const next = searchParams.get('next') || '/dashboard';
+          const next = searchParams.get('next') || searchParams.get('redirect') || '/dashboard';
           router.push(next);
         });
       }
@@ -94,7 +101,7 @@ export function EmailPasswordForm() {
 
       <form onSubmit={handleAuth} className="space-y-4">
         {/* Additional Signup Fields */}
-        {isSignUp && (
+        {isSignUp && !isReset && (
           <div className="space-y-4 animate-slide-down">
             <div className="space-y-2">
               <label htmlFor="pseudo" className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
@@ -181,48 +188,55 @@ export function EmailPasswordForm() {
         </div>
 
         {/* Password Field */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label htmlFor="password" className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-              <Lock className="w-3.5 h-3.5" />
-              Mot de passe
-            </label>
-            {!isSignUp && (
+        {!isReset && (
+          <div className="space-y-2 animate-slide-down">
+            <div className="flex items-center justify-between">
+              <label htmlFor="password" className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                <Lock className="w-3.5 h-3.5" />
+                Mot de passe
+              </label>
+              {!isSignUp && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsReset(true);
+                    setError(null);
+                    setMessage(null);
+                  }}
+                  className="text-xs text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 font-medium transition-colors"
+                >
+                  Mot de passe oublié ?
+                </button>
+              )}
+            </div>
+            <div className="relative group">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                className="w-full px-4 py-3.5 pr-12 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white dark:focus:bg-slate-800 focus:border-amber-400 focus:ring-4 focus:ring-amber-100 hover:border-slate-300 dark:hover:border-slate-600"
+                placeholder="••••••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                disabled={isLoading}
+              />
               <button
                 type="button"
-                className="text-xs text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 font-medium transition-colors"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-1"
+                tabIndex={-1}
               >
-                Mot de passe oublié ?
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
-            )}
+            </div>
           </div>
-          <div className="relative group">
-            <input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete={isSignUp ? 'new-password' : 'current-password'}
-              className="w-full px-4 py-3.5 pr-12 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white dark:focus:bg-slate-800 focus:border-amber-400 focus:ring-4 focus:ring-amber-100 hover:border-slate-300 dark:hover:border-slate-600"
-              placeholder="••••••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              disabled={isLoading}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-1"
-              tabIndex={-1}
-            >
-              {showPassword ? (
-                <EyeOff className="w-4 h-4" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* Submit Button */}
         <button
@@ -233,11 +247,16 @@ export function EmailPasswordForm() {
           {isLoading ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              <span>{isSignUp ? 'Création...' : 'Connexion...'}</span>
+              <span>{isReset ? 'Envoi...' : isSignUp ? 'Création...' : 'Connexion...'}</span>
             </>
           ) : (
             <>
-              {isSignUp ? (
+              {isReset ? (
+                <>
+                  <Mail className="w-5 h-5" />
+                  <span>Envoyer l'email</span>
+                </>
+              ) : isSignUp ? (
                 <>
                   <UserPlus className="w-5 h-5" />
                   <span>S'inscrire</span>
@@ -255,26 +274,39 @@ export function EmailPasswordForm() {
       </form>
 
       {/* Toggle Auth Mode */}
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
+      {!isReset && (
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
+          </div>
+          <div className="relative flex justify-center">
+            <span className="bg-white dark:bg-slate-900 px-4 text-sm text-slate-400">ou</span>
+          </div>
         </div>
-        <div className="relative flex justify-center">
-          <span className="bg-white dark:bg-slate-900 px-4 text-sm text-slate-400">ou</span>
-        </div>
-      </div>
+      )}
 
       <button
         type="button"
         onClick={() => {
-          setIsSignUp(!isSignUp);
-          setError(null);
-          setMessage(null);
+          if (isReset) {
+            setIsReset(false);
+            setError(null);
+            setMessage(null);
+          } else {
+            setIsSignUp(!isSignUp);
+            setError(null);
+            setMessage(null);
+          }
         }}
         disabled={isLoading}
         className="w-full py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-semibold transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 disabled:opacity-50"
       >
-        {isSignUp ? (
+        {isReset ? (
+          <>
+            <ArrowRight className="w-5 h-5 rotate-180" />
+            <span>Retour à la connexion</span>
+          </>
+        ) : isSignUp ? (
           <>
             <LogIn className="w-5 h-5" />
             <span>J'ai déjà un compte</span>

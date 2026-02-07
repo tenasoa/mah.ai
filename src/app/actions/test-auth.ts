@@ -4,6 +4,10 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
 export async function loginForTest() {
+  if (process.env.NODE_ENV === 'production' && process.env.ENABLE_TEST_AUTH !== 'true') {
+    return { error: 'Fonction de test désactivée en production' };
+  }
+
   const supabase = await createClient();
 
   // Sign in anonymously (requires anonymous sign-ins enabled in Supabase)

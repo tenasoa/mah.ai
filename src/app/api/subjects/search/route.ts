@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const searchQuery = query.trim();
 
     // Try full-text search first
-    let { data: subjects, error } = await supabase
+    const { data: initialSubjects, error } = await supabase
       .from('subjects')
       .select(
         `
@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
       })
       .order('view_count', { ascending: false })
       .limit(limit);
+    let subjects = initialSubjects;
 
     // Fallback to ILIKE search if FTS returns no results or errors
     if (error || !subjects || subjects.length === 0) {

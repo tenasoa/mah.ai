@@ -13,6 +13,7 @@ import {
   Coffee
 } from "lucide-react";
 import { submitSupportPayment } from "@/app/actions/payment";
+import { useToast } from "@/components/ui/Toast";
 
 interface SupportWorkflowProps {
   type: 'coffee' | 'major';
@@ -20,6 +21,7 @@ interface SupportWorkflowProps {
 }
 
 type Step = 'method' | 'instructions' | 'success';
+type PaymentMethod = 'mvola' | 'orange' | 'airtel';
 
 export function SupportWorkflow({ type, onClose }: SupportWorkflowProps) {
   const configs = {
@@ -42,10 +44,11 @@ export function SupportWorkflow({ type, onClose }: SupportWorkflowProps) {
   const config = configs[type];
 
   const [step, setStep] = useState<Step>('method');
-  const [method, setMethod] = useState<'mvola' | 'orange' | 'airtel' | null>(null);
+  const [method, setMethod] = useState<PaymentMethod | null>(null);
   const [amount, setAmount] = useState(config.amount);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -65,7 +68,10 @@ export function SupportWorkflow({ type, onClose }: SupportWorkflowProps) {
     });
 
     if (result.success) {
-      setStep('success');
+      toast("Merci pour ton soutien. Ton don a bien été enregistré.", "success", 5000);
+      onClose();
+      setLoading(false);
+      return;
     } else {
       setError(result.error || "Une erreur est survenue");
     }
@@ -81,6 +87,17 @@ export function SupportWorkflow({ type, onClose }: SupportWorkflowProps) {
     orange: { display: "032 17 560 02", raw: "0321756002" },
     airtel: { display: "033 00 000 00", raw: "0330000000" }, // Mock data, actual might differ
   };
+  const paymentOptions: Array<{
+    id: PaymentMethod;
+    name: string;
+    color: string;
+    text: string;
+    disabled: boolean;
+  }> = [
+    { id: 'mvola', name: 'Mvola', color: 'bg-[#00A1E4]', text: 'text-white', disabled: false },
+    { id: 'orange', name: 'Orange Money', color: 'bg-[#FF6600]', text: 'text-white', disabled: false },
+    { id: 'airtel', name: 'Airtel Money', color: 'bg-[#E11900]', text: 'text-white', disabled: true },
+  ];
 
   const Icon = config.icon;
 
@@ -155,16 +172,12 @@ export function SupportWorkflow({ type, onClose }: SupportWorkflowProps) {
               </div>
 
               <div className="grid grid-cols-1 gap-3">
-                {[
-                  { id: 'mvola', name: 'Mvola', color: 'bg-[#00A1E4]', text: 'text-white', disabled: false },
-                  { id: 'orange', name: 'Orange Money', color: 'bg-[#FF6600]', text: 'text-white', disabled: false },
-                  { id: 'airtel', name: 'Airtel Money', color: 'bg-[#E11900]', text: 'text-white', disabled: true },
-                ].map((op) => (
+                {paymentOptions.map((op) => (
                   <button
                     key={op.id}
                     onClick={() => {
                       if (op.disabled) return;
-                      setMethod(op.id as any);
+                      setMethod(op.id);
                       setStep('instructions');
                     }}
                     disabled={op.disabled}
@@ -189,6 +202,12 @@ export function SupportWorkflow({ type, onClose }: SupportWorkflowProps) {
                   </button>
                 ))}
               </div>
+
+              {error && (
+                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 text-xs text-red-700 dark:text-red-300">
+                  {error}
+                </div>
+              )}
             </div>
           )}
 
@@ -229,6 +248,12 @@ export function SupportWorkflow({ type, onClose }: SupportWorkflowProps) {
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "J'ai effectué le transfert"}
               </button>
+
+              {error && (
+                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 text-xs text-red-700 dark:text-red-300">
+                  {error}
+                </div>
+              )}
             </div>
           )}
 

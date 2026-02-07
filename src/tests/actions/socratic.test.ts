@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { askSocraticTutor, getSocraticHistory } from '@/app/actions/socratic';
 import { createClient } from '@/lib/supabase/server';
 
-// Mock Supabase
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }));
@@ -19,22 +18,113 @@ vi.mock('@/app/actions/grit', () => ({
   addGritPoints: vi.fn().mockResolvedValue({ success: true }),
 }));
 
+type MockOptions = {
+  user?: { id: string } | null;
+  subject?: { is_free: boolean; uploaded_by: string | null } | null;
+  roles?: string[];
+  hasPurchasedAccess?: boolean;
+  history?: Array<{
+    user_message: string;
+    ai_response: string;
+    created_at: string;
+    insisted_for_answer: boolean;
+  }>;
+};
+
+function buildMockSupabase(options: MockOptions = {}) {
+  const {
+    user = { id: 'user-123' },
+    subject = { is_free: true, uploaded_by: 'author-999' },
+    roles = [],
+    hasPurchasedAccess = false,
+    history = [],
+  } = options;
+
+  return {
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user } }),
+    },
+    from: vi.fn().mockImplementation((table: string) => {
+      if (table === 'subjects') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: subject, error: null }),
+            }),
+          }),
+        };
+      }
+
+      if (table === 'profiles') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: { roles }, error: null }),
+            }),
+          }),
+        };
+      }
+
+      if (table === 'user_subject_access') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                or: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: hasPurchasedAccess ? { id: 'access-123' } : null,
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          }),
+        };
+      }
+
+      if (table === 'socratic_exchanges') {
+        return {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  order: vi.fn().mockReturnValue({
+                    limit: vi.fn().mockResolvedValue({ data: history, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        };
+      }
+
+      return {
+        select: vi.fn(),
+      };
+    }),
+  };
+}
+
 describe('Socratic Actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.PERPLEXITY_API_KEY = 'test-key';
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        choices: [
-          {
-            message: {
-              content: 'Quelle piste de réflexion as-tu déjà explorée sur ce concept ?',
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          choices: [
+            {
+              message: {
+                content: 'Quelle piste de réflexion as-tu déjà explorée sur ce concept ?',
+              },
             },
-          },
-        ],
+          ],
+        }),
       }),
-    }));
+    );
   });
 
   afterEach(() => {
@@ -42,13 +132,10 @@ describe('Socratic Actions', () => {
   });
 
   describe('askSocraticTutor', () => {
-    it('should return error if user is not authenticated', async () => {
-      const mockSupabase = {
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
-        },
-      };
-      (createClient as any).mockReturnValue(mockSupabase);
+    it('retourne auth_required si non authentifié', async () => {
+      (createClient as any).mockResolvedValue(
+        buildMockSupabase({ user: null }),
+      );
 
       const result = await askSocraticTutor({
         subjectId: 'subject-123',
@@ -59,26 +146,14 @@ describe('Socratic Actions', () => {
       expect(result).toEqual({ data: null, error: 'auth_required' });
     });
 
-    it('should return error if user has no access to subject', async () => {
-      // TODO: Réactiver ce test une fois la vérification d'accès réintégrée
-      const mockSupabase = {
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ 
-            data: { user: { id: 'user-123' } } 
-          }),
-        },
-        from: vi.fn().mockImplementation(() => ({
-          insert: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({ 
-                data: null, 
-                error: null 
-              }),
-            }),
-          }),
-        })),
-      };
-      (createClient as any).mockReturnValue(mockSupabase);
+    it('retourne access_denied si utilisateur sans accès', async () => {
+      (createClient as any).mockResolvedValue(
+        buildMockSupabase({
+          subject: { is_free: false, uploaded_by: 'author-999' },
+          roles: ['student'],
+          hasPurchasedAccess: false,
+        }),
+      );
 
       const result = await askSocraticTutor({
         subjectId: 'subject-123',
@@ -86,60 +161,15 @@ describe('Socratic Actions', () => {
         questionText: 'Quelle est la force nucléaire forte ?',
       });
 
-      // Temporairement, le test vérifie que l'IA répond même sans vérification d'accès
-      expect(result.data?.response).toContain('piste de réflexion');
-      expect(result.error).toBeNull();
+      expect(result).toEqual({ data: null, error: 'access_denied' });
     });
 
-    it('should return socratic response when user has access', async () => {
-      const mockSupabase = {
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ 
-            data: { user: { id: 'user-123' } } 
-          }),
-        },
-        from: vi.fn().mockImplementation((table: string) => {
-          if (table === 'user_access') {
-            return {
-              select: vi.fn().mockReturnValue({
-                or: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    eq: vi.fn().mockReturnValue({
-                      single: vi.fn().mockResolvedValue({ 
-                        data: { id: 'access-123' } 
-                      }),
-                    }),
-                  }),
-                }),
-              }),
-            };
-          }
-          if (table === 'socratic_exchanges') {
-            return {
-              insert: vi.fn().mockReturnValue({
-                select: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({ 
-                    data: null, 
-                    error: null 
-                  }),
-                }),
-              }),
-            };
-          }
-          return {
-            select: vi.fn().mockReturnValue({
-              or: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    single: vi.fn().mockResolvedValue({ data: null }),
-                  }),
-                }),
-              }),
-            }),
-          };
+    it('retourne une réponse socratique quand le sujet est accessible', async () => {
+      (createClient as any).mockResolvedValue(
+        buildMockSupabase({
+          subject: { is_free: true, uploaded_by: 'author-999' },
         }),
-      };
-      (createClient as any).mockReturnValue(mockSupabase);
+      );
 
       const result = await askSocraticTutor({
         subjectId: 'subject-123',
@@ -151,55 +181,12 @@ describe('Socratic Actions', () => {
       expect(result.error).toBeNull();
     });
 
-    it('should handle insist for answer correctly', async () => {
-      const mockSupabase = {
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ 
-            data: { user: { id: 'user-123' } } 
-          }),
-        },
-        from: vi.fn().mockImplementation((table: string) => {
-          if (table === 'user_access') {
-            return {
-              select: vi.fn().mockReturnValue({
-                or: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    eq: vi.fn().mockReturnValue({
-                      single: vi.fn().mockResolvedValue({ 
-                        data: { id: 'access-123' } 
-                      }),
-                    }),
-                  }),
-                }),
-              }),
-            };
-          }
-          if (table === 'socratic_exchanges') {
-            return {
-              insert: vi.fn().mockReturnValue({
-                select: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({ 
-                    data: null, 
-                    error: null 
-                  }),
-                }),
-              }),
-            };
-          }
-          return {
-            select: vi.fn().mockReturnValue({
-              or: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  eq: vi.fn().mockReturnValue({
-                    single: vi.fn().mockResolvedValue({ data: null }),
-                  }),
-                }),
-              }),
-            }),
-          };
+    it('gère insistForAnswer sans erreur', async () => {
+      (createClient as any).mockResolvedValue(
+        buildMockSupabase({
+          subject: { is_free: true, uploaded_by: 'author-999' },
         }),
-      };
-      (createClient as any).mockReturnValue(mockSupabase);
+      );
 
       const result = await askSocraticTutor({
         subjectId: 'subject-123',
@@ -214,20 +201,16 @@ describe('Socratic Actions', () => {
   });
 
   describe('getSocraticHistory', () => {
-    it('should return error if user is not authenticated', async () => {
-      const mockSupabase = {
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
-        },
-      };
-      (createClient as any).mockReturnValue(mockSupabase);
+    it('retourne auth_required si non authentifié', async () => {
+      (createClient as any).mockResolvedValue(
+        buildMockSupabase({ user: null }),
+      );
 
       const result = await getSocraticHistory('subject-123', 'question-123');
-
       expect(result).toEqual({ data: [], error: 'auth_required' });
     });
 
-    it('should return user history when authenticated', async () => {
+    it('retourne l’historique si authentifié', async () => {
       const mockHistory = [
         {
           user_message: 'Question test',
@@ -237,33 +220,11 @@ describe('Socratic Actions', () => {
         },
       ];
 
-      const mockSupabase = {
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ 
-            data: { user: { id: 'user-123' } } 
-          }),
-        },
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  order: vi.fn().mockReturnValue({
-                    limit: vi.fn().mockResolvedValue({ 
-                      data: mockHistory, 
-                      error: null 
-                    }),
-                  }),
-                }),
-              }),
-            }),
-          }),
-        }),
-      };
-      (createClient as any).mockReturnValue(mockSupabase);
+      (createClient as any).mockResolvedValue(
+        buildMockSupabase({ history: mockHistory }),
+      );
 
       const result = await getSocraticHistory('subject-123', 'question-123');
-
       expect(result.data).toEqual(mockHistory);
       expect(result.error).toBeNull();
     });

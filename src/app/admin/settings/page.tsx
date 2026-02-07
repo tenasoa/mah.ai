@@ -3,14 +3,10 @@ import { AdminSidebarWrapper } from "@/components/layout/AdminSidebarWrapper";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { 
-  Settings, 
   Save, 
   Coins, 
-  Lock, 
   Globe, 
-  AlertTriangle,
-  Zap,
-  Star
+  AlertTriangle
 } from "lucide-react";
 
 export default async function AdminSettingsPage() {
@@ -99,7 +95,7 @@ export default async function AdminSettingsPage() {
             <div className="flex items-center justify-between p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border border-slate-100 dark:border-slate-800">
               <div>
                 <p className="font-bold text-slate-900 dark:text-white">Mode Maintenance</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Désactive l'accès à l'application pour les élèves.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Désactive l&apos;accès à l&apos;application pour les élèves.</p>
               </div>
               <form action={async () => {
                 'use server';
@@ -116,7 +112,7 @@ export default async function AdminSettingsPage() {
               <div>
                 <p className="text-sm font-black text-amber-900 dark:text-amber-400 uppercase tracking-tight">Zone de danger</p>
                 <p className="text-xs text-amber-700 dark:text-amber-500 mt-1 leading-relaxed">
-                  Modifier ces paramètres affecte immédiatement tous les utilisateurs. Soyez vigilant lors de la mise à jour des prix ou de l'activation de la maintenance.
+                  Modifier ces paramètres affecte immédiatement tous les utilisateurs. Soyez vigilant lors de la mise à jour des prix ou de l&apos;activation de la maintenance.
                 </p>
               </div>
             </div>

@@ -651,41 +651,55 @@ h6.font-outfit {
 
 /* Milkdown Math Support */
 .milkdown-paper .katex {
-  font-size: 1em !important;
+  font-size: 1.1em !important;
+  color: inherit !important;
 }
 
 .milkdown-paper .katex-display {
   margin: 1em 0 !important;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .milkdown-paper .ProseMirror .math-inline {
   display: inline-block !important;
   margin: 0 2px !important;
+  vertical-align: middle;
 }
 
 .milkdown-paper .ProseMirror .math-block {
   display: block !important;
   margin: 1em 0 !important;
   text-align: center !important;
+  min-height: 2em; /* Ensure visible even if empty */
 }
 
 /* Forcer le rendu des équations dans Milkdown */
 .milkdown-readonly .ProseMirror [data-milkdown="math"] {
   display: inline-block !important;
   background: rgba(99, 102, 241, 0.1) !important;
-  padding: 2px 4px !important;
+  padding: 0 4px !important;
   border-radius: 4px !important;
-  font-family: 'KaTeX_Main', 'Times New Roman', serif !important;
 }
 
 .milkdown-readonly .ProseMirror [data-milkdown="math-block"] {
   display: block !important;
   background: rgba(99, 102, 241, 0.05) !important;
-  padding: 8px !important;
+  padding: 12px !important;
   border-radius: 8px !important;
-  margin: 1em 0 !important;
+  margin: 1.5em 0 !important;
   text-align: center !important;
-  font-family: 'KaTeX_Main', 'Times New Roman', serif !important;
+  overflow-x: auto;
+}
+
+/* Fix text color in math blocks in dark mode */
+.dark .milkdown-paper .katex {
+  color: #e2e8f0 !important;
+}
+
+.dark .milkdown-paper .math-inline,
+.dark .milkdown-paper .math-block {
+  color: #e2e8f0 !important;
 }
 
 /* Stagger animations for lists */

@@ -62,14 +62,14 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     const uniqueExercisesCount = new Set(exercises?.map(ex => ex.question_id)).size;
 
     // 3. Get pending subject requests count
-    const { count: pendingRequests, error: requestsError } = await supabase
+    const { count: pendingRequests } = await supabase
       .from('subject_requests')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .eq('status', 'pending');
 
     // 4. Get rank
-    const { count: higherScores, error: rankError } = await supabase
+    const { count: higherScores } = await supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true })
       .gt('grit_score', gritScore);

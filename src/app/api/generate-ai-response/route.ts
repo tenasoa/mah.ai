@@ -2,30 +2,46 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { generatePerplexityResponse, PERPLEXITY_CONFIG } from '@/lib/perplexity';
 
+type ResponseType = 'direct' | 'detailed';
+
+function isResponseType(value: unknown): value is ResponseType {
+  return value === 'direct' || value === 'detailed';
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { subjectContent, responseType, userId } = await request.json();
-
-    // Vérifier les crédits de l'utilisateur
     const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Authentification requise' }, { status: 401 });
+    }
+
+    const payload = await request.json();
+    const subjectContent = typeof payload.subjectContent === 'string' ? payload.subjectContent : '';
+    const responseType = payload.responseType;
+    const subjectId = typeof payload.subjectId === 'string' ? payload.subjectId : null;
+
+    if (!subjectContent.trim()) {
+      return NextResponse.json({ error: 'Le contenu du sujet est requis' }, { status: 400 });
+    }
+
+    if (!isResponseType(responseType)) {
+      return NextResponse.json({ error: 'Type de réponse invalide' }, { status: 400 });
+    }
+
     const { data: profile } = await supabase
       .from('profiles')
-      .select('credits_balance, subscription_status')
-      .eq('id', userId)
+      .select('subscription_status')
+      .eq('id', user.id)
       .single();
 
     if (!profile) {
       return NextResponse.json(
         { error: 'Utilisateur non trouvé' },
         { status: 404 }
-      );
-    }
-
-    // Vérifier si l'utilisateur a les crédits nécessaires
-    if (profile.subscription_status !== 'premium' && profile.credits_balance < 10) {
-      return NextResponse.json(
-        { error: 'Crédits insuffisants' },
-        { status: 402 }
       );
     }
 
@@ -81,27 +97,32 @@ Le sujet présenté nécessite une approche méthodique. Voici la décomposition
 
       // Sauvegarder la réponse simulée
       await supabase.from("ai_responses").insert({
-        user_id: userId,
+        user_id: user.id,
+        subject_id: subjectId,
         subject_content: subjectContent,
         response_type: responseType,
         response: mockResponse,
-        credits_used: profile.subscription_status === 'premium' ? 0 : 10,
+        credits_used: 0,
         model_used: 'perplexity-simulated',
         created_at: new Date().toISOString()
       });
 
       return NextResponse.json({
         response: mockResponse,
-        creditsUsed: profile.subscription_status === 'premium' ? 0 : 10
+        creditsUsed: 0
       });
     }
 
-    // Appeler l'API Perplexity
+    let creditsUsed = 0;
     let aiResponse: string;
+    let isPerplexityFallback = false;
+
+    // Appeler l'API Perplexity d'abord; le débit ne se fait qu'après succès réel.
     try {
       aiResponse = await generatePerplexityResponse(subjectContent, responseType);
     } catch (perplexityError) {
       console.error('Erreur Perplexity:', perplexityError);
+      isPerplexityFallback = true;
       
       // En cas d'erreur Perplexity, fournir une réponse de secours
       aiResponse = `**Erreur lors de l'appel à Perplexity**
@@ -120,20 +141,63 @@ ${perplexityError instanceof Error ? perplexityError.message : 'Erreur inconnue'
 Pour le sujet fourni, une analyse approfondie serait nécessaire avec une méthodologie structurée et des explications détaillées.`;
     }
 
+    // Déduire les crédits uniquement si la génération IA a réellement réussi.
+    if (!isPerplexityFallback && profile.subscription_status !== 'premium') {
+      const actionType = responseType === 'direct' ? 'AI_RESPONSE_COMPLETE' : 'AI_RESPONSE_DETAILED';
+      const { data: consumeData, error: consumeError } = await supabase.rpc('check_and_consume_credits', {
+        p_user_id: user.id,
+        p_action_type: actionType,
+        p_metadata: {
+          subject_id: subjectId,
+          response_type: responseType,
+        },
+      });
+
+      if (consumeError) {
+        return NextResponse.json(
+          { error: 'Erreur lors de la validation des crédits' },
+          { status: 500 }
+        );
+      }
+
+      const consumeResult = (
+        Array.isArray(consumeData) ? consumeData[0] : consumeData
+      ) as { success: boolean; error?: string; cost?: number } | null;
+
+      if (!consumeResult?.success) {
+        const insufficientCredits = consumeResult?.error === 'INSUFFICIENT_CREDITS';
+        return NextResponse.json(
+          {
+            error: insufficientCredits
+              ? 'Crédits insuffisants'
+              : consumeResult?.error || 'Erreur de paiement',
+          },
+          { status: insufficientCredits ? 402 : 400 }
+        );
+      }
+
+      creditsUsed = consumeResult.cost ?? 0;
+    }
+
     // Sauvegarder la réponse générée pour statistiques
-    await supabase.from("ai_responses").insert({
-      user_id: userId,
+    const { error: saveError } = await supabase.from("ai_responses").insert({
+      user_id: user.id,
+      subject_id: subjectId,
       subject_content: subjectContent,
       response_type: responseType,
       response: aiResponse,
-      credits_used: profile.subscription_status === 'premium' ? 0 : 10,
+      credits_used: creditsUsed,
       model_used: PERPLEXITY_CONFIG.model,
       created_at: new Date().toISOString()
     });
 
+    if (saveError) {
+      console.error('Erreur sauvegarde ai_responses:', saveError);
+    }
+
     return NextResponse.json({
       response: aiResponse,
-      creditsUsed: profile.subscription_status === 'premium' ? 0 : 10
+      creditsUsed
     });
 
   } catch (error) {

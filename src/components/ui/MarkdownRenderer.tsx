@@ -157,7 +157,6 @@ export function MarkdownRenderer({
             );
           },
           li({ children }) {
-            // eslint-disable-next-line jsx-a11y/no-li-without-preceding-ul-or-ol
             return (
               <li className="text-slate-900 dark:text-slate-100">{children}</li>
             );

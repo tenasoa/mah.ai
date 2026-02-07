@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 // Global event for message read updates
@@ -16,7 +16,7 @@ export const markMessageAsRead = async (messageId: string) => {
   try {
     await supabase
       .from("messages")
-      .update({ is_read: true, read_at: new Date().toISOString() })
+      .update({ is_read: true })
       .eq("id", messageId);
     
     // Dispatch event to update badges
@@ -35,7 +35,34 @@ export const markMessageAsRead = async (messageId: string) => {
 export function useMessageReadListener() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
+  const loadUnreadCount = useCallback(async () => {
+    if (!userId) return;
+
+    try {
+      const { data: conversations } = await supabase
+        .from("conversations")
+        .select("id");
+
+      const conversationIds = (conversations || []).map((conversation) => conversation.id);
+      if (conversationIds.length === 0) {
+        setUnreadCount(0);
+        return;
+      }
+
+      const { count } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .in("conversation_id", conversationIds)
+        .neq("sender_id", userId)
+        .eq("is_read", false);
+
+      setUnreadCount(count || 0);
+    } catch (error) {
+      console.error("Error loading unread count:", error);
+    }
+  }, [supabase, userId]);
 
   useEffect(() => {
     // Get current user
@@ -55,7 +82,7 @@ export function useMessageReadListener() {
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     if (!userId) return;
@@ -64,7 +91,7 @@ export function useMessageReadListener() {
     loadUnreadCount();
 
     // Listen for message read events
-    const handleMessageRead = (event: MessageReadEvent) => {
+    const handleMessageRead = () => {
       loadUnreadCount();
     };
 
@@ -79,7 +106,6 @@ export function useMessageReadListener() {
           event: "INSERT",
           schema: "public",
           table: "messages",
-          filter: `receiver_id=eq.${userId}`,
         },
         () => {
           loadUnreadCount();
@@ -91,7 +117,6 @@ export function useMessageReadListener() {
           event: "UPDATE",
           schema: "public",
           table: "messages",
-          filter: `receiver_id=eq.${userId}`,
         },
         () => {
           loadUnreadCount();
@@ -103,23 +128,7 @@ export function useMessageReadListener() {
       window.removeEventListener('message-read', handleMessageRead as EventListener);
       supabase.removeChannel(channel);
     };
-  }, [userId]);
-
-  const loadUnreadCount = async () => {
-    if (!userId) return;
-
-    try {
-      const { count } = await supabase
-        .from("messages")
-        .select("*", { count: "exact", head: true })
-        .eq("receiver_id", userId)
-        .eq("is_read", false);
-
-      setUnreadCount(count || 0);
-    } catch (error) {
-      console.error("Error loading unread count:", error);
-    }
-  };
+  }, [userId, loadUnreadCount, supabase]);
 
   return { unreadCount, markMessageAsRead };
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FileText, Plus } from "lucide-react";
 import { SubjectRequestModal } from "./SubjectRequestModal";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export function EmptyStateWithRequest({ searchQuery, isAuthenticated }: { searchQuery?: string; isAuthenticated: boolean }) {
   const [isModalOpen, setIsOpen] = useState(false);
@@ -40,12 +41,12 @@ export function EmptyStateWithRequest({ searchQuery, isAuthenticated }: { search
           Demander ce sujet
         </button>
         
-        <a
+        <Link
           href="/subjects"
           className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-100 text-slate-600 font-bold uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all"
         >
           Réinitialiser les filtres
-        </a>
+        </Link>
       </div>
 
       <SubjectRequestModal 

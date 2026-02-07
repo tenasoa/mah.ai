@@ -100,6 +100,11 @@ function SubjectCard({
           {subject.niveau && (
             <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 uppercase font-medium">{subject.niveau}</p>
           )}
+          <div className="mt-2 text-[10px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1">
+             <span className="truncate max-w-[100px]">{subject.profiles?.pseudo ? `Par ${subject.profiles.pseudo}` : 'Par Contributeur'}</span>
+             <span>•</span>
+             <span>{subject.created_at ? new Date(subject.created_at).toLocaleDateString() : 'Date inconnue'}</span>
+          </div>
         </div>
 
         {/* Footer */}

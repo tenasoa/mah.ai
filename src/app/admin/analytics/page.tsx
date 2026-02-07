@@ -20,11 +20,12 @@ export default async function AdminAnalyticsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, pseudo, avatar_url')
+    .select('roles, pseudo, avatar_url')
     .eq('id', user.id)
     .single();
 
-  if (profile?.role !== 'admin') redirect('/dashboard');
+  const roles = (profile?.roles as string[]) || [];
+  if (!roles.includes('admin') && !roles.includes('superadmin')) redirect('/dashboard');
 
   const { stats, error } = await getTrustGapAnalytics();
 

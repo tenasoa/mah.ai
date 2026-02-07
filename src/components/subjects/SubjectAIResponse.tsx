@@ -1,20 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   X,
   Bot,
   Loader2,
   Download,
   FileText,
-  CheckCircle2,
-  AlertTriangle,
   Eye,
   EyeOff,
   Copy,
 } from "lucide-react";
+import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-import { deductCreditsClient } from "@/lib/credits-client";
 import "katex/dist/katex.min.css";
 import { MilkdownEditor } from "@/components/ui/MilkdownEditor";
 import { useToast } from "@/components/ui/Toast";
@@ -26,8 +24,6 @@ interface SubjectAIResponseProps {
   subjectId: string;
   subjectTitle: string;
   subjectContent: string;
-  userCredits: number;
-  userSubscription: string;
 }
 
 export function SubjectAIResponse({
@@ -36,8 +32,6 @@ export function SubjectAIResponse({
   subjectId,
   subjectTitle,
   subjectContent,
-  userCredits,
-  userSubscription,
 }: SubjectAIResponseProps) {
   const [responseType, setResponseType] = useState<"direct" | "detailed">(
     "direct",
@@ -47,10 +41,10 @@ export function SubjectAIResponse({
   const [isDownloading, setIsDownloading] = useState(false);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   // Récupérer l'utilisateur actuel
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -67,7 +61,8 @@ export function SubjectAIResponse({
   const cleanAndFormatResponse = (response: string) =>
     processContent(response, true);
 
-  useEffect(() => {    if (!isGenerating || etaSeconds === null) return;
+  useEffect(() => {
+    if (!isGenerating || etaSeconds === null) return;
     const timer = setInterval(() => {
       setEtaSeconds((prev) => {
         if (prev === null) return prev;
@@ -92,8 +87,6 @@ export function SubjectAIResponse({
       setIsGenerating(true);
       setEtaSeconds(null);
 
-      const cost = responseType === "direct" ? 2 : 3;
-
       // Simuler un temps d'attente pour l'ETA (optionnel)
       const simulatedEta = Math.floor(Math.random() * 5) + 3;
       setEtaSeconds(simulatedEta);
@@ -110,7 +103,6 @@ export function SubjectAIResponse({
           subjectId,
           subjectContent,
           responseType,
-          userId: user.id, // Utiliser l'userId vérifié
         }),
       });
 
@@ -127,26 +119,11 @@ export function SubjectAIResponse({
       const cleanedResponse = cleanAndFormatResponse(data.response);
       setAiResponse(cleanedResponse);
 
-      // Déduire les crédits si nécessaire (uniquement pour les non-premium)
-      if (userSubscription !== "premium") {
-        // Récupérer l'utilisateur à jour pour s'assurer qu'il existe
-        const {
-          data: { user: currentUser },
-        } = await supabase.auth.getUser();
-
-        if (currentUser) {
-          const result = await deductCreditsClient(currentUser.id, cost);
-          if (!result.success) {
-            throw new Error(
-              result.error || "Erreur lors de la déduction des crédits",
-            );
-          }
-          // Afficher le toast de déduction de crédits
-          const creditText = `${cost} crédit${cost > 1 ? "s" : ""}`;
-          toast(`${creditText} ont été déduits de votre solde`, "info", 4000);
-        } else {
-          console.warn("Utilisateur non connecté, pas de déduction de crédits");
-        }
+      // La déduction est faite côté serveur; on affiche uniquement l'information.
+      const creditsUsed = Number(data.creditsUsed || 0);
+      if (creditsUsed > 0) {
+        const creditText = `${creditsUsed} crédit${creditsUsed > 1 ? "s" : ""}`;
+        toast(`${creditText} ont été déduits de votre solde`, "info", 4000);
       }
     } catch (error) {
       console.error("Erreur:", error);
@@ -355,7 +332,7 @@ export function SubjectAIResponse({
                 </label>
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
                   <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-2">
-                    📄 Sujet d'origine :
+                    📄 Sujet d&apos;origine :
                   </h4>
                   <MilkdownEditor
                     value={subjectContent}
@@ -372,7 +349,7 @@ export function SubjectAIResponse({
               <div className="mb-6">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    Réponse générée par l'IA
+                    Réponse générée par l&apos;IA
                   </label>
                   <div className="flex items-center gap-2">
                     <button

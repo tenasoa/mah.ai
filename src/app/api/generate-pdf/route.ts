@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import puppeteer from "puppeteer";
+import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -7,6 +8,18 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   let browser = null;
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Authentification requise" },
+        { status: 401 },
+      );
+    }
+
     const {
       subjectContent,
       subjectTitle,
@@ -90,219 +103,289 @@ export async function POST(request: NextRequest) {
   <link rel="stylesheet" href="https://unpkg.com/@milkdown/crepe@7.18.0/theme/common/style.css">
   <link rel="stylesheet" href="https://unpkg.com/@milkdown/crepe@7.18.0/theme/frame.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
-  
   <style>
+    /* Premium Design System */
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --secondary: #475569;
+      --accent: #f59e0b;
+      --success: #10b981;
+      --success-light: #ecfdf5;
+      --danger: #ef4444;
+      --danger-light: #fef2f2;
+      --surface: #ffffff;
+      --background: #f8fafc;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+    
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       line-height: 1.6;
-      color: #2c3e50;
-      background: white;
+      color: var(--text-main);
+      background: var(--background);
       padding: 40px;
       max-width: 210mm;
       margin: 0 auto;
     }
     
-    /* En-tête */
+    /* Elegant Header */
     .header {
       text-align: center;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 3px solid #3498db;
+      margin-bottom: 40px;
+      padding-bottom: 30px;
+      border-bottom: 2px solid var(--border);
+      position: relative;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 2px;
+      background: var(--primary);
     }
     
     .header .logo {
-      font-size: 18px;
-      font-weight: bold;
-      color: #3498db;
-      margin-bottom: 10px;
+      font-size: 24px;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 15px;
+      letter-spacing: -0.5px;
+      display: inline-block;
     }
     
     .header h1 {
-      font-size: 28px;
-      font-weight: 700;
-      color: #2c3e50;
-      margin: 10px 0;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin: 15px 0 10px;
+      line-height: 1.2;
     }
     
-    .header .subtitle {
-      font-size: 12px;
-      color: #7f8c8d;
-      font-style: italic;
-      margin: 5px 0;
+    .header .meta {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 15px;
+      font-size: 13px;
+      color: var(--text-muted);
     }
-    
-    /* Sections */
-    .section {
-      margin: 30px 0;
-      page-break-inside: avoid;
-    }
-    
-    .section-title {
+
+    .header .meta span {
       display: flex;
       align-items: center;
-      gap: 12px;
-      font-size: 16px;
-      font-weight: 700;
-      color: white;
-      background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-      padding: 12px 16px;
-      border-radius: 6px;
-      margin-bottom: 15px;
+      gap: 6px;
+      background: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      font-weight: 500;
+    }
+    
+    /* Section Cards */
+    .section {
+      margin: 30px 0;
+      break-inside: avoid;
+      background: white;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+    
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--background);
     }
     
     .section-number {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 28px;
-      height: 28px;
-      background: rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      font-weight: bold;
-      font-size: 12px;
-      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      background: var(--primary);
+      color: white;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    }
+    
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     .section-content {
-      background: #f8f9fa;
-      padding: 16px;
-      border-radius: 6px;
-      border-left: 4px solid #3498db;
+      padding: 24px;
     }
     
-    /* Typographie */
-    h1 { font-size: 24px; margin: 20px 0 10px; font-weight: 700; color: #2c3e50; }
-    h2 { font-size: 20px; margin: 18px 0 8px; font-weight: 700; color: #2c3e50; }
-    h3 { font-size: 16px; margin: 16px 0 8px; font-weight: 700; color: #2c3e50; }
-    h4 { font-size: 14px; margin: 14px 0 6px; font-weight: 700; color: #34495e; }
-    
-    p {
-      margin: 10px 0;
-      line-height: 1.8;
+    /* Special styling for User Answer */
+    #user-answer .section-header {
+      background: var(--primary-light);
     }
+    
+    #user-answer .section-number {
+      background: var(--text-main);
+    }
+
+    /* Special styling for AI Response */
+    [id^="ai-part"] .section-header {
+      background: linear-gradient(to right, #fdfbf7, #fff);
+    }
+
+    [id^="ai-part"] .section-number {
+      background: linear-gradient(135deg, var(--accent) 0%, #d97706 100%);
+    }
+    
+    /* Typography within Content */
+    h1, h2, h3, h4, h5, h6 {
+      color: var(--text-main);
+      font-weight: 700;
+      margin-top: 1.5em;
+      margin-bottom: 0.8em;
+    }
+    
+    h1 { font-size: 1.8em; border-bottom: 2px solid var(--primary-light); padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; }
+    h3 { font-size: 1.3em; }
+    
+    p { margin-bottom: 1em; text-align: justify; }
     
     ul, ol {
-      margin: 12px 0;
-      padding-left: 30px;
+      margin-bottom: 1em;
+      padding-left: 1.5em;
     }
     
-    li {
-      margin: 6px 0;
-      line-height: 1.6;
-    }
+    li { margin-bottom: 0.5em; }
     
-    strong, b {
-      font-weight: 700;
-      color: #2c3e50;
-    }
-    
-    em, i {
+    blockquote {
+      border-left: 4px solid var(--primary);
+      background: var(--primary-light);
+      padding: 1em;
+      border-radius: 0 8px 8px 0;
+      margin: 1.5em 0;
       font-style: italic;
-      color: #34495e;
     }
     
-    /* Code */
-    code {
-      background: #ecf0f1;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-family: 'Courier New', monospace;
-      font-size: 0.9em;
-      color: #c0392b;
-    }
-    
+    /* Code Blocks */
     pre {
-      background: #2c3e50;
-      color: #ecf0f1;
-      padding: 12px;
-      border-radius: 6px;
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 15px;
+      border-radius: 8px;
       overflow-x: auto;
-      border-left: 4px solid #3498db;
-      font-family: 'Courier New', monospace;
-      font-size: 12px;
-      line-height: 1.5;
-      margin: 10px 0;
+      margin: 1.5em 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9em;
     }
     
+    code {
+      background: var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9em;
+      color: #dc2626;
+    }
+
     pre code {
-      background: none;
+      background: transparent;
+      color: inherit;
       padding: 0;
-      color: #ecf0f1;
     }
     
     /* Tables */
     table {
-      border-collapse: collapse;
       width: 100%;
-      margin: 12px 0;
-      font-size: 0.95em;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: 1.5em 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
     }
     
     th, td {
-      border: 1px solid #bdc3c7;
-      padding: 8px;
-      text-align: left;
+      padding: 12px 15px;
+      border-bottom: 1px solid var(--border);
     }
     
     th {
-      background: #3498db;
-      color: white;
-      font-weight: 700;
+      background: var(--background);
+      font-weight: 600;
+      text-align: left;
     }
     
-    tr:nth-child(even) {
-      background: #ecf0f1;
+    tr:last-child td {
+      border-bottom: none;
+    }
+    
+    tr:hover td {
+      background: var(--primary-light);
     }
 
-    /* Sommaire (PDF anchors) */
-    .toc-link {
-      color: #3498db;
-      text-decoration: none;
-      font-weight: 600;
+    /* Math Formula Enhancement */
+    .katex-display {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px dashed var(--border);
+      margin: 1.5em 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
     
     /* Footer */
     .footer {
       text-align: center;
-      margin-top: 40px;
+      margin-top: 60px;
       padding-top: 20px;
-      border-top: 1px solid #bdc3c7;
-      color: #7f8c8d;
-      font-size: 10px;
-      line-height: 1.6;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    /* Print Tweaks */
+    @page {
+      margin: 20mm;
+    }
+
+    /* Helper Classes */
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
     }
     
-    .footer .logo {
-      font-size: 16px;
-      font-weight: bold;
-      color: #3498db;
-      margin-bottom: 8px;
-    }
-    
-    /* Saut de page */
-    .page-break {
-      page-break-before: always;
-    }
-    
-    /* Impression */
-    @media print {
-      body {
-        padding: 0;
-        max-width: 100%;
-      }
-      
-      .section {
-        page-break-inside: avoid;
-      }
-    }
+    .badge-primary { background: var(--primary-light); color: var(--primary); }
+    .badge-accent { background: #fffbeb; color: var(--accent); }
 
     /* Milkdown readonly */
     .milkdown-readonly .milkdown-toolbar {
@@ -360,19 +443,23 @@ export async function POST(request: NextRequest) {
   <div class="header">
     <div class="logo">🎓 MAH.AI</div>
     <h1>${escapeHtml(subjectTitle)}</h1>
-    <div class="subtitle">Généré le ${new Date().toLocaleDateString("fr-FR", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })}</div>
-    <div class="subtitle">Plateforme d'Apprentissage Intelligent - Votre Tuteur IA Socratique</div>
+    <div class="meta">
+      <span>
+        📅 ${new Date().toLocaleDateString("fr-FR", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })}
+      </span>
+      <span>🤖 Tuteur IA</span>
+      <span>📚 Document Pédagogique</span>
+    </div>
   </div>
   
   <div class="section">
-    <div class="section-title">
+    <div class="section-header">
       <div class="section-number">1</div>
-      📋 SUJET D'EXAMEN
+      <div class="section-title">Sujet d'Examen</div>
     </div>
     <div class="section-content">
       <div class="milkdown-paper milkdown-readonly">
@@ -384,10 +471,10 @@ export async function POST(request: NextRequest) {
   ${
     includeAnswer && userAnswer
       ? `
-  <div class="section page-break">
-    <div class="section-title">
+  <div class="section page-break" id="user-answer">
+    <div class="section-header">
       <div class="section-number">2</div>
-      ✍️ VOTRE RÉPONSE
+      <div class="section-title">Votre Réponse</div>
     </div>
     <div class="section-content">
       <div class="milkdown-paper milkdown-readonly">
@@ -404,9 +491,9 @@ export async function POST(request: NextRequest) {
       ? aiResponseParts.length > 1
         ? `
   <div class="section page-break" id="ai-summary">
-    <div class="section-title">
+    <div class="section-header">
       <div class="section-number">${includeAnswer ? 3 : 2}</div>
-      🧭 SOMMAIRE — RÉPONSE IA
+      <div class="section-title">Sommaire de la Correction</div>
     </div>
     <div class="section-content">
       <ul>
@@ -421,9 +508,9 @@ export async function POST(request: NextRequest) {
       const mdIndex = index + offset;
       return `
   <div class="section page-break" id="${section.id}">
-    <div class="section-title">
+    <div class="section-header">
       <div class="section-number">${section.number}</div>
-      ${section.title}
+      <div class="section-title">${section.title}</div>
     </div>
     <div class="section-content">
       <div class="milkdown-paper milkdown-readonly">
@@ -437,9 +524,9 @@ export async function POST(request: NextRequest) {
   `
         : `
   <div class="section page-break" id="ai-part-1">
-    <div class="section-title">
+    <div class="section-header">
       <div class="section-number">${includeAnswer ? 3 : 2}</div>
-      🤖 RÉPONSE IA
+      <div class="section-title">Correction & Analyse IA</div>
     </div>
     <div class="section-content">
       <div class="milkdown-paper milkdown-readonly">
@@ -453,14 +540,9 @@ export async function POST(request: NextRequest) {
   
   <div class="footer">
     <div class="logo">MAH.AI</div>
-    <p><strong>Document généré par Mah.ai</strong></p>
-    <p>Plateforme d'Apprentissage Intelligent</p>
-    <p style="margin-top: 10px; font-size: 9px; color: #95a5a6;">
-      Ce document est à usage personnel et pédagogique
-    </p>
-    <p style="margin-top: 8px; font-size: 9px; color: #95a5a6;">
-      © ${new Date().getFullYear()} Mah.ai - Tous droits réservés
-    </p>
+    <p><strong>Plateforme d'Apprentissage Intelligent</strong></p>
+    <p>Ce document a été généré automatiquement pour un usage pédagogique personnel.</p>
+    <p>© ${new Date().getFullYear()} Mah.ai - Tous droits réservés</p>
   </div>
   
   <script type="module">

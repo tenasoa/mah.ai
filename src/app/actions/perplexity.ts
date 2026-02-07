@@ -76,7 +76,7 @@ async function callPerplexityAPI(messages: Array<{ role: string; content: string
 
 export async function askSocraticTutor(params: SocraticRequest) {
   const supabase = await createClient();
-  const { subjectId, questionId, questionText, selectionRect, zoom, userMessage, insistForAnswer, markdownContext } = params;
+  const { subjectId, questionId, questionText, userMessage, insistForAnswer, markdownContext } = params;
 
   const {
     data: { user },
@@ -86,17 +86,50 @@ export async function askSocraticTutor(params: SocraticRequest) {
     return { data: null, error: 'auth_required' };
   }
 
-  // TODO: Réintégrer la vérification d'accès une fois les mocks corrigés
-  // const { data: access } = await supabase
-  //   .from('user_access')
-  //   .select('id')
-  //   .or(`subject_id.eq.${subjectId},is_permanent.eq.true`)
-  //   .eq('user_id', user.id)
-  //   .single();
+  // Vérification d'accès au sujet (gratuit, propriétaire, rôle privilégié ou accès acheté)
+  const { data: subject } = await supabase
+    .from('subjects')
+    .select('is_free, uploaded_by')
+    .eq('id', subjectId)
+    .maybeSingle();
 
-  // if (!access) {
-  //   return { data: null, error: 'access_denied' };
-  // }
+  if (!subject) {
+    return { data: null, error: 'subject_not_found' };
+  }
+
+  let hasAccess = Boolean(subject.is_free) || subject.uploaded_by === user.id;
+
+  if (!hasAccess) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('roles')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const roles = (profile?.roles as string[]) || [];
+    const isPrivileged =
+      roles.includes('admin') ||
+      roles.includes('superadmin') ||
+      roles.includes('validator');
+
+    hasAccess = isPrivileged;
+  }
+
+  if (!hasAccess) {
+    const { data: access } = await supabase
+      .from('user_subject_access')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('subject_id', subjectId)
+      .or('expires_at.is.null,expires_at.gt.now()')
+      .maybeSingle();
+
+    hasAccess = Boolean(access);
+  }
+
+  if (!hasAccess) {
+    return { data: null, error: 'access_denied' };
+  }
 
   try {
     // 1. Tenter de récupérer depuis le cache Redis

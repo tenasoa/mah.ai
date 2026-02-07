@@ -35,7 +35,7 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const resolvedParams = await params;
-  const { data } = await getSubjectById(resolvedParams.id);
+  const { data } = await getSubjectById(resolvedParams.id, { incrementView: false });
 
   if (!data) {
     return {
@@ -180,6 +180,8 @@ export default async function SubjectDetailPage({ params, searchParams }: PagePr
             is_free: data.is_free,
             concours_type: data.exam_metadata?.concours_type,
           }}
+          uploadedBy={data.uploaded_by}
+          currentUserId={user?.id}
         />
       </div>
     );

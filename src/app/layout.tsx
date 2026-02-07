@@ -5,7 +5,9 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { PersistentLayout } from "@/components/layout/PersistentLayout";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import { ToastProvider } from "@/components/ui/Toast";
+import { PwaRegistration } from "@/components/pwa/PwaRegistration";
 
 const calSans = localFont({
   src: [
@@ -44,7 +46,9 @@ export default function RootLayout({
         <ThemeProvider>
           <ToastProvider>
             <Suspense fallback={null}>
+              <PwaRegistration />
               <PersistentLayout>{children}</PersistentLayout>
+              <ChatWidget />
             </Suspense>
           </ToastProvider>
         </ThemeProvider>

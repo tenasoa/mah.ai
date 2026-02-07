@@ -4,14 +4,8 @@ import { createServerClient } from "@supabase/ssr";
 const DASHBOARD_PATH = "/subjects"; // Redirection vers la page des sujets
 const AUTH_PATH = "/auth";
 
-function getSafeRedirect(value: string | null) {
-  if (!value) return null;
-  if (!value.startsWith("/") || value.startsWith("//")) return null;
-  return value;
-}
-
 export default async function proxy(request: NextRequest) {
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request: {
       headers: request.headers,
     },
@@ -45,7 +39,6 @@ export default async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   const isRoot = pathname === "/";
-  const isAuthRoute = pathname.startsWith(AUTH_PATH);
   const isAdminRoute = pathname.startsWith("/admin");
   const isProtectedRoute =
     pathname.startsWith("/dashboard") ||
@@ -80,11 +73,13 @@ export default async function proxy(request: NextRequest) {
   if (user && isAdminRoute) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("roles")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (profile?.role !== "admin") {
+    const roles = (profile?.roles as string[]) || [];
+    const isAdmin = roles.includes("admin") || roles.includes("superadmin");
+    if (!isAdmin) {
       const url = request.nextUrl.clone();
       url.pathname = DASHBOARD_PATH;
       url.search = "";

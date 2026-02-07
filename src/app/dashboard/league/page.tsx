@@ -1,12 +1,27 @@
 import { getGritLeaderboard } from "@/app/actions/leaderboard";
+import { getSubjectMetadata } from "@/app/actions/subjects";
 import { Trophy, Flame, Star, Medal, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function LeaguePage() {
-  const leaderboard = await getGritLeaderboard();
+type LeaguePageProps = {
+  searchParams: Promise<{
+    matiere?: string;
+  }>;
+};
+
+export default async function LeaguePage({ searchParams }: LeaguePageProps) {
+  const resolvedSearchParams = await searchParams;
+  const selectedMatiere = resolvedSearchParams.matiere || "";
+  const leaderboard = await getGritLeaderboard(50, selectedMatiere || undefined);
+  const { data: metadata } = await getSubjectMetadata();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const selectedMatiereLabel =
+    metadata?.matieres.find((item) => item.value === selectedMatiere)?.label || "Toutes les matières";
+  const scoreLabel = selectedMatiere ? "Points matière" : "Score Grit";
+  const getDisplayedScore = (index: number) =>
+    selectedMatiere ? (leaderboard[index]?.matiere_points || 0) : (leaderboard[index]?.grit_score || 0);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -21,13 +36,50 @@ export default async function LeaguePage() {
           </Link>
           <div>
             <h1 className="text-3xl font-bold font-outfit tracking-tight text-slate-900 dark:text-white">Ligue Grit</h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium uppercase tracking-wider">Classement National</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium uppercase tracking-wider">
+              {selectedMatiere ? `Classement ${selectedMatiereLabel}` : "Classement National"}
+            </p>
           </div>
         </div>
         <div className="h-12 w-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shadow-inner">
           <Trophy className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
         </div>
       </div>
+
+      <form method="get" className="mah-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center gap-3">
+        <label htmlFor="matiere" className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+          Classement par matière
+        </label>
+        <div className="flex items-center gap-2 flex-1">
+          <select
+            id="matiere"
+            name="matiere"
+            defaultValue={selectedMatiere}
+            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200"
+          >
+            <option value="">Toutes les matières</option>
+            {(metadata?.matieres || []).map((matiere) => (
+              <option key={matiere.value} value={matiere.value}>
+                {matiere.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-indigo-700 transition-colors"
+          >
+            Filtrer
+          </button>
+          {selectedMatiere && (
+            <Link
+              href="/dashboard/league"
+              className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
+              Réinitialiser
+            </Link>
+          )}
+        </div>
+      </form>
 
       {/* Top 3 Podium (Visual) */}
       <div className="grid grid-cols-3 gap-4 items-end pt-10 pb-6 px-2">
@@ -44,7 +96,7 @@ export default async function LeaguePage() {
             </div>
             <div className="text-center">
               <p className="text-xs font-bold text-slate-900 dark:text-white truncate w-24">{leaderboard[1].pseudo}</p>
-              <p className="text-[10px] font-mono font-bold text-indigo-600/70 dark:text-indigo-300/80 uppercase">{leaderboard[1].grit_score} Grit</p>
+              <p className="text-[10px] font-mono font-bold text-indigo-600/70 dark:text-indigo-300/80 uppercase">{getDisplayedScore(1)} {selectedMatiere ? "pts" : "Grit"}</p>
             </div>
           </div>
         )}
@@ -69,7 +121,7 @@ export default async function LeaguePage() {
                 <Star className="w-2 h-2 fill-amber-600" />
                 Le Maître
               </div>
-              <p className="text-xs font-mono font-black text-amber-600 dark:text-amber-300 uppercase mt-1">{leaderboard[0].grit_score} Grit</p>
+              <p className="text-xs font-mono font-black text-amber-600 dark:text-amber-300 uppercase mt-1">{getDisplayedScore(0)} {selectedMatiere ? "pts" : "Grit"}</p>
             </div>
           </div>
         )}
@@ -87,7 +139,7 @@ export default async function LeaguePage() {
             </div>
             <div className="text-center">
               <p className="text-xs font-bold text-slate-900 dark:text-white truncate w-24">{leaderboard[2].pseudo}</p>
-              <p className="text-[10px] font-mono font-bold text-amber-600/80 dark:text-amber-300/80 uppercase">{leaderboard[2].grit_score} Grit</p>
+              <p className="text-[10px] font-mono font-bold text-amber-600/80 dark:text-amber-300/80 uppercase">{getDisplayedScore(2)} {selectedMatiere ? "pts" : "Grit"}</p>
             </div>
           </div>
         )}
@@ -96,14 +148,21 @@ export default async function LeaguePage() {
       {/* Full Ranking List */}
       <article className="mah-card p-0 overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20">
         <div className="px-6 py-4 bg-slate-50/50 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Top 50 Apprenants</h2>
+          <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+            Top 50 Apprenants
+          </h2>
           <div className="flex items-center gap-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">
-            <span>Score Grit</span>
+            <span>{scoreLabel}</span>
             <span className="w-16 text-right">Série</span>
           </div>
         </div>
 
         <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          {leaderboard.length === 0 && (
+            <div className="px-6 py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+              Aucun point enregistré pour cette matière pour le moment.
+            </div>
+          )}
           {leaderboard.map((entry, index) => {
             const isCurrentUser = user?.id === entry.id;
             return (
@@ -132,7 +191,7 @@ export default async function LeaguePage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-black font-mono text-slate-900 dark:text-white leading-none">
-                    {entry.grit_score}
+                    {selectedMatiere ? entry.matiere_points || 0 : entry.grit_score}
                   </p>
                 </div>
                 <div className="w-16 flex items-center justify-end gap-1.5">

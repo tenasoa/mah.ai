@@ -14,8 +14,8 @@ import {
   Minimize2,
   CheckCircle2,
   XCircle,
-  RotateCcw,
   MessageSquare,
+  BrainCircuit,
   AlertTriangle,
 } from "lucide-react";
 import {
@@ -39,6 +39,7 @@ import { SubjectComments } from "./SubjectComments";
 import { processContent } from "@/lib/content-processor";
 import { EXAM_TYPE_LABELS, type ExamType } from "@/lib/types/subject";
 import { SubjectMetadataEditor } from "./SubjectMetadataEditor";
+import { SubjectFlashcards } from "./SubjectFlashcards";
 
 interface SubjectReaderProps {
   subjectId: string;
@@ -57,11 +58,23 @@ interface SubjectReaderProps {
     is_free?: boolean;
     concours_type?: string;
   };
+  uploadedBy?: string | null;
+  currentUserId?: string | null;
 }
 
 type QuestionMessage = {
   id: string;
   text?: string; // Ajout pour compatibilité
+};
+
+type ReaderQuestionRow = {
+  id: string;
+  question_text?: string;
+};
+
+type ReaderQuestionsResult = {
+  data: ReaderQuestionRow[];
+  error?: string | null;
 };
 
 export function SubjectReader({
@@ -73,6 +86,8 @@ export function SubjectReader({
   userRoles = [],
   initialStatus = "published",
   metadata,
+  uploadedBy,
+  currentUserId: propUserId,
 }: SubjectReaderProps) {
   const router = useRouter();
   const supabase = createClient();
@@ -98,6 +113,7 @@ export function SubjectReader({
   const [isValidating, setIsValidating] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [showMetadataEditor, setShowMetadataEditor] = useState(false);
+  const [showFlashcards, setShowFlashcards] = useState(false);
 
   // États pour les notifications et messages
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -105,6 +121,15 @@ export function SubjectReader({
   const [isToastClosing, setIsToastClosing] = useState(false);
   const [messages, setMessages] = useState<QuestionMessage[]>([]);
   const [showComments, setShowComments] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(propUserId || null);
+
+  useEffect(() => {
+    async function fetchUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setCurrentUserId(user.id);
+    }
+    fetchUser();
+  }, [supabase]);
 
   useEffect(() => {
     if (title) {
@@ -119,7 +144,7 @@ export function SubjectReader({
 
   const canEdit = 
     canValidate || 
-    userRoles.includes("contributor");
+    (userRoles.includes("contributor") && !!currentUserId && currentUserId === uploadedBy);
 
   const showToast = (message: string, tone: "success" | "error" = "success") => {
     setToastTone(tone);
@@ -167,7 +192,7 @@ export function SubjectReader({
         setToastTone("error");
         setToastMessage(result.error || "Erreur de mise à jour");
       }
-    } catch (error) {
+    } catch {
       setToastTone("error");
       setToastMessage("Erreur serveur");
     } finally {
@@ -177,7 +202,6 @@ export function SubjectReader({
   };
 
   // Heartbeat State
-  const [lastHeartbeat, setLastHeartbeat] = useState(Date.now());
   const isActive = useRef(true);
 
   // Heartbeat Logic (Active Reading)
@@ -266,13 +290,12 @@ export function SubjectReader({
 
   useEffect(() => {
     let active = true;
-    listSubjectQuestions(subjectId).then((result: any) => {
+    listSubjectQuestions(subjectId).then((result: ReaderQuestionsResult) => {
       if (!active) return;
       if (!result.error) {
-        const mapped = result.data.map((item: any) => ({
+        const mapped = result.data.map((item) => ({
           id: item.id,
           text: item.question_text,
-          createdAt: item.created_at,
         }));
         setMessages(mapped);
       }
@@ -292,14 +315,19 @@ export function SubjectReader({
     try {
       const result = await saveSubjectMarkdown(subjectId, markdownContent);
       if (result.success) {
-        showToast("Sujet mis à jour avec succès");
+        if (currentStatus === "published" && !canValidate) {
+          showToast("Modifications enregistrées. Le sujet est renvoyé en validation.", "success");
+          setCurrentStatus("pending");
+        } else {
+          showToast("Sujet mis à jour avec succès");
+        }
         setIsEditing(false);
-        router.push("/admin/subjects?status=pending&mine=1");
+        // On ne redirige plus systématiquement pour permettre de voir le résultat
         return;
       } else {
         showToast(result.error || "Erreur lors de la sauvegarde", "error");
       }
-    } catch (error) {
+    } catch {
       showToast("Erreur de connexion", "error");
     } finally {
       setIsSaving(false);
@@ -491,6 +519,14 @@ export function SubjectReader({
             <MessageSquare className="w-5 h-5" />
           </button>
 
+          <button
+            onClick={() => setShowFlashcards(true)}
+            className="p-2 rounded-lg transition-all hover:bg-slate-100 text-slate-500"
+            title="Cartes mémoire IA"
+          >
+            <BrainCircuit className="w-5 h-5" />
+          </button>
+
           <div className="h-6 w-[1px] bg-slate-200 dark:bg-slate-800 mx-0.5 sm:mx-1" />
 
           {isEditing && (
@@ -522,7 +558,11 @@ export function SubjectReader({
                 </button>
                 <button
                   onClick={() => setShowMetadataEditor((value) => !value)}
-                  className="px-3 sm:px-4 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs sm:text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-1.5 sm:gap-2 transition-all shadow-sm whitespace-nowrap"
+                  className={`px-3 sm:px-4 py-1.5 border rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-sm whitespace-nowrap ${
+                    showMetadataEditor 
+                      ? "bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700" 
+                      : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  }`}
                 >
                   <span>Métadonnées</span>
                 </button>
@@ -536,6 +576,16 @@ export function SubjectReader({
               </>
             ) : (
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <button
+                  onClick={() => setShowMetadataEditor((value) => !value)}
+                  className={`px-3 sm:px-4 py-1.5 border rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-sm whitespace-nowrap ${
+                    showMetadataEditor 
+                      ? "bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700" 
+                      : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  }`}
+                >
+                  <span>Métadonnées</span>
+                </button>
                 <button
                   onClick={() => setIsEditing(false)}
                   className="px-2 sm:px-4 py-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs sm:text-sm font-medium whitespace-nowrap"
@@ -563,7 +613,7 @@ export function SubjectReader({
       <div className={`flex-1 overflow-hidden flex relative ${isZen ? "bg-white dark:bg-slate-900" : "bg-slate-100 dark:bg-slate-950"}`}>
         {/* Main Workspace */}
         <div className={`flex-1 flex overflow-hidden ${isZen ? "gap-0 p-0" : "gap-4 p-4"}`}>
-          {!isEditing && showMetadataEditor && metadata && (
+          {showMetadataEditor && metadata && (
             <div className="absolute top-4 left-4 right-4 z-20 max-h-[40vh] overflow-y-auto">
               <SubjectMetadataEditor
                 subjectId={subjectId}
@@ -579,6 +629,8 @@ export function SubjectReader({
                   value: value as ExamType,
                   label,
                 }))}
+                isPublished={currentStatus === "published"}
+                canValidate={canValidate}
               />
             </div>
           )}
@@ -588,6 +640,17 @@ export function SubjectReader({
             <div
               className={`${viewMode === "split" ? "w-1/2" : "w-full"} h-full flex flex-col bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800 overflow-hidden`}
             >
+              {currentStatus === "published" && !canValidate && (
+                <div className="px-6 py-3 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-800/50 flex items-center gap-3 animate-in slide-in-from-top duration-300">
+                  <div className="p-1.5 bg-amber-100 dark:bg-amber-900/40 rounded-lg text-amber-600 dark:text-amber-400">
+                    <AlertTriangle className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-black text-amber-900 dark:text-amber-200 uppercase tracking-tight">Modification d&apos;un sujet publié</p>
+                    <p className="text-[10px] font-medium text-amber-700 dark:text-amber-400 mt-0.5 opacity-80 italic">Une nouvelle validation sera requise après l&apos;enregistrement.</p>
+                  </div>
+                </div>
+              )}
               <div
                 ref={editorScrollRef}
                 onScroll={handleEditorScroll}
@@ -670,7 +733,6 @@ export function SubjectReader({
         subjectId={subjectId}
         subjectTitle={title}
         subjectContent={markdownContent}
-        userCredits={userCredits}
         userSubscription={userSubscription}
       />
 
@@ -681,8 +743,13 @@ export function SubjectReader({
         subjectId={subjectId}
         subjectTitle={title}
         subjectContent={markdownContent}
-        userCredits={userCredits}
-        userSubscription={userSubscription}
+      />
+
+      <SubjectFlashcards
+        isOpen={showFlashcards}
+        onClose={() => setShowFlashcards(false)}
+        subjectId={subjectId}
+        subjectContent={markdownContent}
       />
 
       {/* Floating Subject Actions */}

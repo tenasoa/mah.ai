@@ -57,6 +57,49 @@ const MilkdownEditorInner = forwardRef<MilkdownEditorHandle, MilkdownEditorProps
         });
       });
 
+      // Configure Image Upload
+      const uploadImage = async (file: File) => {
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          const response = await fetch("/api/upload-subject-image", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const body = await response.json().catch(() => null);
+            console.error("Upload Error:", body || response.statusText);
+             return null;
+          }
+
+          const body = (await response.json()) as { publicUrl?: string };
+          return body.publicUrl || null;
+        } catch (e) {
+          console.error('Upload Exception:', e);
+          return null;
+        }
+      };
+
+      // Try setting uploader if supported by Crepe API
+      // @ts-ignore - setUploader might be dynamic or missing in types
+      if (typeof crepe.setUploader === 'function') {
+        // @ts-ignore
+        crepe.setUploader(async (files: File[]) => {
+           const uploads = await Promise.all(files.map(async (file) => {
+              const url = await uploadImage(file);
+              if (!url) return null;
+              return { 
+                src: url, 
+                alt: file.name,
+                title: file.name 
+              };
+           }));
+           return uploads.filter(u => u !== null);
+        });
+      }
+
       return crepe;
     },
     [placeholder, readOnly]

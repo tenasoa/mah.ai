@@ -14,7 +14,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { deductCreditsClient } from "@/lib/credits-client";
 import { MilkdownEditor } from "@/components/ui/MilkdownEditor";
 import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import "katex/dist/katex.min.css";
@@ -25,7 +24,6 @@ interface SubjectResolverProps {
   subjectId: string;
   subjectTitle: string;
   subjectContent: string;
-  userCredits: number;
   userSubscription: string;
 }
 
@@ -52,7 +50,6 @@ export function SubjectResolver({
   subjectId,
   subjectTitle,
   subjectContent,
-  userCredits,
   userSubscription,
 }: SubjectResolverProps) {
   const [answer, setAnswer] = useState("");
@@ -108,7 +105,34 @@ export function SubjectResolver({
         const payload = await response.json();
         setGradingResult(payload.result || null);
       } else {
-        const finalAnswer = answerFile ? `[Fichier] ${answerFile.name}\n\n${answer}` : answer;
+        // Human correction
+        let fileUrl = "";
+        
+        if (answerFile && user?.id) {
+          const fileExt = answerFile.name.split(".").pop();
+          const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from("submissions")
+            .upload(fileName, answerFile);
+            
+          if (uploadError) {
+             console.error("Upload error:", uploadError);
+             // Verify if bucket exists or continue with just the name
+             // For now we throw to alert the user
+             throw new Error("Erreur lors de l'envoi du fichier. Veuillez réessayer.");
+          }
+          
+          const { data: { publicUrl } } = supabase.storage
+            .from("submissions")
+            .getPublicUrl(fileName);
+            
+          fileUrl = publicUrl;
+        }
+
+        const finalAnswer = answerFile 
+          ? `[Fichier joint](${fileUrl || answerFile.name})\n\n${answer}` 
+          : answer;
 
         await supabase.from("subject_submissions").insert({
           subject_id: subjectId,
@@ -120,17 +144,10 @@ export function SubjectResolver({
         });
       }
 
-      if (userSubscription !== "premium" && user?.id) {
-        const result = await deductCreditsClient(user.id, 5);
-        if (!result.success) {
-          throw new Error(result.error || "Erreur lors de la déduction des crédits");
-        }
-      }
-
       setSubmitted(true);
     } catch (error) {
       console.error("Erreur lors de la soumission:", error);
-      alert("Une erreur est survenue. Veuillez réessayer.");
+      alert(error instanceof Error ? error.message : "Une erreur est survenue. Veuillez réessayer.");
     } finally {
       setIsSubmitting(false);
     }

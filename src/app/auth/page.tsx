@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
 /**
@@ -11,11 +11,23 @@ import { Loader2 } from 'lucide-react';
  */
 export default function AuthPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Rediriger vers la landing page avec paramètre pour ouvrir la modal
-    router.replace('/?auth=open');
-  }, [router]);
+    const requestedPath = searchParams.get('next') || searchParams.get('redirect');
+    const safePath =
+      requestedPath && requestedPath.startsWith('/') && !requestedPath.startsWith('//')
+        ? requestedPath
+        : null;
+
+    const target = new URLSearchParams();
+    target.set('auth', 'open');
+    if (safePath) {
+      target.set('next', safePath);
+    }
+
+    router.replace(`/?${target.toString()}`);
+  }, [router, searchParams]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center transition-colors duration-300">

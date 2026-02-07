@@ -145,20 +145,24 @@ function LandingPageContent() {
         router.replace('/subjects');
         return;
       }
+
+      const clearParam = (param: string) => {
+        const url = new URL(window.location.href);
+        url.searchParams.delete(param);
+        const nextSearch = url.searchParams.toString();
+        const nextUrl = nextSearch ? `${url.pathname}?${nextSearch}` : url.pathname;
+        window.history.replaceState({}, "", nextUrl);
+      };
       
       // Ouvrir la modal si paramètre auth=open (redirection depuis /auth)
       if (searchParams.get("auth") === "open") {
         setIsAuthModalOpen(true);
-        // Nettoyer l'URL
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, "", newUrl);
+        clearParam("auth");
       }
       
       if (searchParams.get("logout") === "true") {
         toast("Déconnexion réussie. À bientôt !", "success");
-        // Nettoyer l'URL
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, "", newUrl);
+        clearParam("logout");
       }
     };
     

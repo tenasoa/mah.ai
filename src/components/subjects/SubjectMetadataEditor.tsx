@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Save } from "lucide-react";
+import { Save, AlertTriangle } from "lucide-react";
 import { updateSubjectMetadata } from "@/app/actions/subjects";
 import type { ExamType } from "@/lib/types/subject";
 
@@ -16,6 +16,8 @@ interface SubjectMetadataEditorProps {
   initialIsFree?: boolean;
   initialConcoursType?: string;
   examTypeEntries: Array<{ value: ExamType; label: string }>;
+  isPublished?: boolean;
+  canValidate?: boolean;
 }
 
 export function SubjectMetadataEditor({
@@ -29,6 +31,8 @@ export function SubjectMetadataEditor({
   initialIsFree,
   initialConcoursType,
   examTypeEntries,
+  isPublished = false,
+  canValidate = false,
 }: SubjectMetadataEditorProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -74,7 +78,15 @@ export function SubjectMetadataEditor({
   };
 
   return (
-    <form action={onSubmit} className="space-y-4 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+    <form action={onSubmit} className="space-y-4 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl animate-in zoom-in-95 duration-300">
+      {isPublished && !canValidate && (
+        <div className="p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-xl flex items-center gap-3">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+          <p className="text-[10px] font-bold text-amber-800 dark:text-amber-200 uppercase tracking-tight">
+            Attention : Ce sujet est publié. Modifier les métadonnées renverra le sujet en validation.
+          </p>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="space-y-1">
           <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
+import { awardContributionMilestones, tryAwardBadge } from './badges';
 import type {
   Subject,
   SubjectCard,
@@ -75,7 +76,8 @@ export async function getSubjects(params: GetSubjectsParams = {}): Promise<{
         credit_cost,
         view_count,
         status,
-        uploaded_by
+        uploaded_by,
+        created_at
       `,
         { count: 'exact' }
       );
@@ -189,25 +191,49 @@ export async function getSubjects(params: GetSubjectsParams = {}): Promise<{
 
     // Reuse existing user variable for access check
     let userAccess: Set<string> = new Set();
+    const authorProfiles: Record<string, { pseudo: string }> = {};
 
-    if (user && subjects && subjects.length > 0) {
-      const subjectIds = subjects.map((s) => s.id);
-      const { data: accessData } = await supabase
-        .from('user_subject_access')
-        .select('subject_id')
-        .eq('user_id', user.id)
-        .in('subject_id', subjectIds)
-        .or('expires_at.is.null,expires_at.gt.now()');
+    if (subjects && subjects.length > 0) {
+      // 1. Fetch access
+      if (user) {
+        const subjectIds = subjects.map((s) => s.id);
+        const { data: accessData } = await supabase
+          .from('user_subject_access')
+          .select('subject_id')
+          .eq('user_id', user.id)
+          .in('subject_id', subjectIds)
+          .or('expires_at.is.null,expires_at.gt.now()');
+  
+        if (accessData) {
+          userAccess = new Set(accessData.map((a) => a.subject_id));
+        }
+      }
 
-      if (accessData) {
-        userAccess = new Set(accessData.map((a) => a.subject_id));
+      // 2. Fetch profiles manually
+      const uploadedByList = subjects
+        .map(s => s.uploaded_by)
+        .filter((id): id is string => !!id);
+        
+      if (uploadedByList.length > 0) {
+        const uniqueIds = Array.from(new Set(uploadedByList));
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, pseudo')
+          .in('id', uniqueIds);
+          
+        if (profilesData) {
+          profilesData.forEach(p => {
+            authorProfiles[p.id] = { pseudo: p.pseudo };
+          });
+        }
       }
     }
 
-    // Add has_access to subjects
+    // Add has_access to subjects and map profiles
     const subjectsWithAccess: SubjectCard[] = (subjects || []).map((subject) => ({
       ...subject,
       has_access: subject.is_free || userAccess.has(subject.id),
+      profiles: subject.uploaded_by ? authorProfiles[subject.uploaded_by] : null
     }));
 
     return {
@@ -373,11 +399,15 @@ export async function getSubjectMetadata(): Promise<{
 // Get Single Subject
 // =====================================================
 
-export async function getSubjectById(id: string): Promise<{
+export async function getSubjectById(
+  id: string,
+  options: { incrementView?: boolean } = {}
+): Promise<{
   data: SubjectWithAccess | null;
   error: string | null;
 }> {
   const supabase = await createClient();
+  const shouldIncrementView = options.incrementView !== false;
 
   try {
     const { data: subject, error } = await supabase
@@ -414,7 +444,8 @@ export async function getSubjectById(id: string): Promise<{
       if (
         roles.includes('admin') ||
         roles.includes('superadmin') ||
-        roles.includes('validator')
+        roles.includes('validator') ||
+        subject.uploaded_by === user.id
       ) {
         hasAccess = true;
       } 
@@ -435,39 +466,41 @@ export async function getSubjectById(id: string): Promise<{
       }
     }
 
-    // Increment view count
-    // Pass user ID to ensure unique counting per user (logic handled in SQL function)
-    const { error: viewError } = await supabase.rpc('increment_subject_view', {
-      p_subject_id: id,
-      p_user_id: user?.id || null,
-    });
-
-    if (viewError) {
-      const { error: fallbackError } = await supabase.rpc('increment_subject_view', {
+    if (shouldIncrementView) {
+      // Increment view count
+      // Pass user ID to ensure unique counting per user (logic handled in SQL function)
+      const { error: viewError } = await supabase.rpc('increment_subject_view', {
         p_subject_id: id,
+        p_user_id: user?.id || null,
       });
-      if (fallbackError) {
-        console.error('❌ Error incrementing view count:', fallbackError);
-      }
-    }
 
-    // If we just incremented (or tried to), the returned subject data might be stale 
-    // because we fetched it BEFORE the RPC call.
-    // However, fetching again is expensive.
-    // Ideally, the RPC should return the new count or a "did_increment" boolean.
-    // For now, let's just leave it as is - the count will update on next refresh.
-    // Or we could optimistically increment if no error occurred (but we don't know if it was deduped).
-    
-    // To be perfectly accurate without refetching, we would need the RPC to return "incremented: true".
-    // Let's refetch just the view_count to be safe and accurate for the UI.
-    const { data: updatedCount } = await supabase
-      .from('subjects')
-      .select('view_count')
-      .eq('id', id)
-      .maybeSingle();
+      if (viewError) {
+        const { error: fallbackError } = await supabase.rpc('increment_subject_view', {
+          p_subject_id: id,
+        });
+        if (fallbackError) {
+          console.error('❌ Error incrementing view count:', fallbackError);
+        }
+      }
+
+      // If we just incremented (or tried to), the returned subject data might be stale 
+      // because we fetched it BEFORE the RPC call.
+      // However, fetching again is expensive.
+      // Ideally, the RPC should return the new count or a "did_increment" boolean.
+      // For now, let's just leave it as is - the count will update on next refresh.
+      // Or we could optimistically increment if no error occurred (but we don't know if it was deduped).
       
-    if (updatedCount) {
-        subject.view_count = updatedCount.view_count;
+      // To be perfectly accurate without refetching, we would need the RPC to return "incremented: true".
+      // Let's refetch just the view_count to be safe and accurate for the UI.
+      const { data: updatedCount } = await supabase
+        .from('subjects')
+        .select('view_count')
+        .eq('id', id)
+        .maybeSingle();
+        
+      if (updatedCount) {
+          subject.view_count = updatedCount.view_count;
+      }
     }
 
     return {
@@ -526,27 +559,38 @@ export async function saveSubjectMarkdown(
 
       if (error) return { success: false, error: error.message };
     } else if (isContributor) {
-      // Contributors can only edit their own subjects if not published
+      // Contributors can edit any subject to fix errors
+      // BUT if the subject is published, it reverts to pending for validation
       const { data: subject } = await supabase
         .from('subjects')
-      .select('uploaded_by, status')
-      .eq('id', id)
-      .maybeSingle();
+        .select('uploaded_by, status')
+        .eq('id', id)
+        .maybeSingle();
 
-      if (!subject || subject.uploaded_by !== user.id) {
-        return { success: false, error: 'Permission refusée' };
+      if (!subject) {
+        return { success: false, error: 'Sujet introuvable' };
       }
 
-      if (subject.status === 'published') {
-        return { success: false, error: 'Impossible de modifier un sujet déjà publié' };
+      // If it's their own draft, keep it draft or pending.
+      // If it's someone else's or published, force pending.
+      let newStatus = subject.status;
+      if (subject.status === 'published' || subject.status === 'rejected') {
+        newStatus = 'pending';
       }
 
       const { error } = await supabase
         .from('subjects')
-        .update({ content_markdown: content, updated_at: new Date().toISOString(), status: 'pending' })
+        .update({ 
+            content_markdown: content, 
+            updated_at: new Date().toISOString(), 
+            status: newStatus 
+        })
         .eq('id', id);
 
       if (error) return { success: false, error: error.message };
+
+      // Reward contribution badges without blocking save flow.
+      await awardContributionMilestones(user.id);
     } else {
       return { success: false, error: 'Permission refusée' };
     }
@@ -625,12 +669,8 @@ export async function updateSubjectMetadata(
         return { success: false, error: 'Permission refusée' };
       }
 
-      if (subject.status === 'published') {
-        return {
-          success: false,
-          error: 'Impossible de modifier les métadonnées d’un sujet publié',
-        };
-      }
+      // Note: On autorise l'édition des métadonnées même si publié, 
+      // mais cela changera le statut en 'pending' plus bas.
     }
 
     const level = params.level?.trim() || '';
@@ -860,6 +900,8 @@ export async function createSubject(params: {
       }
     }
 
+    await awardContributionMilestones(user.id);
+
     return { data, error: null };
   } catch (err) {
     console.error('Error creating subject:', err);
@@ -905,6 +947,10 @@ export async function updateSubjectStatus(
       .eq('id', id);
 
     if (error) return { success: false, error: error.message };
+
+    if (status === 'published') {
+      await tryAwardBadge(user.id, 'quality_guardian');
+    }
 
     revalidatePath('/admin/subjects');
     revalidatePath(`/subjects/${id}`);

@@ -54,7 +54,6 @@ export function MessageBadge({ className = "" }: MessageBadgeProps) {
           event: "INSERT",
           schema: "public",
           table: "messages",
-          filter: `receiver_id=eq.${userId}`,
         },
         () => {
           loadUnreadCount();
@@ -66,7 +65,6 @@ export function MessageBadge({ className = "" }: MessageBadgeProps) {
           event: "UPDATE",
           schema: "public",
           table: "messages",
-          filter: `receiver_id=eq.${userId}`,
         },
         () => {
           loadUnreadCount();
@@ -83,10 +81,21 @@ export function MessageBadge({ className = "" }: MessageBadgeProps) {
     if (!userId) return;
 
     try {
+      const { data: conversations } = await supabase
+        .from("conversations")
+        .select("id");
+
+      const conversationIds = (conversations || []).map((conversation) => conversation.id);
+      if (conversationIds.length === 0) {
+        messageStore.setCount(0);
+        return;
+      }
+
       const { count } = await supabase
         .from("messages")
         .select("*", { count: "exact", head: true })
-        .eq("receiver_id", userId)
+        .in("conversation_id", conversationIds)
+        .neq("sender_id", userId)
         .eq("is_read", false);
 
       const newCount = count || 0;

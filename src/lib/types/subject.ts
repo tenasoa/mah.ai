@@ -118,6 +118,8 @@ export interface SubjectCard {
   has_access?: boolean;
   status?: SubjectStatus;
   uploaded_by?: string | null;
+  created_at?: string;
+  profiles?: { pseudo: string } | null;
 }
 
 // =====================================================

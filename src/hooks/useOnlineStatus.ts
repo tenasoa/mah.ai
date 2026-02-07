@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 interface OnlineStatusOptions {
@@ -14,30 +14,10 @@ export function useOnlineStatus({
 }: OnlineStatusOptions = {}) {
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState<Date | null>(null);
-  const supabase = createClient();
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const supabase = useMemo(() => createClient(), []);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    if (!userId) return;
-
-    // Set initial online status
-    setOnlineStatus(true);
-
-    // Start heartbeat
-    intervalRef.current = setInterval(() => {
-      setOnlineStatus(true);
-    }, heartbeatInterval);
-
-    // Cleanup on unmount
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      setOnlineStatus(false);
-    };
-  }, [userId, heartbeatInterval]);
-
-  const setOnlineStatus = async (online: boolean) => {
+  const setOnlineStatus = useCallback(async (online: boolean) => {
     if (!userId) return;
 
     try {
@@ -69,7 +49,27 @@ export function useOnlineStatus({
     } catch (error) {
       console.error("Error updating online status:", error);
     }
-  };
+  }, [supabase, userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    // Set initial online status
+    setOnlineStatus(true);
+
+    // Start heartbeat
+    intervalRef.current = setInterval(() => {
+      setOnlineStatus(true);
+    }, heartbeatInterval);
+
+    // Cleanup on unmount
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      setOnlineStatus(false);
+    };
+  }, [heartbeatInterval, setOnlineStatus, userId]);
 
   // Handle page visibility changes
   useEffect(() => {
@@ -97,10 +97,10 @@ export function useOnlineStatus({
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [userId]);
+  }, [setOnlineStatus, userId]);
 
   // Subscribe to real-time online status changes for other users
-  const subscribeToUserStatus = (targetUserId: string, callback: (status: boolean, lastSeen?: Date) => void) => {
+  const subscribeToUserStatus = useCallback((targetUserId: string, callback: (status: boolean, lastSeen?: Date) => void) => {
     if (!targetUserId) return () => {};
 
     const channel = supabase
@@ -125,7 +125,7 @@ export function useOnlineStatus({
     return () => {
       supabase.removeChannel(channel);
     };
-  };
+  }, [supabase]);
 
   return {
     isOnline,

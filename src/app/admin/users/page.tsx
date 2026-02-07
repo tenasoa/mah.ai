@@ -1,19 +1,13 @@
-import { getAllUsers, updateUserRoles, updateUserCredits } from "@/app/actions/admin-users";
+import { getAllUsers } from "@/app/actions/admin-users";
 import { AdminSidebarWrapper } from "@/components/layout/AdminSidebarWrapper";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { 
-  Users, 
   Search, 
-  Shield, 
-  Coins, 
-  MoreVertical, 
   Mail, 
-  Calendar,
-  UserCheck,
   Ban
 } from "lucide-react";
-import { UserRole, ROLE_LABELS } from "@/lib/types/user";
+import { ROLE_LABELS } from "@/lib/types/user";
 import { UserActionsMenu } from "@/components/admin/UserActionsMenu";
 
 export default async function AdminUsersPage({
@@ -37,7 +31,7 @@ export default async function AdminUsersPage({
   const roles = (profile?.roles as string[]) || [];
   if (!roles.includes('admin') && !roles.includes('superadmin')) redirect('/dashboard');
 
-  const { data: users, total, error } = await getAllUsers(q, pageLimit);
+  const { data: users, total } = await getAllUsers(q, pageLimit);
 
   const adminUser = {
     name: profile?.pseudo || 'Admin',

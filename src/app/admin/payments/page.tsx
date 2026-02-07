@@ -19,11 +19,12 @@ export default async function AdminPaymentsPage({
   // Double check admin access on page load
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, pseudo, etablissement, classe, avatar_url')
+    .select('roles, pseudo, etablissement, classe, avatar_url')
     .eq('id', user.id)
     .single();
 
-  if (profile?.role !== 'admin') {
+  const roles = (profile?.roles as string[]) || [];
+  if (!roles.includes('admin') && !roles.includes('superadmin')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-900">
         <div className="text-center">

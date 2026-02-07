@@ -32,6 +32,22 @@ const fileToBase64 = async (file: File): Promise<string> => {
   return buffer.toString("base64");
 };
 
+const isSupportedUpload = (file: File): boolean => {
+  const fileName = file.name.toLowerCase();
+  const mimeType = file.type;
+  if (mimeType.startsWith("text/") || fileName.endsWith(".txt") || fileName.endsWith(".md")) return true;
+  if (
+    mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    fileName.endsWith(".docx")
+  ) {
+    return true;
+  }
+  if (mimeType === "application/msword" || fileName.endsWith(".doc")) return true;
+  if (mimeType === "application/pdf" || fileName.endsWith(".pdf")) return true;
+  if (mimeType.startsWith("image/")) return true;
+  return false;
+};
+
 const extractUploadedAnswer = async (
   client: OpenAI,
   file: File,
@@ -166,14 +182,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Sujet incomplet" }, { status: 400 });
     }
 
+    const hasUpload = uploadedFile instanceof File && uploadedFile.size > 0;
+    if (!hasUpload && !typedAnswer.trim()) {
+      return NextResponse.json(
+        { error: "La réponse est vide. Saisissez un texte ou importez un fichier." },
+        { status: 400 },
+      );
+    }
+
+    if (hasUpload && !isSupportedUpload(uploadedFile)) {
+      return NextResponse.json(
+        { error: "Format non supporté. Utilisez image, PDF, Word ou texte." },
+        { status: 400 },
+      );
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("subscription_status")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError || !profile) {
+      return NextResponse.json({ error: "Profil utilisateur introuvable" }, { status: 404 });
+    }
+
     const client = new OpenAI({ apiKey: openAIKey });
 
     let extractedAnswer = "";
     let source = "editor" as "editor" | "upload";
 
-    if (uploadedFile instanceof File && uploadedFile.size > 0) {
+    if (hasUpload) {
       source = "upload";
-      extractedAnswer = await extractUploadedAnswer(client, uploadedFile);
+      extractedAnswer = await extractUploadedAnswer(client, uploadedFile as File);
     } else {
       extractedAnswer = typedAnswer;
     }
@@ -212,6 +253,32 @@ export async function POST(request: NextRequest) {
 
     const raw = gradeResponse.output_text || "";
     const parsed = parseJsonObject(raw);
+    let creditsUsed = 0;
+
+    // Déduire les crédits uniquement après une correction IA réussie.
+    if (profile.subscription_status !== "premium") {
+      const { data: debitData, error: debitError } = await supabase.rpc("deduct_credits", {
+        user_id: user.id,
+        amount: 5,
+      });
+
+      if (debitError) {
+        return NextResponse.json(
+          { error: "Erreur lors de la déduction des crédits" },
+          { status: 500 },
+        );
+      }
+
+      const debitResult = Array.isArray(debitData) ? debitData[0] : null;
+      if (!debitResult?.success) {
+        return NextResponse.json(
+          { error: debitResult?.message || "Crédits insuffisants" },
+          { status: 402 },
+        );
+      }
+
+      creditsUsed = 5;
+    }
 
     const {
       data: submission,
@@ -233,10 +300,15 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (insertError) {
-      return NextResponse.json(
-        { error: "Échec de sauvegarde de la soumission", details: insertError.message },
-        { status: 500 },
-      );
+      console.error("Échec de sauvegarde de la soumission:", insertError);
+      return NextResponse.json({
+        submissionId: null,
+        source,
+        extractedAnswer,
+        result: parsed,
+        creditsUsed,
+        warning: "Correction générée, mais la sauvegarde de la soumission a échoué.",
+      });
     }
 
     return NextResponse.json({
@@ -244,6 +316,7 @@ export async function POST(request: NextRequest) {
       source,
       extractedAnswer,
       result: parsed,
+      creditsUsed,
     });
   } catch (error) {
     console.error("grade-submission error:", error);

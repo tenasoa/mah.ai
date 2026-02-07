@@ -2,8 +2,9 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import type { User } from '@supabase/supabase-js';
 import {
   FileText,
   Search,
@@ -11,7 +12,6 @@ import {
   Star,
   Timer,
   TrendingUp,
-  Target,
   ArrowRight,
   ChevronRight,
   Play,
@@ -67,20 +67,16 @@ const subjects = [
 ];
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
-  useEffect(() => {
-    getUserAndProfile();
-  }, []);
-
-  async function getUserAndProfile() {
+  const getUserAndProfile = useCallback(async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -119,14 +115,13 @@ export default function DashboardPage() {
 
     setStats(statsRes);
     setLoading(false);
-  }
+  }, [router, supabase]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
-  };
+  useEffect(() => {
+    getUserAndProfile();
+  }, [getUserAndProfile]);
 
-  if (loading || !profile) {
+  if (loading || !profile || !user) {
     return <LoadingScreen message="Initialisation de ton espace..." />;
   }
 
@@ -146,6 +141,7 @@ export default function DashboardPage() {
     { label: 'Streak', value: `${stats?.streak_days || 0}j`, icon: Flame, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/20' },
     { label: 'Rang', value: `#${stats?.rank || '-'}`, icon: TrendingUp, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-900/20' },
   ];
+  const pendingRequestsCount = stats?.pending_requests_count ?? 0;
 
   return (
     <div className="w-full">
@@ -245,7 +241,7 @@ export default function DashboardPage() {
                         <p className="text-[10px] font-bold text-indigo-400 dark:text-indigo-500 uppercase tracking-widest mb-1">Contributions</p>
                         <p className="text-xl font-black text-indigo-900 dark:text-indigo-100">{stats?.my_subjects_count || 0}</p>
                     </div>
-                    <Link href="/profile" className="flex items-center justify-center p-2 rounded-xl bg-indigo-100 dark:bg-indigo-800 hover:bg-indigo-200 dark:hover:bg-indigo-700 transition-colors border border-indigo-200 dark:border-indigo-700">
+                    <Link href={isValidator ? "/validator" : "/contributor"} className="flex items-center justify-center p-2 rounded-xl bg-indigo-100 dark:bg-indigo-800 hover:bg-indigo-200 dark:hover:bg-indigo-700 transition-colors border border-indigo-200 dark:border-indigo-700">
                         <ArrowRight className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                     </Link>
                 </div>
@@ -352,7 +348,7 @@ export default function DashboardPage() {
           </article>
 
           {/* Subject Request Reminder Card (Dynamic) */}
-          {(stats?.pending_requests_count || 0) > 0 && (
+          {pendingRequestsCount > 0 && (
             <Link href="/profile" className="mah-card bg-indigo-900 text-white border-none group animate-slide-up stagger-6">
               <div className="flex items-start justify-between">
                 <div className="h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center border border-white/10">
@@ -362,7 +358,7 @@ export default function DashboardPage() {
               </div>
               <div className="mt-auto">
                 <h3 className="text-base font-bold text-white leading-tight">
-                  {stats?.pending_requests_count} demande{stats?.pending_requests_count! > 1 ? 's' : ''} de sujet{stats?.pending_requests_count! > 1 ? 's' : ''}
+                  {pendingRequestsCount} demande{pendingRequestsCount > 1 ? 's' : ''} de sujet{pendingRequestsCount > 1 ? 's' : ''}
                 </h3>
                 <div className="flex items-center gap-2 mt-2 text-indigo-300 text-xs font-medium">
                   <span>Voir l'état de recherche</span>

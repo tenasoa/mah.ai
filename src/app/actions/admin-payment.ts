@@ -30,11 +30,13 @@ async function isAdmin() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("roles")
     .eq("id", user.id)
     .single();
 
-  return { supabase, isAdmin: profile?.role === "admin" };
+  const roles = (profile?.roles as string[]) || [];
+  const isAdmin = roles.includes("admin") || roles.includes("superadmin");
+  return { supabase, isAdmin };
 }
 
 export async function getPendingPayments(limit = 25): Promise<{
