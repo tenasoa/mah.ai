@@ -127,19 +127,21 @@ function applyCaptureAggressiveStyles(doc: Document, markerAttribute: string): v
 }
 
 function buildCanvas(source: HTMLElement, markerAttribute: string, aggressive: boolean) {
-  return html2canvas(source, {
+  const options = {
     scale: 2,
     useCORS: true,
     backgroundColor: "#ffffff",
     logging: false,
-    onclone: (clonedDocument) => {
+    onclone: (clonedDocument: Document) => {
       if (aggressive) {
         applyCaptureAggressiveStyles(clonedDocument, markerAttribute);
         return;
       }
       applyCaptureSafeStyles(clonedDocument, markerAttribute);
     },
-  });
+  } as unknown as Parameters<typeof html2canvas>[1];
+
+  return html2canvas(source, options);
 }
 
 export async function exportElementToPdf(
