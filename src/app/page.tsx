@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Sparkles,
@@ -121,7 +122,6 @@ import { useToast } from "@/components/ui/Toast";
 
 // ─── COMPOSANT INTERNE AVEC RECHERCHE ───
 function LandingPageContent() {
-  const [mounted, setMounted] = useState(false);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [currentText, setCurrentText] = useState(typewriterWords[0]);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -132,11 +132,9 @@ function LandingPageContent() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
-    setMounted(true);
-    
     // Vérifier si l'utilisateur est connecté et rediriger
     const checkAuthAndRedirect = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -167,12 +165,10 @@ function LandingPageContent() {
     };
     
     checkAuthAndRedirect();
-  }, [searchParams, toast, router]);
+  }, [searchParams, toast, router, supabase]);
 
   // Typewriter effect
   useEffect(() => {
-    if (!mounted) return;
-
     const timeout = setTimeout(
       () => {
         const currentFullWord = typewriterWords[currentWordIndex];
@@ -194,10 +190,7 @@ function LandingPageContent() {
     );
 
     return () => clearTimeout(timeout);
-  }, [currentText, isDeleting, currentWordIndex, mounted]);
-
-  // Affichage du texte pour le typewriter - utiliser une valeur par défaut côté serveur
-  const displayText = mounted ? currentText : typewriterWords[0];
+  }, [currentText, isDeleting, currentWordIndex]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 overflow-x-hidden transition-colors duration-300">
@@ -215,9 +208,11 @@ function LandingPageContent() {
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5 group">
-              <img
+              <Image
                 src="/icons/icon-512x512.png"
                 alt="Logo"
+                width={36}
+                height={36}
                 className="h-9 w-9 rounded-xl shadow-lg shadow-orange-500/20"
               />
               <span className="text-xl font-extrabold tracking-tight font-outfit text-slate-900 dark:text-white">
@@ -329,11 +324,11 @@ function LandingPageContent() {
             {/* Left Content */}
             <div className="flex-1 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-semibold mb-8 animate-bounce-soft border border-amber-100 dark:border-amber-500/20">
-                <Rocket className="w-4 h-4" /> Prépare ton avenir dès aujourd'hui
+                <Rocket className="w-4 h-4" /> Prépare ton avenir dès aujourd&apos;hui
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold font-outfit tracking-tight leading-[0.9] mb-8 text-slate-900 dark:text-white">
-                Tes sujets d'examens.
+                Tes sujets d&apos;examens.
                 <br />
                 <span className="text-gradient-grit">Leurs corrigés réels.</span>
               </h1>
@@ -355,7 +350,7 @@ function LandingPageContent() {
                   href="/auth"
                   className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-bold uppercase tracking-wider hover:border-amber-300 dark:hover:border-amber-500/50 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-all"
                 >
-                  S'inscrire gratuitement
+                  S&apos;inscrire gratuitement
                 </Link>
               </div>
 
@@ -392,9 +387,11 @@ function LandingPageContent() {
 
                 {/* Main Image */}
                 <div className="relative bg-white dark:bg-slate-900 rounded-[32px] p-4 shadow-2xl shadow-orange-500/10 border border-slate-100 dark:border-slate-800">
-                  <img
+                  <Image
                     src="/hero-illustration.png"
                     alt="Étudiants malgaches utilisant mah.ai"
+                    width={1200}
+                    height={800}
                     className="w-full h-auto rounded-2xl"
                   />
 
@@ -445,7 +442,7 @@ function LandingPageContent() {
             <h2 className="text-3xl lg:text-5xl font-extrabold font-outfit tracking-tight min-h-[1.2em] text-slate-900 dark:text-white">
               Tout pour réussir ton{" "}
               <span className="text-gradient-grit" suppressHydrationWarning>
-                {displayText}
+                {currentText}
                 <span className="animate-pulse text-orange-500">|</span>
               </span>
             </h2>
@@ -682,7 +679,7 @@ function LandingPageContent() {
             Soutenir le projet
           </h2>
           <p className="text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-10 lg:mb-12 text-base lg:text-lg leading-relaxed">
-            Mah.ai aide des milliers de jeunes. Votre soutien permet de financer l'IA et de
+            Mah.ai aide des milliers de jeunes. Votre soutien permet de financer l&apos;IA et de
             rémunérer les professeurs malgaches qui créent les corrigés.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4 lg:gap-5">
@@ -708,7 +705,13 @@ function LandingPageContent() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-8 lg:gap-10">
             <div className="text-center md:text-left space-y-3 lg:space-y-4">
               <Link href="/" className="inline-flex items-center gap-2.5">
-                <img src="/icons/icon-512x512.png" alt="Logo" className="h-8 w-8 rounded-xl shadow-md" />
+                <Image
+                  src="/icons/icon-512x512.png"
+                  alt="Logo"
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 rounded-xl shadow-md"
+                />
                 <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                   Mah<span className="text-gradient-grit">.ai</span>
                 </span>

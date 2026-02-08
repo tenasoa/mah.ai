@@ -3,9 +3,10 @@ import { AdminSidebarWrapper } from "@/components/layout/AdminSidebarWrapper";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
-import { ArrowLeft, User, Shield, Ban, Calendar, Mail } from "lucide-react";
+import { ArrowLeft, User, Ban, Calendar, Mail } from "lucide-react";
 import Link from "next/link";
 import { ROLE_LABELS } from "@/lib/types/user";
+import Image from "next/image";
 
 export default async function AdminUserProfilePage({
   params,
@@ -58,7 +59,14 @@ export default async function AdminUserProfilePage({
           <article className="mah-card p-8 bg-white border-slate-200 shadow-xl rounded-3xl text-center">
             <div className="relative inline-block mb-4">
               {targetUser.avatar_url ? (
-                <img src={targetUser.avatar_url} className="w-32 h-32 rounded-3xl object-cover shadow-lg border-4 border-white" alt="" />
+                <Image
+                  src={targetUser.avatar_url}
+                  alt={targetUser.pseudo ? `Avatar de ${targetUser.pseudo}` : "Avatar utilisateur"}
+                  width={128}
+                  height={128}
+                  className="w-32 h-32 rounded-3xl object-cover shadow-lg border-4 border-white"
+                  unoptimized
+                />
               ) : (
                 <div className="w-32 h-32 rounded-3xl bg-slate-100 flex items-center justify-center font-black text-4xl text-slate-300 border-4 border-white">
                   {targetUser.pseudo?.charAt(0).toUpperCase()}
@@ -128,7 +136,7 @@ export default async function AdminUserProfilePage({
               </div>
               <div>
                 <h3 className="text-xl font-black text-slate-900">Modifier le profil</h3>
-                <p className="text-slate-500 text-sm">Gestion des informations personnelles par l'administrateur.</p>
+                <p className="text-slate-500 text-sm">Gestion des informations personnelles par l&apos;administrateur.</p>
               </div>
             </div>
 

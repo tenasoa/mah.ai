@@ -241,9 +241,17 @@ export async function getTrustGapAnalytics(): Promise<{
   error: string | null;
 }> {
   const { supabase, isAdmin: isUserAdmin } = await isAdmin();
+  const emptyStats = {
+    total_trust_requests: 0,
+    confirmed_payments: 0,
+    rejected_payments: 0,
+    pending_trust: 0,
+    trust_gap_index: 0,
+    total_revenue: 0,
+  };
 
   if (!isUserAdmin) {
-    return { stats: {} as any, error: "Accès refusé." };
+    return { stats: emptyStats, error: "Accès refusé." };
   }
 
   try {
@@ -271,8 +279,8 @@ export async function getTrustGapAnalytics(): Promise<{
     }
 
     return { stats, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching analytics:", error);
-    return { stats: {} as any, error: "Erreur lors du calcul des stats." };
+    return { stats: emptyStats, error: "Erreur lors du calcul des stats." };
   }
 }

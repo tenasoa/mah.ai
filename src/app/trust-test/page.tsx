@@ -25,10 +25,10 @@ export default function TrustTestPage() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-slate-900 font-outfit">
-            Test du Paiement "Confiance"
+            Test du Paiement &quot;Confiance&quot;
           </h1>
           <p className="mt-2 text-slate-500">
-            Simulez un paiement mobile pour débloquer l'accès immédiat.
+            Simulez un paiement mobile pour débloquer l&apos;accès immédiat.
           </p>
         </div>
 
@@ -60,9 +60,9 @@ export default function TrustTestPage() {
         <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
           <strong>Note Technique :</strong>
           <br />
-          Si vous n'êtes pas connecté, l'action serveur échouera (vérifiez la
-          console), mais l'UI devrait quand même passer en mode "Débloqué" grâce
-          à l'Optimistic UI.
+          Si vous n&apos;êtes pas connecté, l&apos;action serveur échouera (vérifiez la
+          console), mais l&apos;UI devrait quand même passer en mode &quot;Débloqué&quot; grâce
+          à l&apos;Optimistic UI.
         </div>
       </div>
     </div>

@@ -10,12 +10,35 @@ import { Search, MessageSquarePlus, ArrowLeft, Users, ShieldCheck, Sparkles, Use
 import { NewChatModal } from "@/components/chat/NewChatModal";
 import Link from "next/link";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import Image from "next/image";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
+
+type ChatMessage = {
+  id: string;
+  is_read: boolean;
+};
+
+type ChatConversation = {
+  id: string;
+  messages?: ChatMessage[];
+};
+
+type SuggestedUser = {
+  id: string;
+  pseudo: string | null;
+  avatar_url: string | null;
+  filiere: string | null;
+};
+
+type AdminUser = {
+  id: string;
+};
 
 export default function ChatPage() {
-  const [conversations, setConversations] = useState<any[]>([]);
-  const [suggestedUsers, setSuggestedUsers] = useState<any[]>([]);
-  const [adminUser, setAdminUser] = useState<any>(null);
-  const [user, setUser] = useState<any>(null);
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [startingChat, setStartingChat] = useState<string | null>(null);
@@ -58,7 +81,7 @@ export default function ChatPage() {
         prev.map(conv => {
           if (conv.id !== detail.conversationId) return conv;
 
-          const updatedMessages = (conv.messages || []).map((msg: any) =>
+          const updatedMessages = (conv.messages || []).map((msg) =>
             detail.messageIds.includes(msg.id) ? { ...msg, is_read: true } : msg
           );
 
@@ -78,14 +101,14 @@ export default function ChatPage() {
 
   const handleStartChat = async (userId: string) => {
     setStartingChat(userId);
-    const { conversationId, error } = await getOrCreateConversation(userId);
+    const { conversationId } = await getOrCreateConversation(userId);
     if (conversationId) {
       router.push(`/chat?id=${conversationId}`);
     }
     setStartingChat(null);
   };
 
-  if (loading) return null;
+  if (loading || !user) return null;
 
   return (
     <div className="w-full max-w-7xl mx-auto h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)] px-0 sm:px-4">
@@ -134,7 +157,7 @@ export default function ChatPage() {
                   className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:border-indigo-500 hover:text-indigo-600 transition-all shadow-sm group"
                 >
                   <ShieldCheck className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" />
-                  Contacter l'admin
+                  Contacter l&apos;admin
                   {startingChat === adminUser.id && <Sparkles className="w-3 h-3 animate-pulse text-amber-500" />}
                 </button>
               </div>
@@ -179,14 +202,21 @@ export default function ChatPage() {
                   </div>
 
                   <div className="space-y-4">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Suggestions d'amis</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Suggestions d&apos;amis</p>
                     {suggestedUsers.length > 0 ? (
                       <div className="space-y-3">
                         {suggestedUsers.map((su) => (
                           <div key={su.id} className="flex items-center justify-between group">
                             <div className="flex items-center gap-3 min-w-0">
                               {su.avatar_url ? (
-                                <img src={su.avatar_url} className="w-9 h-9 rounded-xl object-cover" />
+                                <Image
+                                  src={su.avatar_url}
+                                  alt={su.pseudo ? `Avatar de ${su.pseudo}` : "Avatar utilisateur"}
+                                  width={36}
+                                  height={36}
+                                  className="w-9 h-9 rounded-xl object-cover"
+                                  unoptimized
+                                />
                               ) : (
                                 <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 font-bold text-xs">
                                   {su.pseudo?.charAt(0).toUpperCase()}
@@ -219,17 +249,17 @@ export default function ChatPage() {
                   <div className="mt-2 pt-6 border-t border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-2 mb-4">
                         <Sparkles className="w-4 h-4 text-indigo-500" />
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-balance">Groupes d'étude</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-balance">Groupes d&apos;étude</p>
                     </div>
                     <p className="text-xs text-slate-500 leading-relaxed">
-                      Connecte-toi avec d'autres élèves pour réviser ensemble !
+                      Connecte-toi avec d&apos;autres élèves pour réviser ensemble !
                     </p>
                   </div>
                 </div>
                 
                 <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-[32px] p-6 text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden group">
                   <div className="relative z-10">
-                    <h4 className="font-bold mb-2">Besoin d'un sujet ?</h4>
+                    <h4 className="font-bold mb-2">Besoin d&apos;un sujet ?</h4>
                     <p className="text-xs text-white/80 leading-relaxed mb-4">
                       Demande un sujet spécifique à la communauté.
                     </p>

@@ -5,7 +5,7 @@ import { CreditTabsManager } from "@/components/credits/CreditTabsManager";
 interface CreditsPageClientProps {
   balance: number;
   prices: Record<string, number>;
-  transactions: any[];
+  transactions: Array<Record<string, unknown>>;
   totalTransactions: number;
   transactionLimit: number;
 }

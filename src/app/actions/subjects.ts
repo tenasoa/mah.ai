@@ -682,7 +682,7 @@ export async function updateSubjectMetadata(
     const concoursType = params.concours_type?.trim() || '';
     const serieDepartement = params.serie_departement?.trim() || '';
 
-    const nextExamMetadata: Record<string, any> = {
+    const nextExamMetadata: Record<string, unknown> = {
       ...(subject.exam_metadata || {}),
     };
 
@@ -827,7 +827,7 @@ export async function createSubject(params: {
   niveau?: string;
   is_free?: boolean;
   credit_cost?: number;
-  exam_metadata?: any;
+  exam_metadata?: Record<string, unknown>;
   status?: SubjectStatus;
   requestId?: string;
 }): Promise<{ data: Subject | null; error: string | null }> {
@@ -1011,7 +1011,7 @@ export async function deleteSubject(id: string): Promise<{ success: boolean; err
     revalidatePath('/admin/subjects');
     revalidatePath('/subjects');
     return { success: true, error: null };
-  } catch (err) {
+  } catch {
     return { success: false, error: 'Erreur lors de la suppression' };
   }
 }

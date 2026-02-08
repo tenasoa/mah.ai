@@ -31,10 +31,10 @@ export default function NotFound() {
         {/* Content */}
         <div className="space-y-6 animate-slide-up">
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white font-outfit tracking-tight">
-            Oups ! Cette page s'est envolée.
+            Oups ! Cette page s&apos;est envolée.
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-lg max-w-md mx-auto leading-relaxed">
-            Même les meilleurs élèves se perdent parfois. Ne t'inquiète pas, nous allons te ramener sur la bonne voie.
+            Même les meilleurs élèves se perdent parfois. Ne t&apos;inquiète pas, nous allons te ramener sur la bonne voie.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
@@ -43,7 +43,7 @@ export default function NotFound() {
               className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900 dark:bg-slate-50 text-white dark:text-slate-950 font-bold uppercase tracking-widest text-xs shadow-xl shadow-slate-900/20 dark:shadow-white/10 hover:-translate-y-1 transition-all flex items-center justify-center gap-3 group"
             >
               <Home className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              Retour à l'accueil
+              Retour à l&apos;accueil
             </Link>
             
             <Link

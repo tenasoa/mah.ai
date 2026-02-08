@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase/server';
 import { uploadAvatar } from '@/app/actions/profile';
 import { NextRequest, NextResponse } from 'next/server';
 

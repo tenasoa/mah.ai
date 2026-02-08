@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import {
-  FileText,
   Eye,
   Lock,
   Unlock,
@@ -218,7 +217,7 @@ async function SubjectsGrid({
 
       {/* Bento Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
-        {data.subjects.map((subject, index) => (
+        {data.subjects.map((subject) => (
           <SubjectCard
             key={subject.id}
             subject={subject}
@@ -244,11 +243,7 @@ async function SubjectsGrid({
 }
 
 // Filter Bar Wrapper (fetches metadata server-side)
-async function FilterBarWrapper({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined };
-}) {
+async function FilterBarWrapper() {
   const { data: metadata } = await getSubjectMetadata();
   return <SubjectFilters metadata={metadata} />;
 }
@@ -299,7 +294,7 @@ export default async function SubjectsPage({
             </div>
           }
         >
-          <FilterBarWrapper searchParams={resolvedSearchParams} />
+          <FilterBarWrapper />
         </Suspense>
       </header>
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ShieldCheck, Lock, Eye } from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { ContactButton } from "@/components/ui/ContactButton";
 
 export default function PrivacyPage() {

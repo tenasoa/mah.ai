@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { User } from '@supabase/supabase-js';
 import {
@@ -76,50 +76,61 @@ export default function DashboardPage() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
-  const getUserAndProfile = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      router.push('/');
-      return;
-    }
-
-    setUser(user);
-
-    const [profileRes, statsRes] = await Promise.all([
-      supabase
-        .from('profiles')
-        .select('pseudo, etablissement, filiere, classe, grit_score, roles, onboarding_completed')
-        .eq('id', user.id)
-        .maybeSingle(),
-      getDashboardStats()
-    ]);
-
-    const profiles = (profileRes.data ?? {}) as Partial<Profile>;
-    const profileData: Profile = {
-      pseudo: profiles.pseudo || user.email?.split('@')[0] || 'Élève',
-      etablissement: profiles.etablissement || 'Lycée non renseigné',
-      filiere: profiles.filiere || 'Série non renseignée',
-      classe: profiles.classe || 'Niveau non renseigné',
-      grit_score: profiles.grit_score || 0,
-      roles: profiles.roles || ['user'],
-      onboarding_completed: profiles.onboarding_completed || false
-    };
-    setProfile(profileData);
-    
-    if (!profileData.onboarding_completed) {
-        setShowOnboarding(true);
-    }
-
-    setStats(statsRes);
-    setLoading(false);
-  }, [router, supabase]);
-
   useEffect(() => {
-    getUserAndProfile();
-  }, [getUserAndProfile]);
+    let isActive = true;
+
+    const loadDashboardData = async () => {
+      try {
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
+
+        if (!isActive) return;
+
+        if (!authUser) {
+          router.push('/');
+          return;
+        }
+
+        const [profileRes, statsRes] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('pseudo, etablissement, filiere, classe, grit_score, roles, onboarding_completed')
+            .eq('id', authUser.id)
+            .maybeSingle(),
+          getDashboardStats(),
+        ]);
+
+        if (!isActive) return;
+
+        const profiles = (profileRes.data ?? {}) as Partial<Profile>;
+        const profileData: Profile = {
+          pseudo: profiles.pseudo || authUser.email?.split('@')[0] || 'Élève',
+          etablissement: profiles.etablissement || 'Lycée non renseigné',
+          filiere: profiles.filiere || 'Série non renseignée',
+          classe: profiles.classe || 'Niveau non renseigné',
+          grit_score: profiles.grit_score || 0,
+          roles: profiles.roles || ['user'],
+          onboarding_completed: profiles.onboarding_completed || false,
+        };
+
+        setUser(authUser);
+        setProfile(profileData);
+        setShowOnboarding(!profileData.onboarding_completed);
+        setStats(statsRes);
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadDashboardData();
+
+    return () => {
+      isActive = false;
+    };
+  }, [router, supabase]);
 
   if (loading || !profile || !user) {
     return <LoadingScreen message="Initialisation de ton espace..." />;
@@ -361,7 +372,7 @@ export default function DashboardPage() {
                   {pendingRequestsCount} demande{pendingRequestsCount > 1 ? 's' : ''} de sujet{pendingRequestsCount > 1 ? 's' : ''}
                 </h3>
                 <div className="flex items-center gap-2 mt-2 text-indigo-300 text-xs font-medium">
-                  <span>Voir l'état de recherche</span>
+                  <span>Voir l&apos;état de recherche</span>
                   <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>

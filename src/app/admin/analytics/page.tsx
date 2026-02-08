@@ -5,7 +5,6 @@ import { AdminSidebarWrapper } from "@/components/layout/AdminSidebarWrapper";
 import { 
   BarChart3, 
   TrendingUp, 
-  TrendingDown, 
   Wallet, 
   Users, 
   ShieldCheck,

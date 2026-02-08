@@ -94,7 +94,10 @@ export async function getCreditPrices(): Promise<Record<string, number>> {
 /**
  * Consume credits for a specific action
  */
-export async function consumeCredits(actionType: string, metadata: any = {}) {
+export async function consumeCredits(
+  actionType: string,
+  metadata: Record<string, unknown> = {},
+) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Non authentifié" };

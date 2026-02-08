@@ -1,7 +1,6 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import type { SubjectWithAccess } from "@/lib/types/subject";
 
 /**
  * Vérifie si un utilisateur a accès à un sujet

@@ -7,7 +7,6 @@ import {
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { 
-  Plus, 
   Pencil, 
   Copy,
   CheckCircle2, 
@@ -135,7 +134,7 @@ export default async function AdminSubjectsPage({
                   .replace(/-+/g, "-")
                   .replace(/^-|-$/g, "");
 
-                const exam_metadata: any = {};
+                const exam_metadata: Record<string, string> = {};
                 if (level) exam_metadata.level = level;
                 if (concours_type) exam_metadata.concours_type = concours_type;
                 if (serie_departement) exam_metadata.serie_departement = serie_departement;

@@ -92,8 +92,8 @@ export default function NewSubjectPage() {
 
         router.push(`/contributor`);
       }
-    } catch (err: any) {
-      setError(err.message || "Erreur lors de la création");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erreur lors de la création");
     } finally {
       setIsSubmitting(false);
     }
@@ -119,7 +119,7 @@ export default function NewSubjectPage() {
               Nouveau Sujet
             </h1>
             <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-xl">
-              Ajoutez un nouveau sujet d'examen à la base de connaissances.
+              Ajoutez un nouveau sujet d&apos;examen à la base de connaissances.
               Il sera soumis à validation avant publication.
             </p>
           </div>
@@ -182,7 +182,7 @@ export default function NewSubjectPage() {
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                   <GraduationCap className="w-4 h-4" />
-                  Type d'examen
+                  Type d&apos;examen
                 </label>
                 <select
                   value={formData.exam_type}

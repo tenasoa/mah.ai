@@ -12,7 +12,7 @@ export default async function CreditsPage({
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { tab = 'packs', tx_limit } = await searchParams;
+  const { tx_limit } = await searchParams;
   const txLimit = Math.max(1, Number(tx_limit) || 10);
 
   if (!user) {

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ShieldCheck, ScrollText, FileText } from "lucide-react";
+import { ArrowLeft, ScrollText } from "lucide-react";
 import { ContactButton } from "@/components/ui/ContactButton";
 
 export default function CGUPage() {

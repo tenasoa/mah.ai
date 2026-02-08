@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { UserRole } from '@/lib/types/user';
 
 interface UpdateProfileParams {
   pseudo?: string;
@@ -21,7 +20,7 @@ interface UpdateProfileParams {
   interests?: string[];
   avatar_url?: string;
   cover_url?: string;
-  privacy_settings?: any;
+  privacy_settings?: Record<string, unknown>;
 }
 
 export async function getMyProfile() {

@@ -3,12 +3,9 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { 
   FileText, 
-  MapPin, 
-  Calendar, 
   Clock, 
   CheckCircle2, 
   AlertCircle,
-  Plus,
   Search,
   BookOpen
 } from "lucide-react";
@@ -172,7 +169,7 @@ export default async function ContributorDashboard() {
                   <FileText className="w-8 h-8" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Aucune contribution</h3>
-                <p className="text-slate-500 mb-6">Vous n'avez pas encore ajouté de sujet.</p>
+                <p className="text-slate-500 mb-6">Vous n&apos;avez pas encore ajouté de sujet.</p>
                 <ContributorDashboardHeader />
               </div>
             )}
@@ -183,7 +180,7 @@ export default async function ContributorDashboard() {
         <div className="text-center pt-8">
            <Link href="/subjects" className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold flex items-center justify-center gap-2">
              <Search className="w-4 h-4" />
-             Parcourir le catalogue complet pour corriger d'autres sujets
+             Parcourir le catalogue complet pour corriger d&apos;autres sujets
            </Link>
         </div>
       </div>

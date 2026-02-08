@@ -9,7 +9,7 @@ interface AddGritParams {
   amount: number;
   action: GritAction;
   referenceId?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 /**

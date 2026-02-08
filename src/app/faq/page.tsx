@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, HelpCircle, ChevronRight } from "lucide-react";
+import { ArrowLeft, HelpCircle } from "lucide-react";
 import { ContactButton } from "@/components/ui/ContactButton";
 
 const faqs = [

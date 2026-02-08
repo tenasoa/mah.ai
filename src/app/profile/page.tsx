@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ProfileForm } from "@/components/profile/profile-form";
 import Link from "next/link";
+import Image from "next/image";
 import { 
   User, 
   Edit, 
   MapPin, 
   Calendar, 
   Mail, 
-  Globe, 
   Target, 
   Heart, 
   CreditCard, 
@@ -28,21 +28,43 @@ import {
   LogOut,
   Phone
 } from "lucide-react";
-import { getMyProfile, getPurchaseHistory, getTransactionHistory, getMyEarnings } from "@/app/actions/profile";
+import { getMyProfile, getTransactionHistory, getMyEarnings } from "@/app/actions/profile";
 import { getMyRequests } from "@/app/actions/tickets";
 import { ROLE_LABELS, type UserProfile } from "@/lib/types/user";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 
+type TransactionItem = {
+  id: string;
+  amount: number;
+  action_type: string | null;
+  type: string | null;
+  created_at: string;
+};
+
+type EarningItem = {
+  id: string;
+  source_type: string;
+  amount: number;
+  commission_site: number;
+  subjects: { title: string | null } | null;
+};
+
+type TicketItem = {
+  id: string;
+  matiere: string;
+  year: number;
+  serie: string | null;
+  status: "pending" | "fulfilled" | "refunded" | string;
+  subject_id: string | null;
+};
+
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [purchaseHistory, setPurchaseHistory] = useState<any[]>([]);
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [earnings, setEarnings] = useState<any[]>([]);
-  const [tickets, setTickets] = useState<any[]>([]);
-  const [purchaseTotal, setPurchaseTotal] = useState(0);
+  const [transactions, setTransactions] = useState<TransactionItem[]>([]);
+  const [earnings, setEarnings] = useState<EarningItem[]>([]);
+  const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [earningsTotal, setEarningsTotal] = useState(0);
-  const [purchaseLimit, setPurchaseLimit] = useState(5);
   const [transactionLimit, setTransactionLimit] = useState(10);
   const [isEditing, setIsEditing] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -65,21 +87,17 @@ export default function ProfilePage() {
       
       const [
         { data: profile }, 
-        { data: history, total: pTotal },
         { data: transList },
         { data: earningsList, total: eTotal },
         { data: ticketList }
       ] = await Promise.all([
         getMyProfile(),
-        getPurchaseHistory(purchaseLimit),
         getTransactionHistory(transactionLimit),
         getMyEarnings(5),
         getMyRequests()
       ]);
 
       if (profile) setUserProfile(profile);
-      if (history) setPurchaseHistory(history);
-      if (typeof pTotal === "number") setPurchaseTotal(pTotal);
       if (transList) setTransactions(transList);
       if (earningsList) setEarnings(earningsList);
       if (typeof eTotal === "number") setEarningsTotal(eTotal);
@@ -88,7 +106,7 @@ export default function ProfilePage() {
       setLoading(false);
     }
     loadData();
-  }, [router, supabase, isEditing, purchaseLimit, transactionLimit]);
+  }, [router, supabase, isEditing, transactionLimit]);
 
   if (loading) {
     return <LoadingScreen message="Récupération de tes données..." />;
@@ -108,7 +126,13 @@ export default function ProfilePage() {
           {/* Cover Banner */}
           <div className="h-48 w-full bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 relative">
             {userProfile?.cover_url && (
-              <img src={userProfile.cover_url} alt="Cover" className="w-full h-full object-cover" />
+              <Image
+                src={userProfile.cover_url}
+                alt="Cover"
+                fill
+                className="w-full h-full object-cover"
+                unoptimized
+              />
             )}
             <div className="absolute inset-0 bg-black/10" />
             
@@ -129,10 +153,13 @@ export default function ProfilePage() {
               <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6">
                 <div className="relative group">
                   {userProfile?.avatar_url ? (
-                    <img 
+                    <Image 
                       src={userProfile.avatar_url} 
                       alt="Avatar" 
+                      width={128}
+                      height={128}
                       className="h-32 w-32 rounded-3xl object-cover border-4 border-white dark:border-slate-900 shadow-xl bg-white dark:bg-slate-800"
+                      unoptimized
                     />
                   ) : (
                     <div className="h-32 w-32 rounded-3xl border-4 border-white dark:border-slate-900 bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-5xl font-black shadow-xl">
@@ -280,7 +307,7 @@ export default function ProfilePage() {
                       <div className="bg-white dark:bg-slate-900/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 mb-6">
                         <h5 className="text-sm font-black text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                           <Target className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                          Objectifs d'apprentissage
+                          Objectifs d&apos;apprentissage
                         </h5>
                         <div className="flex flex-wrap gap-2">
                           {userProfile?.learning_goals?.length ? userProfile.learning_goals.map(goal => (
@@ -293,7 +320,7 @@ export default function ProfilePage() {
                       <div className="bg-white dark:bg-slate-900/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 mb-6">
                         <h5 className="text-sm font-black text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                           <Heart className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                          Centres d'intérêt
+                          Centres d&apos;intérêt
                         </h5>
                         <div className="flex flex-wrap gap-2">
                           {userProfile?.interests?.length ? userProfile.interests.map(tag => (

@@ -29,7 +29,7 @@ export async function getAllSettings() {
   return { data: data || [], error: error?.message || null };
 }
 
-export async function updateSetting(key: string, value: any) {
+export async function updateSetting(key: string, value: unknown) {
   const { supabase, isAdmin } = await checkAdmin();
   if (!isAdmin || !supabase) return { success: false, error: 'Accès refusé' };
 

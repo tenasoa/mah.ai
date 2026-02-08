@@ -3,12 +3,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { 
   FileText, 
-  MapPin, 
-  Calendar, 
   Clock, 
   CheckCircle2, 
-  AlertCircle,
-  Search,
   BookOpen,
   User
 } from "lucide-react";
@@ -42,8 +38,20 @@ export default async function ValidatorDashboard() {
     .eq("status", "pending")
     .order("created_at", { ascending: true });
 
+  type PendingSubjectWithProfile = {
+    id: string;
+    title: string | null;
+    matiere_display: string;
+    exam_type: string;
+    year: number;
+    serie: string | null;
+    thumbnail_url: string | null;
+    created_at: string;
+    profiles: { pseudo: string | null } | null;
+  };
+
   // Manually fetch profiles
-  let subjectsWithProfiles = [];
+  let subjectsWithProfiles: PendingSubjectWithProfile[] = [];
   if (pendingSubjects && pendingSubjects.length > 0) {
     const userIds = Array.from(new Set(pendingSubjects.map(s => s.uploaded_by).filter(Boolean)));
     const { data: profiles } = await supabase
@@ -53,9 +61,9 @@ export default async function ValidatorDashboard() {
 
     const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
     
-    subjectsWithProfiles = pendingSubjects.map(s => ({
+    subjectsWithProfiles = pendingSubjects.map((s) => ({
       ...s,
-      profiles: s.uploaded_by ? profileMap.get(s.uploaded_by) : null
+      profiles: s.uploaded_by ? profileMap.get(s.uploaded_by) : null,
     }));
   } else {
     subjectsWithProfiles = [];
@@ -106,7 +114,7 @@ export default async function ValidatorDashboard() {
           <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <FileText className="w-5 h-5 text-slate-400" />
-              File d'attente
+              File d&apos;attente
             </h2>
             <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-md text-xs font-bold">
               {pendingCount}
@@ -115,7 +123,7 @@ export default async function ValidatorDashboard() {
           
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {subjectsWithProfiles.length > 0 ? (
-              subjectsWithProfiles.map((subject: any) => (
+              subjectsWithProfiles.map((subject) => (
                 <div key={subject.id} className="p-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex flex-col md:flex-row gap-6 justify-between group">
                   <div className="flex items-start gap-4 flex-1">
                     <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-800 flex-shrink-0 relative overflow-hidden mt-1">

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { ROLE_LABELS } from "@/lib/types/user";
 import { UserActionsMenu } from "@/components/admin/UserActionsMenu";
+import Image from "next/image";
 
 export default async function AdminUsersPage({
   searchParams,
@@ -77,7 +78,14 @@ export default async function AdminUsersPage({
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
                         {u.avatar_url ? (
-                          <img src={u.avatar_url} className="w-10 h-10 rounded-xl object-cover" alt="" />
+                          <Image
+                            src={u.avatar_url}
+                            alt={u.pseudo ? `Avatar de ${u.pseudo}` : "Avatar utilisateur"}
+                            width={40}
+                            height={40}
+                            className="w-10 h-10 rounded-xl object-cover"
+                            unoptimized
+                          />
                         ) : (
                           <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-400 dark:text-slate-500">
                             {u.pseudo?.charAt(0).toUpperCase()}

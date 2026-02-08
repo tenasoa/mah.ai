@@ -12,25 +12,6 @@ type PageProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
-const fallbackPreviewLines = [
-  "1. Définir les grandeurs et établir les hypothèses.",
-  "2. Écrire l'équation principale et isoler l'inconnue.",
-  "3. Vérifier l'ordre de grandeur du résultat obtenu.",
-  "4. Interpréter le résultat dans le contexte du sujet.",
-  "5. Conclure avec une justification claire et concise.",
-  "6. Proposer une extension ou une vérification alternative.",
-];
-
-function buildPreviewLines(previewText: string | null) {
-  if (!previewText) return fallbackPreviewLines;
-  const lines = previewText
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-  if (lines.length >= 6) return lines;
-  return [...lines, ...fallbackPreviewLines.slice(lines.length)];
-}
-
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {

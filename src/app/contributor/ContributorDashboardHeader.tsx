@@ -56,7 +56,7 @@ export function ContributorDashboardHeader() {
           </span>
         </h1>
         <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-2xl">
-          Gérez vos contributions et aidez la communauté en ajoutant de nouveaux sujets d'examen.
+          Gérez vos contributions et aidez la communauté en ajoutant de nouveaux sujets d&apos;examen.
         </p>
       </div>
       
