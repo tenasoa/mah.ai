@@ -122,6 +122,7 @@ export function SubjectReader({
   const [messages, setMessages] = useState<QuestionMessage[]>([]);
   const [showComments, setShowComments] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(propUserId || null);
+  const downloadInFlightRef = useRef(false);
 
   useEffect(() => {
     async function fetchUser() {
@@ -354,6 +355,11 @@ export function SubjectReader({
 
   // Handlers pour les nouvelles fonctionnalités
   const handleDownloadPDF = async () => {
+    if (downloadInFlightRef.current) {
+      return;
+    }
+
+    downloadInFlightRef.current = true;
     try {
       setIsDownloading(true);
       const response = await fetch("/api/generate-pdf", {
@@ -365,21 +371,39 @@ export function SubjectReader({
         }),
       });
 
+      const contentType = (response.headers.get("content-type") || "").toLowerCase();
+
       if (!response.ok) {
-        const errorBody = await response.json().catch(() => null);
-        const message = errorBody?.error || `Erreur (${response.status}) lors du téléchargement`;
+        let message = `Erreur (${response.status}) lors du téléchargement`;
+        if (contentType.includes("application/json")) {
+          const errorBody = await response.json().catch(() => null);
+          message = errorBody?.error || message;
+        } else {
+          const errorText = await response.text().catch(() => "");
+          if (errorText.trim()) {
+            message = `${message}: ${errorText.slice(0, 300)}`;
+          }
+        }
         throw new Error(message);
       }
 
-      const responseClone = response.clone();
-      const blob = await response.blob();
-      if (!blob.size) {
-        const contentType = response.headers.get("content-type") || "inconnu";
-        const text = await responseClone.text().catch(() => "");
-        const details = text ? ` Détails: ${text.slice(0, 300)}` : "";
-        throw new Error(`Le document généré est vide (Content-Type: ${contentType}).${details}`);
+      const arrayBuffer = await response.arrayBuffer();
+      if (arrayBuffer.byteLength === 0) {
+        throw new Error(
+          `Le document généré est vide (Content-Type: ${contentType || "inconnu"}).`,
+        );
       }
 
+      if (contentType && !contentType.includes("application/pdf")) {
+        const preview = new TextDecoder().decode(arrayBuffer.slice(0, 300));
+        throw new Error(
+          `Réponse inattendue du serveur (Content-Type: ${contentType}). ${preview}`,
+        );
+      }
+
+      const blob = new Blob([arrayBuffer], {
+        type: contentType || "application/pdf",
+      });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -394,6 +418,7 @@ export function SubjectReader({
         error instanceof Error ? error.message : "Erreur lors du téléchargement du document";
       alert(message);
     } finally {
+      downloadInFlightRef.current = false;
       setIsDownloading(false);
     }
   };

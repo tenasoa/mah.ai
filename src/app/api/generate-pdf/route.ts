@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import puppeteer, { type Browser } from "puppeteer";
 import { marked } from "marked";
+import katex from "katex";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -22,6 +23,11 @@ type PdfSection = {
   html: string;
 };
 
+const FENCED_CODE_BLOCK_REGEX = /```[\s\S]*?```/g;
+const INLINE_CODE_REGEX = /`[^`\n]+`/g;
+const BLOCK_MATH_REGEX = /\$\$([\s\S]*?)\$\$/g;
+const INLINE_MATH_REGEX = /(?<!\$)\$((?:\\.|[^$\n])+)\$(?!\$)/g;
+
 marked.setOptions({
   gfm: true,
   breaks: true,
@@ -42,18 +48,98 @@ function toStringOrEmpty(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
-function sanitizeMarkdownInput(markdown: string): string {
-  return markdown
+function stashSegments(
+  input: string,
+  regex: RegExp,
+  tokenPrefix: string,
+  store: string[],
+): string {
+  return input.replace(regex, (match) => {
+    const token = `@@${tokenPrefix}_${store.length}@@`;
+    store.push(match);
+    return token;
+  });
+}
+
+function restoreSegments(input: string, tokenPrefix: string, store: string[]): string {
+  const tokenRegex = new RegExp(`@@${tokenPrefix}_(\\d+)@@`, "g");
+  return input.replace(tokenRegex, (_token, rawIndex: string) => {
+    const index = Number(rawIndex);
+    return store[index] ?? "";
+  });
+}
+
+function renderKatexExpression(expression: string, displayMode: boolean): string {
+  const trimmed = expression.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  try {
+    return katex.renderToString(trimmed, {
+      displayMode,
+      throwOnError: false,
+      strict: "ignore",
+      output: "html",
+      trust: false,
+    });
+  } catch {
+    return `<code>${escapeHtml(trimmed)}</code>`;
+  }
+}
+
+function prepareMarkdownForRendering(markdown: string): {
+  markdown: string;
+  mathTokens: Record<string, string>;
+} {
+  let prepared = markdown
     .replace(/\r\n?/g, "\n")
     .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<iframe[\s\S]*?<\/iframe>/gi, "")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/<iframe[\s\S]*?<\/iframe>/gi, "");
+
+  const fencedCodeBlocks: string[] = [];
+  const inlineCodeSegments: string[] = [];
+
+  prepared = stashSegments(prepared, FENCED_CODE_BLOCK_REGEX, "CODE_BLOCK", fencedCodeBlocks);
+  prepared = stashSegments(prepared, INLINE_CODE_REGEX, "INLINE_CODE", inlineCodeSegments);
+
+  prepared = prepared.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const mathTokens: Record<string, string> = {};
+  let blockIndex = 0;
+  let inlineIndex = 0;
+
+  prepared = prepared.replace(BLOCK_MATH_REGEX, (_match, expression: string) => {
+    const token = `@@KATEX_BLOCK_${blockIndex}@@`;
+    const rendered = renderKatexExpression(expression, true);
+    mathTokens[token] = `<div class="katex-block">${rendered}</div>`;
+    blockIndex += 1;
+    return token;
+  });
+
+  prepared = prepared.replace(INLINE_MATH_REGEX, (_match, expression: string) => {
+    const token = `@@KATEX_INLINE_${inlineIndex}@@`;
+    const rendered = renderKatexExpression(expression, false);
+    mathTokens[token] = `<span class="katex-inline">${rendered}</span>`;
+    inlineIndex += 1;
+    return token;
+  });
+
+  prepared = restoreSegments(prepared, "INLINE_CODE", inlineCodeSegments);
+  prepared = restoreSegments(prepared, "CODE_BLOCK", fencedCodeBlocks);
+
+  return { markdown: prepared, mathTokens };
 }
 
 function renderMarkdown(markdown: string): string {
-  const safeMarkdown = sanitizeMarkdownInput(markdown);
-  return marked.parse(safeMarkdown) as string;
+  const { markdown: preparedMarkdown, mathTokens } = prepareMarkdownForRendering(markdown);
+  let html = marked.parse(preparedMarkdown) as string;
+
+  Object.entries(mathTokens).forEach(([token, rendered]) => {
+    html = html.replaceAll(token, rendered);
+  });
+
+  return html;
 }
 
 function stripSources(text: string): string {
@@ -190,6 +276,7 @@ export async function POST(request: NextRequest) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${escapeHtml(subjectTitle)}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
     <style>
       :root {
         --border: #e2e8f0;
@@ -336,6 +423,23 @@ export async function POST(request: NextRequest) {
         border-radius: 4px;
         padding: 1px 4px;
         font-family: "Consolas", "Courier New", monospace;
+      }
+
+      .katex-block {
+        margin: 10px 0 14px;
+        padding: 8px 10px;
+        border: 1px dashed var(--border);
+        border-radius: 10px;
+        overflow-x: auto;
+      }
+
+      .katex-inline {
+        display: inline-block;
+        vertical-align: middle;
+      }
+
+      .katex {
+        font-size: 1.03em;
       }
 
       .footer {
