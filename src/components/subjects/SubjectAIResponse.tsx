@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   X,
   Bot,
@@ -17,6 +17,7 @@ import "katex/dist/katex.min.css";
 import { MilkdownEditor } from "@/components/ui/MilkdownEditor";
 import { useToast } from "@/components/ui/Toast";
 import { processContent } from "@/lib/content-processor";
+import { exportElementToPdf } from "@/lib/export-visible-pdf";
 
 interface SubjectAIResponseProps {
   isOpen: boolean;
@@ -41,6 +42,8 @@ export function SubjectAIResponse({
   const [isDownloading, setIsDownloading] = useState(false);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
+  const pdfSourceRef = useRef<HTMLDivElement>(null);
+  const downloadInFlightRef = useRef(false);
   const supabase = useMemo(() => createClient(), []);
 
   // Récupérer l'utilisateur actuel
@@ -140,51 +143,40 @@ export function SubjectAIResponse({
 
   const handleDownloadPDF = async () => {
     if (!aiResponse) return;
+    if (downloadInFlightRef.current) return;
+
+    let source: HTMLDivElement | null = null;
+    let previousOverflow = "";
+    let previousMaxHeight = "";
+    let previousHeight = "";
 
     try {
+      downloadInFlightRef.current = true;
       setIsDownloading(true);
-      const response = await fetch("/api/generate-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          subjectContent,
-          subjectTitle,
-          aiResponse,
-          includeAIResponse: true,
-        }),
-      });
 
-      if (!response.ok) {
-        const errorBody = await response.json().catch(() => null);
-        const message =
-          errorBody?.error ||
-          `Erreur (${response.status}) lors du téléchargement`;
-        throw new Error(message);
+      source = pdfSourceRef.current;
+      if (!source) {
+        throw new Error("Impossible de capturer la réponse affichée.");
       }
 
-      const responseClone = response.clone();
-      const blob = await response.blob();
-      if (!blob.size) {
-        const contentType = response.headers.get("content-type") || "inconnu";
-        const text = await responseClone.text().catch(() => "");
-        const details = text ? ` Détails: ${text.slice(0, 300)}` : "";
-        throw new Error(
-          `Le document généré est vide (Content-Type: ${contentType}).${details}`,
-        );
-      }
+      previousOverflow = source.style.overflow;
+      previousMaxHeight = source.style.maxHeight;
+      previousHeight = source.style.height;
 
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
+      source.style.overflow = "visible";
+      source.style.maxHeight = "none";
+      source.style.height = "auto";
+
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
       const suffix =
         responseType === "direct"
           ? "reponse_directe_IA"
           : "reponse_detaillee_IA";
-      a.download = `${subjectTitle.replace(/[^a-z0-9]/gi, "_")}_${suffix}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      await exportElementToPdf(
+        source,
+        `${subjectTitle.replace(/[^a-z0-9]/gi, "_")}_${suffix}.pdf`,
+      );
     } catch (error) {
       console.error("Erreur lors du téléchargement PDF:", error);
       const message =
@@ -193,6 +185,12 @@ export function SubjectAIResponse({
           : "Erreur lors du téléchargement du document";
       alert(message);
     } finally {
+      if (source) {
+        source.style.overflow = previousOverflow;
+        source.style.maxHeight = previousMaxHeight;
+        source.style.height = previousHeight;
+      }
+      downloadInFlightRef.current = false;
       setIsDownloading(false);
     }
   };
@@ -346,7 +344,7 @@ export function SubjectAIResponse({
           ) : (
             <>
               {/* Réponse générée */}
-              <div className="mb-6">
+              <div ref={pdfSourceRef} className="mb-6">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                     Réponse générée par l&apos;IA

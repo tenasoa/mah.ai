@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   X,
   Send,
@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase/client";
 import { MilkdownEditor } from "@/components/ui/MilkdownEditor";
 import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import "katex/dist/katex.min.css";
+import { exportElementToPdf } from "@/lib/export-visible-pdf";
 
 interface SubjectResolverProps {
   isOpen: boolean;
@@ -59,6 +60,8 @@ export function SubjectResolver({
   const [isDownloading, setIsDownloading] = useState(false);
   const [answerFile, setAnswerFile] = useState<File | null>(null);
   const [gradingResult, setGradingResult] = useState<GradingResult | null>(null);
+  const pdfSourceRef = useRef<HTMLDivElement>(null);
+  const downloadInFlightRef = useRef(false);
   const supabase = createClient();
 
   const canSubmit = Boolean(answer.trim() || answerFile);
@@ -158,47 +161,36 @@ export function SubjectResolver({
       alert("Votre réponse est vide.");
       return;
     }
+    if (downloadInFlightRef.current) return;
+
+    let source: HTMLDivElement | null = null;
+    let previousOverflow = "";
+    let previousMaxHeight = "";
+    let previousHeight = "";
 
     try {
+      downloadInFlightRef.current = true;
       setIsDownloading(true);
-      const response = await fetch("/api/generate-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          subjectContent,
-          subjectTitle,
-          userAnswer: answer,
-          includeAnswer: true,
-        }),
-      });
 
-      if (!response.ok) {
-        const errorBody = await response.json().catch(() => null);
-        const message =
-          errorBody?.error ||
-          `Erreur (${response.status}) lors du téléchargement`;
-        throw new Error(message);
+      source = pdfSourceRef.current;
+      if (!source) {
+        throw new Error("Impossible de capturer le contenu affiché.");
       }
 
-      const responseClone = response.clone();
-      const blob = await response.blob();
-      if (!blob.size) {
-        const contentType = response.headers.get("content-type") || "inconnu";
-        const text = await responseClone.text().catch(() => "");
-        const details = text ? ` Détails: ${text.slice(0, 300)}` : "";
-        throw new Error(
-          `Le document généré est vide (Content-Type: ${contentType}).${details}`,
-        );
-      }
+      previousOverflow = source.style.overflow;
+      previousMaxHeight = source.style.maxHeight;
+      previousHeight = source.style.height;
 
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${subjectTitle.replace(/[^a-z0-9]/gi, "_")}_reponse.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      source.style.overflow = "visible";
+      source.style.maxHeight = "none";
+      source.style.height = "auto";
+
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+      await exportElementToPdf(
+        source,
+        `${subjectTitle.replace(/[^a-z0-9]/gi, "_")}_reponse.pdf`,
+      );
     } catch (error) {
       console.error("Erreur lors du téléchargement PDF:", error);
       const message =
@@ -207,6 +199,12 @@ export function SubjectResolver({
           : "Erreur lors du téléchargement du document";
       alert(message);
     } finally {
+      if (source) {
+        source.style.overflow = previousOverflow;
+        source.style.maxHeight = previousMaxHeight;
+        source.style.height = previousHeight;
+      }
+      downloadInFlightRef.current = false;
       setIsDownloading(false);
     }
   };
@@ -392,7 +390,7 @@ export function SubjectResolver({
           </div>
         </div>
 
-        <div className="flex-1 p-6 overflow-y-auto">
+        <div ref={pdfSourceRef} className="flex-1 p-6 overflow-y-auto">
           <div className="mb-6">
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
               Type de correction souhaitée

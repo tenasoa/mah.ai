@@ -36,10 +36,10 @@ import { getUserCreditsAndSubscriptionClient } from "@/lib/credits-client";
 import { createClient } from "@/lib/supabase/client";
 import { SubjectStatus } from "@/lib/types/subject";
 import { SubjectComments } from "./SubjectComments";
-import { processContent } from "@/lib/content-processor";
 import { EXAM_TYPE_LABELS, type ExamType } from "@/lib/types/subject";
 import { SubjectMetadataEditor } from "./SubjectMetadataEditor";
 import { SubjectFlashcards } from "./SubjectFlashcards";
+import { exportElementToPdf } from "@/lib/export-visible-pdf";
 
 interface SubjectReaderProps {
   subjectId: string;
@@ -245,11 +245,6 @@ export function SubjectReader({
     };
   }, [subjectId, isEditing]);
 
-  // Fonction pour formater le sujet via l'utilitaire partagé
-  const formatSubjectContent = (content: string): string => {
-    return processContent(content, false);
-  };
-
   // Charger les crédits et abonnement de l'utilisateur
   useEffect(() => {
     const loadUserCredits = async () => {
@@ -274,6 +269,7 @@ export function SubjectReader({
   // Refs pour le scroll synchronisé
   const editorScrollRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+  const previewContentRef = useRef<HTMLDivElement>(null);
 
   // Synchronisation du scroll
   const handleEditorScroll = () => {
@@ -362,61 +358,17 @@ export function SubjectReader({
     downloadInFlightRef.current = true;
     try {
       setIsDownloading(true);
-      const response = await fetch("/api/generate-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          subjectContent: formatSubjectContent(markdownContent),
-          subjectTitle: title,
-        }),
-      });
-
-      const contentType = (response.headers.get("content-type") || "").toLowerCase();
-
-      if (!response.ok) {
-        let message = `Erreur (${response.status}) lors du téléchargement`;
-        if (contentType.includes("application/json")) {
-          const errorBody = await response.json().catch(() => null);
-          message = errorBody?.error || message;
-        } else {
-          const errorText = await response.text().catch(() => "");
-          if (errorText.trim()) {
-            message = `${message}: ${errorText.slice(0, 300)}`;
-          }
-        }
-        throw new Error(message);
+      const source = previewContentRef.current || previewRef.current;
+      if (!source) {
+        throw new Error("Impossible de capturer le rendu du sujet.");
       }
 
-      const arrayBuffer = await response.arrayBuffer();
-      if (arrayBuffer.byteLength === 0) {
-        throw new Error(
-          `Le document généré est vide (Content-Type: ${contentType || "inconnu"}).`,
-        );
-      }
-
-      if (contentType && !contentType.includes("application/pdf")) {
-        const preview = new TextDecoder().decode(arrayBuffer.slice(0, 300));
-        throw new Error(
-          `Réponse inattendue du serveur (Content-Type: ${contentType}). ${preview}`,
-        );
-      }
-
-      const blob = new Blob([arrayBuffer], {
-        type: contentType || "application/pdf",
-      });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${title.replace(/[^a-z0-9]/gi, "_")}_mah_ai.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      await exportElementToPdf(source, `${title.replace(/[^a-z0-9]/gi, "_")}_mah_ai.pdf`);
     } catch (error) {
       console.error("Erreur lors du téléchargement PDF:", error);
       const message =
         error instanceof Error ? error.message : "Erreur lors du téléchargement du document";
-      alert(message);
+      showToast(message, "error");
     } finally {
       downloadInFlightRef.current = false;
       setIsDownloading(false);
@@ -697,7 +649,7 @@ export function SubjectReader({
               ref={previewRef}
               className={`flex-1 h-full bg-white dark:bg-slate-900 overflow-y-auto overflow-x-hidden transition-colors custom-scrollbar ${isZen ? "rounded-none border-0 shadow-none" : "rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800"}`}
             >
-              <div className="min-h-full flex flex-col">
+              <div ref={previewContentRef} className="min-h-full flex flex-col">
                 <div className="h-1.5 bg-gradient-to-r from-violet-500 to-purple-500 w-full" />
                 <div className={`${isZen ? "p-6 md:p-10" : "p-10 md:p-16"} flex-1`}>
                   {markdownContent ? (
