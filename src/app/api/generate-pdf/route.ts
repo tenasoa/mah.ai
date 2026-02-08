@@ -1,12 +1,80 @@
 import { NextRequest, NextResponse } from "next/server";
-import puppeteer from "puppeteer";
+import puppeteer, { type Browser } from "puppeteer";
+import { marked } from "marked";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type PdfPayload = {
+  subjectContent?: unknown;
+  subjectTitle?: unknown;
+  userAnswer?: unknown;
+  includeAnswer?: unknown;
+  aiResponse?: unknown;
+  includeAIResponse?: unknown;
+};
+
+type PdfSection = {
+  id: string;
+  title: string;
+  number: number;
+  html: string;
+};
+
+marked.setOptions({
+  gfm: true,
+  breaks: true,
+});
+
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+}
+
+function toStringOrEmpty(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function sanitizeMarkdownInput(markdown: string): string {
+  return markdown
+    .replace(/\r\n?/g, "\n")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<iframe[\s\S]*?<\/iframe>/gi, "")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function renderMarkdown(markdown: string): string {
+  const safeMarkdown = sanitizeMarkdownInput(markdown);
+  return marked.parse(safeMarkdown) as string;
+}
+
+function stripSources(text: string): string {
+  return text
+    .replace(/\s*\[(\d+(\s*[-,]\s*\d+)*)\]\s*/g, " ")
+    .replace(/^\s*Sources\s*:\s*[\s\S]*$/im, "")
+    .trim();
+}
+
+function safeTitle(rawTitle: string): string {
+  const trimmed = rawTitle.trim();
+  return trimmed.length > 0 ? trimmed : "Document";
+}
+
+function buildFileName(title: string): string {
+  return `${title.replace(/[^a-z0-9]/gi, "_")}_mah_ai.pdf`;
+}
+
 export async function POST(request: NextRequest) {
-  let browser = null;
+  let browser: Browser | null = null;
+
   try {
     const supabase = await createClient();
     const {
@@ -20,601 +88,337 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const {
-      subjectContent,
-      subjectTitle,
-      userAnswer,
-      includeAnswer,
-      aiResponse,
-      includeAIResponse,
-    } = await request.json();
+    const payload = (await request.json().catch(() => null)) as PdfPayload | null;
+    if (!payload || typeof payload !== "object") {
+      return NextResponse.json(
+        { error: "Payload invalide pour la génération PDF." },
+        { status: 400 },
+      );
+    }
 
-    const stripSources = (text: string) =>
-      text
-        .replace(/\s*\[(\d+(\s*[-,]\s*\d+)*)\]\s*/g, " ")
-        .replace(/^\s*Sources\s*:\s*[\s\S]*$/im, "")
-        .trim();
+    const subjectContent = toStringOrEmpty(payload.subjectContent);
+    const subjectTitle = safeTitle(toStringOrEmpty(payload.subjectTitle));
+    const userAnswer = toStringOrEmpty(payload.userAnswer);
+    const aiResponse = toStringOrEmpty(payload.aiResponse);
+    const includeAnswer = Boolean(payload.includeAnswer) && userAnswer.trim().length > 0;
+    const includeAIResponse = Boolean(payload.includeAIResponse) && aiResponse.trim().length > 0;
 
-    const cleanedAiResponse =
-      includeAIResponse && aiResponse ? stripSources(aiResponse) : "";
+    if (!subjectContent.trim()) {
+      return NextResponse.json(
+        { error: "Le contenu du sujet est requis." },
+        { status: 400 },
+      );
+    }
 
-    const aiResponseParts =
-      includeAIResponse && cleanedAiResponse
+    const cleanedAiResponse = includeAIResponse ? stripSources(aiResponse) : "";
+    const aiParts =
+      cleanedAiResponse.length > 0
         ? cleanedAiResponse
             .split(/\n{2,}---\n{2,}/)
             .map((part) => part.trim())
             .filter(Boolean)
         : [];
-    const sections: { id: string; title: string; number: number; markdown: string }[] = [];
+
+    const sections: PdfSection[] = [];
+    let sectionNumber = 1;
+
     sections.push({
       id: "subject",
-      title: "📋 SUJET D'EXAMEN",
-      number: 1,
-      markdown: subjectContent || "",
+      title: "Sujet d'examen",
+      number: sectionNumber,
+      html: renderMarkdown(subjectContent),
     });
-    if (includeAnswer && userAnswer) {
+    sectionNumber += 1;
+
+    if (includeAnswer) {
       sections.push({
         id: "user-answer",
-        title: "✍️ VOTRE RÉPONSE",
-        number: 2,
-        markdown: userAnswer,
+        title: "Votre réponse",
+        number: sectionNumber,
+        html: renderMarkdown(userAnswer),
       });
+      sectionNumber += 1;
     }
-    const hasMultipleAiParts = includeAIResponse && aiResponseParts.length > 1;
-    const aiStartIndex = includeAnswer ? 4 : 3;
+
     if (includeAIResponse && cleanedAiResponse) {
-      if (hasMultipleAiParts) {
-        aiResponseParts.forEach((part, index) => {
+      if (aiParts.length > 1) {
+        aiParts.forEach((part, index) => {
           sections.push({
             id: `ai-part-${index + 1}`,
-            title: `🤖 RÉPONSE IA — PARTIE ${index + 1}/${aiResponseParts.length}`,
-            number: aiStartIndex + index,
-            markdown: part,
+            title: `Réponse IA - Partie ${index + 1}/${aiParts.length}`,
+            number: sectionNumber,
+            html: renderMarkdown(part),
           });
+          sectionNumber += 1;
         });
       } else {
         sections.push({
           id: "ai-part-1",
-          title: "🤖 RÉPONSE IA",
-          number: includeAnswer ? 3 : 2,
-          markdown: cleanedAiResponse,
+          title: "Réponse IA",
+          number: sectionNumber,
+          html: renderMarkdown(cleanedAiResponse),
         });
       }
     }
-    const milkdownSections = sections.map((section) => section.markdown);
-    const aiResponseTocHtml = aiResponseParts
+
+    const tocItems = sections
+      .filter((section) => section.id.startsWith("ai-part-"))
       .map(
-        (_part, index) =>
-          `<li><a class="toc-link" href="#ai-part-${index + 1}">Partie ${index + 1}/${aiResponseParts.length}</a></li>`
+        (section) =>
+          `<li><a href="#${section.id}">${escapeHtml(section.title)}</a></li>`,
       )
       .join("");
 
-    // Créer le document HTML complet
-    const htmlContent = `
-<!DOCTYPE html>
+    const sectionsHtml = sections
+      .map(
+        (section, index) => `
+      <section class="section ${index > 0 ? "page-break" : ""}" id="${section.id}">
+        <header class="section-header">
+          <div class="section-number">${section.number}</div>
+          <h2 class="section-title">${escapeHtml(section.title)}</h2>
+        </header>
+        <div class="section-content markdown-content">${section.html}</div>
+      </section>
+    `,
+      )
+      .join("");
+
+    const html = `
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(subjectTitle)}</title>
-  
-  <!-- KaTeX + Milkdown (Crepe) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-  <link rel="stylesheet" href="https://unpkg.com/@milkdown/crepe@7.18.0/theme/common/style.css">
-  <link rel="stylesheet" href="https://unpkg.com/@milkdown/crepe@7.18.0/theme/frame.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
-  <style>
-    /* Premium Design System */
-    :root {
-      --primary: #2563eb;
-      --primary-light: #eff6ff;
-      --secondary: #475569;
-      --accent: #f59e0b;
-      --success: #10b981;
-      --success-light: #ecfdf5;
-      --danger: #ef4444;
-      --danger-light: #fef2f2;
-      --surface: #ffffff;
-      --background: #f8fafc;
-      --text-main: #1e293b;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-    }
-    
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    
-    body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      line-height: 1.6;
-      color: var(--text-main);
-      background: var(--background);
-      padding: 40px;
-      max-width: 210mm;
-      margin: 0 auto;
-    }
-    
-    /* Elegant Header */
-    .header {
-      text-align: center;
-      margin-bottom: 40px;
-      padding-bottom: 30px;
-      border-bottom: 2px solid var(--border);
-      position: relative;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${escapeHtml(subjectTitle)}</title>
+    <style>
+      :root {
+        --border: #e2e8f0;
+        --bg: #f8fafc;
+        --surface: #ffffff;
+        --text: #1e293b;
+        --muted: #64748b;
+        --primary: #2563eb;
+        --accent: #f59e0b;
+      }
 
-    .header::after {
-      content: '';
-      position: absolute;
-      bottom: -2px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100px;
-      height: 2px;
-      background: var(--primary);
-    }
-    
-    .header .logo {
-      font-size: 24px;
-      font-weight: 900;
-      background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 15px;
-      letter-spacing: -0.5px;
-      display: inline-block;
-    }
-    
-    .header h1 {
-      font-size: 32px;
-      font-weight: 800;
-      color: var(--text-main);
-      margin: 15px 0 10px;
-      line-height: 1.2;
-    }
-    
-    .header .meta {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      margin-top: 15px;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
+      * {
+        box-sizing: border-box;
+      }
 
-    .header .meta span {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: white;
-      padding: 6px 12px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      font-weight: 500;
-    }
-    
-    /* Section Cards */
-    .section {
-      margin: 30px 0;
-      break-inside: avoid;
-      background: white;
-      border-radius: 16px;
-      border: 1px solid var(--border);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-      overflow: hidden;
-    }
-    
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      padding: 20px 24px;
-      border-bottom: 1px solid var(--border);
-      background: var(--background);
-    }
-    
-    .section-number {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      background: var(--primary);
-      color: white;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 14px;
-      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-    }
-    
-    .section-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text-main);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .section-content {
-      padding: 24px;
-    }
-    
-    /* Special styling for User Answer */
-    #user-answer .section-header {
-      background: var(--primary-light);
-    }
-    
-    #user-answer .section-number {
-      background: var(--text-main);
-    }
+      body {
+        margin: 0;
+        padding: 36px;
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
 
-    /* Special styling for AI Response */
-    [id^="ai-part"] .section-header {
-      background: linear-gradient(to right, #fdfbf7, #fff);
-    }
+      .doc-header {
+        text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 2px solid var(--border);
+        margin-bottom: 24px;
+      }
 
-    [id^="ai-part"] .section-number {
-      background: linear-gradient(135deg, var(--accent) 0%, #d97706 100%);
-    }
-    
-    /* Typography within Content */
-    h1, h2, h3, h4, h5, h6 {
-      color: var(--text-main);
-      font-weight: 700;
-      margin-top: 1.5em;
-      margin-bottom: 0.8em;
-    }
-    
-    h1 { font-size: 1.8em; border-bottom: 2px solid var(--primary-light); padding-bottom: 0.3em; }
-    h2 { font-size: 1.5em; }
-    h3 { font-size: 1.3em; }
-    
-    p { margin-bottom: 1em; text-align: justify; }
-    
-    ul, ol {
-      margin-bottom: 1em;
-      padding-left: 1.5em;
-    }
-    
-    li { margin-bottom: 0.5em; }
-    
-    blockquote {
-      border-left: 4px solid var(--primary);
-      background: var(--primary-light);
-      padding: 1em;
-      border-radius: 0 8px 8px 0;
-      margin: 1.5em 0;
-      font-style: italic;
-    }
-    
-    /* Code Blocks */
-    pre {
-      background: #1e293b;
-      color: #e2e8f0;
-      padding: 15px;
-      border-radius: 8px;
-      overflow-x: auto;
-      margin: 1.5em 0;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.9em;
-    }
-    
-    code {
-      background: var(--border);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.9em;
-      color: #dc2626;
-    }
+      .doc-header .brand {
+        font-weight: 800;
+        color: var(--primary);
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+      }
 
-    pre code {
-      background: transparent;
-      color: inherit;
-      padding: 0;
-    }
-    
-    /* Tables */
-    table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      margin: 1.5em 0;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    
-    th, td {
-      padding: 12px 15px;
-      border-bottom: 1px solid var(--border);
-    }
-    
-    th {
-      background: var(--background);
-      font-weight: 600;
-      text-align: left;
-    }
-    
-    tr:last-child td {
-      border-bottom: none;
-    }
-    
-    tr:hover td {
-      background: var(--primary-light);
-    }
+      .doc-header h1 {
+        margin: 0;
+        font-size: 28px;
+        line-height: 1.25;
+      }
 
-    /* Math Formula Enhancement */
-    .katex-display {
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      border: 1px dashed var(--border);
-      margin: 1.5em 0;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    }
-    
-    /* Footer */
-    .footer {
-      text-align: center;
-      margin-top: 60px;
-      padding-top: 20px;
-      border-top: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 11px;
-    }
+      .doc-header p {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 13px;
+      }
 
-    /* Print Tweaks */
-    @page {
-      margin: 20mm;
-    }
+      .toc {
+        margin: 18px 0 0;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: #fffaf2;
+      }
 
-    /* Helper Classes */
-    .badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-    
-    .badge-primary { background: var(--primary-light); color: var(--primary); }
-    .badge-accent { background: #fffbeb; color: var(--accent); }
+      .toc h3 {
+        margin: 0 0 8px;
+        font-size: 13px;
+        color: #7a4a00;
+      }
 
-    /* Milkdown readonly */
-    .milkdown-readonly .milkdown-toolbar {
-      display: none;
-    }
-    .milkdown-paper .milkdown {
-      --crepe-color-background: #fdfbf7;
-      --crepe-color-on-background: #1f1b16;
-      --crepe-color-surface: #f7f1e8;
-      --crepe-color-surface-low: #efe7db;
-      --crepe-color-on-surface: #2a231d;
-      --crepe-color-on-surface-variant: #5c4f43;
-      --crepe-color-outline: #cdbfae;
-      --crepe-color-primary: #9b6b2f;
-      --crepe-color-secondary: #eadcc9;
-      --crepe-color-on-secondary: #2b1d0f;
-      --crepe-color-inverse: #2b241e;
-      --crepe-color-on-inverse: #f6efe6;
-      --crepe-color-inline-code: #9c2f2f;
-      --crepe-color-error: #9c2f2f;
-      --crepe-color-hover: #f3eadf;
-      --crepe-color-selected: #e6dbcc;
-      --crepe-color-inline-area: #e8dccd;
-      --crepe-font-title: Georgia, "Times New Roman", Times, serif;
-      --crepe-font-default: Georgia, "Times New Roman", Times, serif;
-      --crepe-font-code: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-      --crepe-shadow-1: 0 8px 30px rgba(45, 31, 18, 0.08);
-      --crepe-shadow-2: 0 18px 60px rgba(45, 31, 18, 0.12);
-    }
-    .milkdown-paper .milkdown {
-      background:
-        radial-gradient(1200px 500px at 20% 0%, rgba(255, 255, 255, 0.9), transparent 60%),
-        linear-gradient(180deg, #fdfbf7 0%, #f8f1e7 100%);
-      border-radius: 16px;
-      border: 1px solid #eadfce;
-      box-shadow: var(--crepe-shadow-1);
-      padding: 10px 8px;
-    }
-    .milkdown-paper .ProseMirror {
-      max-width: 100%;
-      padding: 18px 22px 26px;
-      font-size: 14px;
-      line-height: 1.7;
-      color: #2a231d;
-    }
-    .milkdown-paper .ProseMirror h1,
-    .milkdown-paper .ProseMirror h2,
-    .milkdown-paper .ProseMirror h3 {
-      font-family: Georgia, "Times New Roman", Times, serif;
-      color: #2b2016;
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div class="logo">🎓 MAH.AI</div>
-    <h1>${escapeHtml(subjectTitle)}</h1>
-    <div class="meta">
-      <span>
-        📅 ${new Date().toLocaleDateString("fr-FR", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })}
-      </span>
-      <span>🤖 Tuteur IA</span>
-      <span>📚 Document Pédagogique</span>
-    </div>
-  </div>
-  
-  <div class="section">
-    <div class="section-header">
-      <div class="section-number">1</div>
-      <div class="section-title">Sujet d'Examen</div>
-    </div>
-    <div class="section-content">
-      <div class="milkdown-paper milkdown-readonly">
-        <div id="md-0"></div>
+      .toc ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .toc a {
+        color: #7a4a00;
+        text-decoration: none;
+      }
+
+      .section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+        margin-top: 18px;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        background: #f1f5f9;
+      }
+
+      .section-number {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: var(--primary);
+        color: white;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+      }
+
+      .section-title {
+        margin: 0;
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .section-content {
+        padding: 16px;
+      }
+
+      .markdown-content p {
+        margin: 0 0 12px;
+        line-height: 1.65;
+      }
+
+      .markdown-content h1,
+      .markdown-content h2,
+      .markdown-content h3 {
+        margin: 12px 0 8px;
+      }
+
+      .markdown-content ul,
+      .markdown-content ol {
+        margin: 0 0 12px;
+        padding-left: 22px;
+      }
+
+      .markdown-content pre {
+        background: #0f172a;
+        color: #e2e8f0;
+        padding: 12px;
+        border-radius: 10px;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+        font-family: "Consolas", "Courier New", monospace;
+      }
+
+      .markdown-content code {
+        background: #e2e8f0;
+        border-radius: 4px;
+        padding: 1px 4px;
+        font-family: "Consolas", "Courier New", monospace;
+      }
+
+      .footer {
+        margin-top: 30px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border);
+        text-align: center;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .page-break {
+        break-inside: avoid;
+      }
+
+      @page {
+        margin: 16mm;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="doc-header">
+      <div class="brand">MAH.AI</div>
+      <h1>${escapeHtml(subjectTitle)}</h1>
+      <p>Généré le ${new Date().toLocaleDateString("fr-FR")} • Support pédagogique</p>
+      ${
+        tocItems
+          ? `
+      <div class="toc">
+        <h3>Sommaire des réponses IA</h3>
+        <ul>${tocItems}</ul>
       </div>
-    </div>
-  </div>
-  
-  ${
-    includeAnswer && userAnswer
-      ? `
-  <div class="section page-break" id="user-answer">
-    <div class="section-header">
-      <div class="section-number">2</div>
-      <div class="section-title">Votre Réponse</div>
-    </div>
-    <div class="section-content">
-      <div class="milkdown-paper milkdown-readonly">
-        <div id="md-1"></div>
-      </div>
-    </div>
-  </div>
-  `
-      : ""
-  }
-  
-  ${
-    includeAIResponse && cleanedAiResponse
-      ? aiResponseParts.length > 1
-        ? `
-  <div class="section page-break" id="ai-summary">
-    <div class="section-header">
-      <div class="section-number">${includeAnswer ? 3 : 2}</div>
-      <div class="section-title">Sommaire de la Correction</div>
-    </div>
-    <div class="section-content">
-      <ul>
-        ${aiResponseTocHtml}
-      </ul>
-    </div>
-  </div>
-  ${sections
-    .filter((section) => section.id.startsWith("ai-part-"))
-    .map((section, index) => {
-      const offset = (includeAnswer ? 1 : 0) + 1;
-      const mdIndex = index + offset;
-      return `
-  <div class="section page-break" id="${section.id}">
-    <div class="section-header">
-      <div class="section-number">${section.number}</div>
-      <div class="section-title">${section.title}</div>
-    </div>
-    <div class="section-content">
-      <div class="milkdown-paper milkdown-readonly">
-        <div id="md-${mdIndex}"></div>
-      </div>
-    </div>
-  </div>
-  `;
-    })
-    .join("")}
-  `
-        : `
-  <div class="section page-break" id="ai-part-1">
-    <div class="section-header">
-      <div class="section-number">${includeAnswer ? 3 : 2}</div>
-      <div class="section-title">Correction & Analyse IA</div>
-    </div>
-    <div class="section-content">
-      <div class="milkdown-paper milkdown-readonly">
-        <div id="md-${includeAnswer ? 2 : 1}"></div>
-      </div>
-    </div>
-  </div>
-  `
-      : ""
-  }
-  
-  <div class="footer">
-    <div class="logo">MAH.AI</div>
-    <p><strong>Plateforme d'Apprentissage Intelligent</strong></p>
-    <p>Ce document a été généré automatiquement pour un usage pédagogique personnel.</p>
-    <p>© ${new Date().getFullYear()} Mah.ai - Tous droits réservés</p>
-  </div>
-  
-  <script type="module">
-    import { Crepe } from "https://esm.sh/@milkdown/crepe@7.18.0?bundle";
+      `
+          : ""
+      }
+    </header>
 
-    const sections = ${JSON.stringify(milkdownSections)};
-    const rootIds = sections.map((_, index) => "md-" + index);
+    ${sectionsHtml}
 
-    const editors = rootIds.map((id, index) => {
-      const root = document.getElementById(id);
-      if (!root) return null;
-      const crepe = new Crepe({
-        root,
-        defaultValue: sections[index] || "",
-      });
-      crepe.setReadonly(true);
-      return crepe;
-    }).filter(Boolean);
-
-    Promise.all(editors.map((editor) => editor.create()))
-      .then(() => {
-        document.documentElement.setAttribute("data-rendered", "true");
-      })
-      .catch((error) => {
-        console.error("Milkdown render error:", error);
-        document.documentElement.setAttribute("data-rendered", "true");
-      });
-  </script>
-</body>
+    <footer class="footer">
+      Document généré automatiquement pour usage pédagogique personnel.
+    </footer>
+  </body>
 </html>
     `;
 
-    // Lancer Puppeteer pour convertir HTML en PDF
     browser = await puppeteer.launch({
       headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
     });
 
     const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
+    await page.emulateMediaType("print");
 
-    // Attendre le rendu Milkdown côté navigateur
-    await page.waitForFunction(
-      () => document.documentElement.getAttribute("data-rendered") === "true",
-      { timeout: 30000 }
-    );
-
-    // Générer le PDF
     const pdfBuffer = await page.pdf({
       format: "A4",
       margin: {
-        top: "20mm",
-        bottom: "20mm",
-        left: "15mm",
-        right: "15mm",
+        top: "14mm",
+        bottom: "14mm",
+        left: "12mm",
+        right: "12mm",
       },
       printBackground: true,
       displayHeaderFooter: false,
     });
+
     if (!pdfBuffer || pdfBuffer.length === 0) {
-      throw new Error("PDF vide: génération interrompue ou contenu non rendu");
+      throw new Error("PDF vide: la génération n'a produit aucun contenu.");
     }
 
     await browser.close();
+    browser = null;
 
-    // Retourner le PDF
-    const pdfData = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
-    const pdfBody = new Uint8Array(pdfData);
-    return new Response(pdfBody, {
+    const pdfData = Buffer.isBuffer(pdfBuffer)
+      ? pdfBuffer
+      : Buffer.from(pdfBuffer);
+    const fileName = buildFileName(subjectTitle);
+
+    return new Response(new Uint8Array(pdfData), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${subjectTitle.replace(/[^a-z0-9]/gi, "_")}_mah_ai.pdf"`,
+        "Content-Disposition": `attachment; filename="${fileName}"`,
         "Content-Length": pdfData.byteLength.toString(),
         "Cache-Control": "no-store",
       },
@@ -624,21 +428,13 @@ export async function POST(request: NextRequest) {
     if (browser) {
       await browser.close();
     }
+
+    const details =
+      error instanceof Error ? error.message : "Erreur inattendue du serveur";
+
     return NextResponse.json(
-      { error: "Erreur lors de la génération du document" },
+      { error: `Erreur lors de la génération du document: ${details}` },
       { status: 500 },
     );
   }
-}
-
-// Fonction pour échapper les caractères HTML
-function escapeHtml(text: string): string {
-  const map: { [key: string]: string } = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#039;",
-  };
-  return text.replace(/[&<>"']/g, (m) => map[m]);
 }

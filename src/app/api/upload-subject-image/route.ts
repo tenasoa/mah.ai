@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 const MAX_UPLOAD_SIZE_BYTES = 8 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
@@ -67,26 +66,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !serviceRoleKey) {
-      return NextResponse.json(
-        { error: "Configuration serveur incomplète pour l'upload." },
-        { status: 500 },
-      );
-    }
-
-    const adminClient = createSupabaseClient(supabaseUrl, serviceRoleKey, {
-      auth: {
-        persistSession: false,
-      },
-    });
-
     const extension = getFileExtension(file);
-    const filePath = `${user.id}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+    const filePath = `subjects/${user.id}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
 
-    const { error: uploadError } = await adminClient.storage
+    const { error: uploadError } = await supabase.storage
       .from("images")
       .upload(filePath, file, {
         cacheControl: "31536000",
@@ -104,7 +87,7 @@ export async function POST(request: NextRequest) {
 
     const {
       data: { publicUrl },
-    } = adminClient.storage.from("images").getPublicUrl(filePath);
+    } = supabase.storage.from("images").getPublicUrl(filePath);
 
     return NextResponse.json({
       publicUrl,

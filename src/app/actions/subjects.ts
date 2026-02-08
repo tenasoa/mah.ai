@@ -559,8 +559,8 @@ export async function saveSubjectMarkdown(
 
       if (error) return { success: false, error: error.message };
     } else if (isContributor) {
-      // Contributors can edit any subject to fix errors
-      // BUT if the subject is published, it reverts to pending for validation
+      // Contributors can only edit their own subjects.
+      // If a published subject is edited, it is sent back to pending validation.
       const { data: subject } = await supabase
         .from('subjects')
         .select('uploaded_by, status')
@@ -571,8 +571,13 @@ export async function saveSubjectMarkdown(
         return { success: false, error: 'Sujet introuvable' };
       }
 
-      // If it's their own draft, keep it draft or pending.
-      // If it's someone else's or published, force pending.
+      if (subject.uploaded_by !== user.id) {
+        return {
+          success: false,
+          error: 'Vous pouvez consulter ce sujet, mais vous ne pouvez pas le modifier.',
+        };
+      }
+
       let newStatus = subject.status;
       if (subject.status === 'published' || subject.status === 'rejected') {
         newStatus = 'pending';
